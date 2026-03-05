@@ -1,7 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Banknote, FileText, Users, CheckCircle, PieChart, Shield } from 'lucide-react';
+import { FileText, Users, CheckCircle, PieChart, Shield } from 'lucide-react';
 import { Button } from '../components/ui/button';
+
+const LOGO_URL = 'https://static.prod-images.emergentagent.com/jobs/1fb06072-670b-49e1-9107-e57d39d3aeac/images/48d24952772b007d8f1595c8f786b20ff8832a50d29b7a2c9de063350c241f5c.png';
 
 const LandingPage = () => {
   return (
@@ -9,8 +11,8 @@ const LandingPage = () => {
       <nav className="fixed top-0 w-full bg-white/70 backdrop-blur-xl border-b border-slate-200 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-2">
-              <img src="https://static.prod-images.emergentagent.com/jobs/1fb06072-670b-49e1-9107-e57d39d3aeac/images/379666c6d42a6e5c67cb522d48b1c7ca17bc748fae3ed9ecf9b30083c78c6f20.png" alt="ZENITHAR" className="h-8 w-8" />
+            <div className="flex items-center gap-3">
+              <img src={LOGO_URL} alt="ZENITHAR" className="h-10 w-10" />
               <span className="text-2xl font-manrope font-black text-slate-900">ZENITHAR</span>
             </div>
             <Link to="/auth">
@@ -27,10 +29,10 @@ const LandingPage = () => {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
               <h1 className="text-5xl md:text-7xl font-manrope font-black tracking-tighter text-slate-900 mb-6">
-                Muhasebenizi <span className="text-primary">Kolaylaştırın</span>
+                Muhasebenizi <span className="text-primary">Yönetin</span>
               </h1>
               <p className="text-lg text-slate-600 mb-8 leading-relaxed">
-                E-Fatura, personel takibi, çek-senet yönetimi ve daha fazlası. Hiçbir şey bilmeseniz bile yapabilirsiniz!
+                E-Fatura, personel takibi, çek-senet yönetimi. Güçlü, hızlı ve profesyonel muhasebe çözümü.
               </p>
               <div className="flex gap-4">
                 <Link to="/auth">
@@ -43,7 +45,7 @@ const LandingPage = () => {
             <div className="relative">
               <img 
                 src="https://images.unsplash.com/photo-1770681381576-fe1ca0178da1?crop=entropy&cs=srgb&fm=jpg&q=85" 
-                alt="Modern muhasebe çalışma alanı"
+                alt="Profesyonel çalışma alanı"
                 className="rounded-xl shadow-2xl"
               />
             </div>
@@ -54,7 +56,7 @@ const LandingPage = () => {
       <section className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <h2 className="text-4xl font-manrope font-black text-center mb-16 text-slate-900">
-            Tüm İhtiyaçlarınız Tek Yerde
+            Tüm İhtiyaçlarınız Tek Platformda
           </h2>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -64,7 +66,7 @@ const LandingPage = () => {
               { icon: CheckCircle, title: 'Çek & Senet Takibi', desc: 'Alınan ve verilen çek/senetleri yönetin' },
               { icon: PieChart, title: 'Cari Hesap', desc: 'Müşteri ve tedarikçi bakiyelerini kontrol edin' },
               { icon: Shield, title: 'KDV İşlemleri', desc: 'İade ve mahsup işlemlerinde rehberlik' },
-              { icon: Banknote, title: 'Raporlar', desc: 'Detaylı finansal raporlar ve analizler' },
+              { icon: FileText, title: 'Detaylı Raporlar', desc: 'Finansal raporlar ve analizler' },
             ].map((feature, idx) => (
               <div 
                 key={idx}
@@ -146,11 +148,11 @@ const LandingPage = () => {
 
       <footer className="py-12 px-4 sm:px-6 lg:px-8 bg-slate-900 text-white">
         <div className="max-w-7xl mx-auto text-center">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <img src="https://static.prod-images.emergentagent.com/jobs/1fb06072-670b-49e1-9107-e57d39d3aeac/images/379666c6d42a6e5c67cb522d48b1c7ca17bc748fae3ed9ecf9b30083c78c6f20.png" alt="ZENITHAR" className="h-8 w-8" />
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <img src={LOGO_URL} alt="ZENITHAR" className="h-8 w-8" />
             <span className="text-2xl font-manrope font-black">ZENITHAR</span>
           </div>
-          <p className="text-slate-400">© 2026 MuhasebePro. Tüm hakları saklıdır.</p>
+          <p className="text-slate-400">© 2026 ZENITHAR. Tüm hakları saklıdır.</p>
         </div>
       </footer>
     </div>

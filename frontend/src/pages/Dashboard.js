@@ -8,6 +8,8 @@ import { Button } from '../components/ui/button';
 import { authAPI } from '../lib/api';
 import DashboardHome from '../components/dashboard/DashboardHome';
 
+const LOGO_URL = 'https://static.prod-images.emergentagent.com/jobs/1fb06072-670b-49e1-9107-e57d39d3aeac/images/48d24952772b007d8f1595c8f786b20ff8832a50d29b7a2c9de063350c241f5c.png';
+
 const Dashboard = ({ user, onLogout }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [subscription, setSubscription] = useState(null);
@@ -36,7 +38,6 @@ const Dashboard = ({ user, onLogout }) => {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Top Bar */}
       <div className="fixed top-0 w-full bg-white border-b border-slate-200 z-40 h-16">
         <div className="h-full px-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -47,8 +48,8 @@ const Dashboard = ({ user, onLogout }) => {
             >
               {sidebarOpen ? <X /> : <Menu />}
             </button>
-            <div className="flex items-center gap-2">
-              <img src="https://static.prod-images.emergentagent.com/jobs/1fb06072-670b-49e1-9107-e57d39d3aeac/images/379666c6d42a6e5c67cb522d48b1c7ca17bc748fae3ed9ecf9b30083c78c6f20.png" alt="ZENITHAR" className="h-6 w-6" />
+            <div className="flex items-center gap-3">
+              <img src={LOGO_URL} alt="ZENITHAR" className="h-8 w-8" />
               <span className="text-xl font-manrope font-black text-slate-900">ZENITHAR</span>
             </div>
           </div>
@@ -70,7 +71,6 @@ const Dashboard = ({ user, onLogout }) => {
         </div>
       </div>
 
-      {/* Sidebar */}
       <aside 
         className={`fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 bg-white border-r border-slate-200 z-30 transition-transform lg:translate-x-0 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
@@ -113,7 +113,6 @@ const Dashboard = ({ user, onLogout }) => {
         )}
       </aside>
 
-      {/* Overlay for mobile */}
       {sidebarOpen && (
         <div 
           className="fixed inset-0 bg-black/50 z-20 lg:hidden"
@@ -121,7 +120,6 @@ const Dashboard = ({ user, onLogout }) => {
         />
       )}
 
-      {/* Main Content */}
       <main className="lg:ml-64 pt-16">
         <div className="p-4 sm:p-6 lg:p-8">
           <Routes>
