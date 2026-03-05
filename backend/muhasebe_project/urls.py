@@ -1,12 +1,18 @@
 from django.contrib import admin
 from django.urls import path, include
-from rest_framework_simplejwt.views import TokenRefreshView
+from api.views import home
+
+def home(request):
+    return render(request, "html/index.html")
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/auth/', include('accounts.urls')),
+    path('', home),
+    path('api/accounts/', include('accounts.urls')),
+    path('api/invoices/', include('invoices.urls')),
+    path('api/checks/', include('checks.urls')),
+    path('api/current-accounts/', include('current_accounts.urls')),
     path('api/personnel/', include('personnel.urls')),
-    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]
 
 admin.site.site_header = 'ZENITHAR Yönetim Paneli'
