@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock } from 'lucide-react';
-import { Button } from '../../components/ui/button';
-import { Card } from '../../components/ui/card';
-import { personnelAPI } from '../../lib/api';
+import Button from '../../components/ui/button';
+import Card from '../../components/ui/card';
+import { personnelAPI } from '@/services/api';
 import { toast } from 'sonner';
 
 const AttendanceList = () => {

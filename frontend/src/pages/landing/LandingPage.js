@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { FileText, Users, CheckCircle, PieChart, Shield } from 'lucide-react';
-import { Button } from '../components/ui/button';
+import Button from '../../components/ui/button';
 
 const LOGO_URL = 'https://static.prod-images.emergentagent.com/jobs/1fb06072-670b-49e1-9107-e57d39d3aeac/images/48d24952772b007d8f1595c8f786b20ff8832a50d29b7a2c9de063350c241f5c.png';
 

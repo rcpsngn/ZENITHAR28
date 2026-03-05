@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { Users, Clock, DollarSign, Calendar } from 'lucide-react';
-import { Button } from '../../components/ui/button';
+import Button from '../../components/ui/button';
 import EmployeeList from './EmployeeList';
 import AttendanceList from './AttendanceList';
 import SalaryList from './SalaryList';

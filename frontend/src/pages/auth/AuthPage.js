@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Label } from '../components/ui/label';
-import { Card } from '../components/ui/card';
+import Button from '../../components/ui/button'
+import Input from '../../components/ui/input';
+import Label from '../../components/ui/label';
+import Card from '../../components/ui/card';
 import { toast } from 'sonner';
-import { authAPI } from '../lib/api';
+import { authAPI } from '../../services/api';
 
 const LOGO_URL = 'https://static.prod-images.emergentagent.com/jobs/1fb06072-670b-49e1-9107-e57d39d3aeac/images/48d24952772b007d8f1595c8f786b20ff8832a50d29b7a2c9de063350c241f5c.png';
 

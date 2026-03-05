@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Card } from '../../components/ui/card';
-import { Button } from '../../components/ui/button';
-import { personnelAPI } from '../../lib/api';
+import Card from '../../components/ui/card';
+import Button from '../../components/ui/button';
+import { personnelAPI } from '@/services/api';
 import { toast } from 'sonner';
 import { Check, X } from 'lucide-react';
 

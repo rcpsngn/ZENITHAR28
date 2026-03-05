@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit, Trash2, UserCheck, UserX } from 'lucide-react';
-import { Button } from '../../components/ui/button';
-import { Input } from '../../components/ui/input';
-import { Card } from '../../components/ui/card';
+import Button from '../../components/ui/button';
+import Input from '../../components/ui/input';
+import Card from '../../components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../../components/ui/dialog';
-import { Label } from '../../components/ui/label';
-import { personnelAPI } from '../../lib/api';
+import Label from '../../components/ui/label';
+import { personnelAPI } from '@/services/api';
 import { toast } from 'sonner';
 
 const EmployeeList = () => {
@@ -64,7 +64,7 @@ const EmployeeList = () => {
     }
   };
 
-  const filteredEmployees = employees.filter(emp => 
+  const filteredEmployees = employees.filter(emp =>
     emp.full_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -83,7 +83,7 @@ const EmployeeList = () => {
             />
           </div>
         </div>
-        
+
         <Dialog open={showDialog} onOpenChange={setShowDialog}>
           <DialogTrigger asChild>
             <Button className="bg-primary hover:bg-primary-hover" data-testid="add-employee-btn">
@@ -99,35 +99,35 @@ const EmployeeList = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Ad Soyad *</Label>
-                  <Input required value={formData.full_name} onChange={(e) => setFormData({...formData, full_name: e.target.value})} />
+                  <Input required value={formData.full_name} onChange={(e) => setFormData({ ...formData, full_name: e.target.value })} />
                 </div>
                 <div>
                   <Label>TC Kimlik No *</Label>
-                  <Input required value={formData.identity_number} onChange={(e) => setFormData({...formData, identity_number: e.target.value})} />
+                  <Input required value={formData.identity_number} onChange={(e) => setFormData({ ...formData, identity_number: e.target.value })} />
                 </div>
                 <div>
                   <Label>Telefon *</Label>
-                  <Input required value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} />
+                  <Input required value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
                 </div>
                 <div>
                   <Label>E-posta</Label>
-                  <Input type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
+                  <Input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
                 </div>
                 <div>
                   <Label>Pozisyon *</Label>
-                  <Input required value={formData.position} onChange={(e) => setFormData({...formData, position: e.target.value})} />
+                  <Input required value={formData.position} onChange={(e) => setFormData({ ...formData, position: e.target.value })} />
                 </div>
                 <div>
                   <Label>Departman</Label>
-                  <Input value={formData.department} onChange={(e) => setFormData({...formData, department: e.target.value})} />
+                  <Input value={formData.department} onChange={(e) => setFormData({ ...formData, department: e.target.value })} />
                 </div>
                 <div>
                   <Label>İşe Başlama Tarihi *</Label>
-                  <Input type="date" required value={formData.hire_date} onChange={(e) => setFormData({...formData, hire_date: e.target.value})} />
+                  <Input type="date" required value={formData.hire_date} onChange={(e) => setFormData({ ...formData, hire_date: e.target.value })} />
                 </div>
                 <div>
                   <Label>Maaş (₺) *</Label>
-                  <Input type="number" required value={formData.salary} onChange={(e) => setFormData({...formData, salary: e.target.value})} />
+                  <Input type="number" required value={formData.salary} onChange={(e) => setFormData({ ...formData, salary: e.target.value })} />
                 </div>
               </div>
               <div className="flex justify-end gap-2">

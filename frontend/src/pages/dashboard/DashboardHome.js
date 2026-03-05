@@ -1,6 +1,7 @@
 import React from 'react';
-import { Card } from '../ui/card';
+import Card from '../../components/ui/card';
 import { FileText, Users, CheckCircle, Banknote, TrendingUp, AlertCircle } from 'lucide-react';
+
 
 const DashboardHome = ({ user }) => {
   const stats = [
@@ -12,6 +13,7 @@ const DashboardHome = ({ user }) => {
 
   return (
     <div data-testid="dashboard-home">
+
       <div className="mb-8">
         <h1 className="text-3xl font-manrope font-bold text-slate-900 mb-2">
           Hoş Geldiniz, {user.username}!
@@ -70,6 +72,26 @@ const DashboardHome = ({ user }) => {
           <li>• KDV işlemleri için rehberlik almak istiyorsanız ilgili modüle göz atın</li>
         </ul>
       </div>
+
+      {/* ZENITHAR AI */}
+      <div className="mt-8 p-6 bg-white rounded-xl border shadow-sm">
+        <h3 className="text-xl font-bold mb-3">🤖 ZENITHAR AI</h3>
+
+        <p className="text-slate-600 mb-4">
+          Muhasebe verileriniz hakkında soru sorabilirsiniz.
+        </p>
+
+        <input
+          type="text"
+          placeholder="Örn: Bu ay giderlerim ne kadar?"
+          className="w-full border p-2 rounded mb-3"
+        />
+
+        <button className="bg-black text-white px-4 py-2 rounded">
+          AI Sor
+        </button>
+      </div>
+
     </div>
   );
 };
