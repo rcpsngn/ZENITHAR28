@@ -7,6 +7,7 @@ import {
 import { Button } from '../components/ui/button';
 import { authAPI } from '../lib/api';
 import DashboardHome from '../components/dashboard/DashboardHome';
+import PersonnelPage from './personnel/PersonnelPage';
 
 const LOGO_URL = 'https://static.prod-images.emergentagent.com/jobs/1fb06072-670b-49e1-9107-e57d39d3aeac/images/48d24952772b007d8f1595c8f786b20ff8832a50d29b7a2c9de063350c241f5c.png';
 
@@ -125,7 +126,7 @@ const Dashboard = ({ user, onLogout }) => {
           <Routes>
             <Route path="/" element={<DashboardHome user={user} />} />
             <Route path="/invoices" element={<div className="text-center p-12"><h2 className="text-2xl font-bold">E-Fatura/İrsaliye modülü yakında...</h2></div>} />
-            <Route path="/personnel" element={<div className="text-center p-12"><h2 className="text-2xl font-bold">Personel modülü yakında...</h2></div>} />
+            <Route path="/personnel/*" element={<PersonnelPage />} />
             <Route path="/checks" element={<div className="text-center p-12"><h2 className="text-2xl font-bold">Çek/Senet modülü yakında...</h2></div>} />
             <Route path="/accounts" element={<div className="text-center p-12"><h2 className="text-2xl font-bold">Cari Hesap modülü yakında...</h2></div>} />
             <Route path="/settings" element={<div className="text-center p-12"><h2 className="text-2xl font-bold">Ayarlar modülü yakında...</h2></div>} />
