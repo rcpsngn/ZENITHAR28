@@ -1,0 +1,120 @@
+.
+├── .env
+├── .env.example
+├── .gitignore
+├── README.md
+├── build
+│   ├── asset-manifest.json
+│   ├── index.html
+│   └── static
+│       ├── css
+│       │   ├── main.13e83174.css
+│       │   └── main.13e83174.css.map
+│       └── js
+│           ├── main.d4c952c4.js
+│           ├── main.d4c952c4.js.LICENSE.txt
+│           └── main.d4c952c4.js.map
+├── components.json
+├── craco.config.js
+├── jsconfig.json
+├── package-lock.json
+├── package.json
+├── plugins
+│   └── health-check
+│       ├── health-endpoints.js
+│       └── webpack-health-plugin.js
+├── postcss.config.js
+├── public
+│   └── index.html
+├── src
+│   ├── App.css
+│   ├── App.js
+│   ├── ai
+│   ├── app
+│   ├── components
+│   │   ├── dashboard
+│   │   └── ui
+│   │       ├── accordion.jsx
+│   │       ├── alert-dialog.jsx
+│   │       ├── alert.jsx
+│   │       ├── aspect-ratio.jsx
+│   │       ├── avatar.jsx
+│   │       ├── badge.jsx
+│   │       ├── breadcrumb.jsx
+│   │       ├── button.js
+│   │       ├── button.jsx
+│   │       ├── calendar.jsx
+│   │       ├── card.js
+│   │       ├── card.jsx
+│   │       ├── carousel.jsx
+│   │       ├── checkbox.jsx
+│   │       ├── collapsible.jsx
+│   │       ├── command.jsx
+│   │       ├── context-menu.jsx
+│   │       ├── dialog.js
+│   │       ├── dialog.jsx
+│   │       ├── drawer.jsx
+│   │       ├── dropdown-menu.jsx
+│   │       ├── form.jsx
+│   │       ├── hover-card.jsx
+│   │       ├── input-otp.jsx
+│   │       ├── input.js
+│   │       ├── input.jsx
+│   │       ├── label.js
+│   │       ├── label.jsx
+│   │       ├── menubar.jsx
+│   │       ├── navigation-menu.jsx
+│   │       ├── pagination.jsx
+│   │       ├── popover.jsx
+│   │       ├── progress.jsx
+│   │       ├── radio-group.jsx
+│   │       ├── resizable.jsx
+│   │       ├── scroll-area.jsx
+│   │       ├── select.js
+│   │       ├── select.jsx
+│   │       ├── separator.jsx
+│   │       ├── sheet.jsx
+│   │       ├── skeleton.jsx
+│   │       ├── slider.jsx
+│   │       ├── sonner.jsx
+│   │       ├── switch.jsx
+│   │       ├── table.jsx
+│   │       ├── tabs.jsx
+│   │       ├── textarea.jsx
+│   │       ├── toast.jsx
+│   │       ├── toaster.jsx
+│   │       ├── toggle-group.jsx
+│   │       ├── toggle.jsx
+│   │       └── tooltip.jsx
+│   ├── hooks
+│   │   └── use-toast.js
+│   ├── index.css
+│   ├── index.js
+│   ├── pages
+│   │   ├── Dashboard.js
+│   │   ├── auth
+│   │   │   └── AuthPage.js
+│   │   ├── dashboard
+│   │   │   └── DashboardHome.js
+│   │   ├── invoices
+│   │   │   └── InvoicePage.js
+│   │   ├── landing
+│   │   │   └── LandingPage.js
+│   │   └── personnel
+│   │       ├── AttendanceList.js
+│   │       ├── EmployeeList.js
+│   │       ├── LeaveList.js
+│   │       ├── PersonnelPage.js
+│   │       └── SalaryList.js
+│   ├── services
+│   │   └── api.js
+│   ├── styles
+│   │   ├── App.css
+│   │   └── index.css
+│   └── utils
+│       └── utils.js
+├── structure.txt
+├── tailwind.config.js
+└── yarn.lock
+
+24 directories, 94 files
