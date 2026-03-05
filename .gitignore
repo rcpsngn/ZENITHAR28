@@ -1,80 +1,99 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# IDE and editors
-.idea/
-.vscode/
-
-# Dependencies
-node_modules/
-/node_modules
-/.pnp
-.pnp.js
-.yarn/install-state.gz
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
-
-# Testing
-/coverage
-
-# Next.js
-/.next/
-/out/
-next-env.d.ts
-*.tsbuildinfo
-
-# Production builds
-/build
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
 dist/
-dist
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# Environment files (comprehensive coverage)
+# Virtual Environment
+venv/
+ENV/
+env/
+.venv/
 
-*token.json*
-*credentials.json*
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
 
-# Logs and debug files
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+logs/
+
+# Node
+node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.pnpm-debug.log*
-dump.rdb
+.pnp/
+.pnp.js
 
-# System files
-.DS_Store
-*.pem
+# Testing
+coverage/
+.nyc_output/
+*.test.js.snap
 
-# Python
-__pycache__/
-*pyc*
-venv/
-.venv/
+# Production
+build/
+dist/
 
-# Development tools
-chainlit.md
-.chainlit
-.ipynb_checkpoints/
-.ac
-
-# Deployment
-.vercel
-
-# Data and databases
-agenthub/agents/youtube/db
-
-# Archive files and large assets
-**/*.zip
-**/*.tar.gz
-**/*.tar
-**/*.tgz
-*.pack
-*.deb
-*.dylib
-
-# Build caches
+# Misc
 .cache/
+.parcel-cache/
+.next/
+out/
+.nuxt/
+.docusaurus/
 
-# Mobile development
-android-sdk/ 
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Temporary files
+*.tmp
+*.temp
+
+# Django (legacy)
+*.mo
+*.pot
+staticfiles/
+media/
+db.sqlite3
+db.sqlite3-journal
+
+# Django apps (if any remain)
+muhasebe_project/
+accounts/
+invoices/
+personnel/
+checks/
+current_accounts/
+manage.py

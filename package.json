@@ -1,0 +1,22 @@
+{
+  "name": "zenithar",
+  "version": "1.0.0",
+  "description": "Güçlü Muhasebe Yönetim Platformu",
+  "main": "backend/server.py",
+  "scripts": {
+    "start": "cd frontend && yarn start",
+    "backend": "cd backend && python server.py",
+    "dev": "concurrently \"yarn backend\" \"yarn start\"",
+    "build": "cd frontend && yarn build"
+  },
+  "keywords": [
+    "accounting",
+    "muhasebe",
+    "invoice",
+    "personnel",
+    "fastapi",
+    "react"
+  ],
+  "author": "ZENITHAR Team",
+  "license": "MIT"
+}
