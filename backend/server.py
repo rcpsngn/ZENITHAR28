@@ -230,10 +230,16 @@ async def toggle_employee(emp_id: str, user = Depends(get_current_user)):
 @app.get("/api/personnel/attendance/")
 async def get_attendance(user = Depends(get_current_user)):
     attendance = await db.attendance.find({"user_id": user["id"]}).sort("date", -1).to_list(100)
+    
+    # Batch fetch employees to avoid N+1 queries
+    employee_ids = list(set([att["employee_id"] for att in attendance if "employee_id" in att]))
+    employees = await db.employees.find({"_id": {"$in": [ObjectId(id) for id in employee_ids]}}).to_list(None)
+    emp_map = {str(emp["_id"]): emp for emp in employees}
+    
     for att in attendance:
         att["id"] = str(att["_id"])
         del att["_id"]
-        emp = await db.employees.find_one({"_id": ObjectId(att["employee_id"])})
+        emp = emp_map.get(att.get("employee_id"))
         att["employee_name"] = emp["full_name"] if emp else "Unknown"
     return attendance
 
@@ -256,10 +262,16 @@ async def quick_attendance(data: dict, user = Depends(get_current_user)):
 @app.get("/api/personnel/salaries/")
 async def get_salaries(user = Depends(get_current_user)):
     salaries = await db.salaries.find({"user_id": user["id"]}).sort("year", -1).to_list(100)
+    
+    # Batch fetch employees
+    employee_ids = list(set([sal["employee_id"] for sal in salaries if "employee_id" in sal]))
+    employees = await db.employees.find({"_id": {"$in": [ObjectId(id) for id in employee_ids]}}).to_list(None)
+    emp_map = {str(emp["_id"]): emp for emp in employees}
+    
     for sal in salaries:
         sal["id"] = str(sal["_id"])
         del sal["_id"]
-        emp = await db.employees.find_one({"_id": ObjectId(sal["employee_id"])})
+        emp = emp_map.get(sal.get("employee_id"))
         sal["employee_name"] = emp["full_name"] if emp else "Unknown"
         months = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık']
         sal["month_name"] = months[sal["month"] - 1] if 1 <= sal["month"] <= 12 else str(sal["month"])
@@ -276,10 +288,16 @@ async def mark_salary_paid(sal_id: str, user = Depends(get_current_user)):
 @app.get("/api/personnel/leaves/")
 async def get_leaves(user = Depends(get_current_user)):
     leaves = await db.leaves.find({"user_id": user["id"]}).sort("start_date", -1).to_list(100)
+    
+    # Batch fetch employees
+    employee_ids = list(set([leave["employee_id"] for leave in leaves if "employee_id" in leave]))
+    employees = await db.employees.find({"_id": {"$in": [ObjectId(id) for id in employee_ids]}}).to_list(None)
+    emp_map = {str(emp["_id"]): emp for emp in employees}
+    
     for leave in leaves:
         leave["id"] = str(leave["_id"])
         del leave["_id"]
-        emp = await db.employees.find_one({"_id": ObjectId(leave["employee_id"])})
+        emp = emp_map.get(leave.get("employee_id"))
         leave["employee_name"] = emp["full_name"] if emp else "Unknown"
     return leaves
 
