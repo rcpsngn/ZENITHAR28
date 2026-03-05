@@ -48,8 +48,8 @@ const Dashboard = ({ user, onLogout }) => {
               {sidebarOpen ? <X /> : <Menu />}
             </button>
             <div className="flex items-center gap-2">
-              <Banknote className="h-6 w-6 text-primary" />
-              <span className="text-xl font-manrope font-black text-slate-900">MuhasebePro</span>
+              <img src="https://static.prod-images.emergentagent.com/jobs/1fb06072-670b-49e1-9107-e57d39d3aeac/images/379666c6d42a6e5c67cb522d48b1c7ca17bc748fae3ed9ecf9b30083c78c6f20.png" alt="ZENITHAR" className="h-6 w-6" />
+              <span className="text-xl font-manrope font-black text-slate-900">ZENITHAR</span>
             </div>
           </div>
           

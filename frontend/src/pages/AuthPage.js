@@ -56,8 +56,8 @@ const AuthPage = ({ onLogin }) => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-tr from-emerald-50 to-orange-50 p-4">
       <Card className="w-full max-w-md p-8" data-testid="auth-card">
         <div className="flex items-center justify-center gap-2 mb-8">
-          <Banknote className="h-10 w-10 text-primary" />
-          <span className="text-3xl font-manrope font-black text-slate-900">MuhasebePro</span>
+          <img src="https://static.prod-images.emergentagent.com/jobs/1fb06072-670b-49e1-9107-e57d39d3aeac/images/379666c6d42a6e5c67cb522d48b1c7ca17bc748fae3ed9ecf9b30083c78c6f20.png" alt="ZENITHAR" className="h-10 w-10" />
+          <span className="text-3xl font-manrope font-black text-slate-900">ZENITHAR</span>
         </div>
 
         <h2 className="text-2xl font-manrope font-bold text-center mb-6">

@@ -8,6 +8,6 @@ urlpatterns = [
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]
 
-admin.site.site_header = 'Muhasebe Yönetim Paneli'
-admin.site.site_title = 'Muhasebe Admin'
+admin.site.site_header = 'ZENITHAR Yönetim Paneli'
+admin.site.site_title = 'ZENITHAR Admin'
 admin.site.index_title = 'Yönetim Paneli'

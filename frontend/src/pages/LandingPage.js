@@ -10,8 +10,8 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-2">
-              <Banknote className="h-8 w-8 text-primary" />
-              <span className="text-2xl font-manrope font-black text-slate-900">MuhasebePro</span>
+              <img src="https://static.prod-images.emergentagent.com/jobs/1fb06072-670b-49e1-9107-e57d39d3aeac/images/379666c6d42a6e5c67cb522d48b1c7ca17bc748fae3ed9ecf9b30083c78c6f20.png" alt="ZENITHAR" className="h-8 w-8" />
+              <span className="text-2xl font-manrope font-black text-slate-900">ZENITHAR</span>
             </div>
             <Link to="/auth">
               <Button data-testid="nav-login-btn" className="bg-primary hover:bg-primary-hover text-white font-bold">
@@ -147,8 +147,8 @@ const LandingPage = () => {
       <footer className="py-12 px-4 sm:px-6 lg:px-8 bg-slate-900 text-white">
         <div className="max-w-7xl mx-auto text-center">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <Banknote className="h-8 w-8 text-primary" />
-            <span className="text-2xl font-manrope font-black">MuhasebePro</span>
+            <img src="https://static.prod-images.emergentagent.com/jobs/1fb06072-670b-49e1-9107-e57d39d3aeac/images/379666c6d42a6e5c67cb522d48b1c7ca17bc748fae3ed9ecf9b30083c78c6f20.png" alt="ZENITHAR" className="h-8 w-8" />
+            <span className="text-2xl font-manrope font-black">ZENITHAR</span>
           </div>
           <p className="text-slate-400">© 2026 MuhasebePro. Tüm hakları saklıdır.</p>
         </div>
