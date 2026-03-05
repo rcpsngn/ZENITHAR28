@@ -4,10 +4,10 @@
   "description": "Güçlü Muhasebe Yönetim Platformu",
   "main": "backend/server.py",
   "scripts": {
-    "start": "cd frontend && yarn start",
+    "start": "cd frontend && npm start",
     "backend": "cd backend && python server.py",
-    "dev": "concurrently \"yarn backend\" \"yarn start\"",
-    "build": "cd frontend && yarn build"
+    "dev": "concurrently \"npm run backend\" \"npm start\"",
+    "build": "cd frontend && npm run build"
   },
   "keywords": [
     "accounting",
@@ -18,5 +18,8 @@
     "react"
   ],
   "author": "ZENITHAR Team",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "concurrently": "^9.2.1"
+  }
 }
