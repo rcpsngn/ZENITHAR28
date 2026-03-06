@@ -3,6 +3,7 @@
 ![ZENITHAR Logo](https://static.prod-images.emergentagent.com/jobs/1fb06072-670b-49e1-9107-e57d39d3aeac/images/48d24952772b007d8f1595c8f786b20ff8832a50d29b7a2c9de063350c241f5c.png)
 
 Güçlü, modern ve kullanıcı dostu muhasebe yönetim platformu.
+Zenithar, Türk işletmeler için geliştirilmiş, kullanımı kolay bir muhasebe takip sistemidir. E-fatura, e-irsaliye, personel takibi ve AI asistanlı rehberlik özellikleri ile muhasebenizi kolaylaştırır.
 
 ## 🚀 Özellikler
 
