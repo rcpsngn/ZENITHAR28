@@ -1,0 +1,53 @@
+/* FONT */
+
+body{
+    margin:0;
+    font-family: 'Inter', sans-serif;
+    background:#f6f7fb;
+    color:#0f172a;
+}
+
+/* NAVBAR */
+
+.navbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:20px 40px;
+    background:white;
+    border-bottom:1px solid #e2e8f0;
+}
+
+/* LOGO */
+
+.logo{
+    font-size:22px;
+    font-weight:700;
+    color:#10b981;
+}
+
+/* MENU */
+
+nav a{
+    margin-left:20px;
+    text-decoration:none;
+    color:#334155;
+    font-weight:500;
+}
+
+nav a:hover{
+    color:#10b981;
+}
+
+/* PAGE */
+
+.container{
+    max-width:1200px;
+    margin:auto;
+    padding:60px 20px;
+}
+
+h1{
+    font-size:36px;
+    margin-bottom:10px;
+}

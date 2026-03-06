@@ -1,1 +1,53 @@
-<h1>ZENITHAR çalışıyor</h1>
+{% load static %}
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>ZENITHAR | Muhasebe Platformu</title>
+
+    <link rel="icon" type="image/png" href="{% static 'img/favicon.png' %}">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+</head>
+
+<body>
+
+<header class="navbar">
+
+    <div class="logo">
+        ZENITHAR
+    </div>
+
+    <nav class="nav-links">
+
+        <a href="/">Dashboard</a>
+        <a href="/api/current-accounts/">Cari Hesaplar</a>
+        <a href="/api/invoices/">Faturalar</a>
+        <a href="/api/checks/">Çekler</a>
+        <a href="/api/personnel/">Personel</a>
+
+    </nav>
+
+</header>
+
+
+<main class="container">
+
+    <h1>ZENITHAR Muhasebe Platformu</h1>
+
+    <p>
+        Django backend başarıyla çalışıyor 🚀
+    </p>
+
+</main>
+
+
+</body>
+</html>

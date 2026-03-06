@@ -1,0 +1,51 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+
+    <meta charset="UTF-8">
+    <title>ZENITHAR Giriş</title>
+
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+</head>
+
+<body>
+
+<div class="auth-container">
+
+    <h2 id="auth-title">Giriş Yap</h2>
+
+    <form id="auth-form">
+
+        <input id="username" placeholder="Kullanıcı Adı" required>
+
+        <div id="email-field" style="display:none;">
+            <input id="email" placeholder="E-posta">
+        </div>
+
+        <div id="company-field" style="display:none;">
+            <input id="company" placeholder="Firma Adı">
+        </div>
+
+        <input id="password" type="password" placeholder="Şifre" required>
+
+        <div id="password-confirm-field" style="display:none;">
+            <input id="password_confirm" type="password" placeholder="Şifre Tekrar">
+        </div>
+
+        <button type="submit">Gönder</button>
+
+    </form>
+
+    <button id="toggle-auth">
+        Hesabınız yok mu? Kayıt olun
+    </button>
+
+</div>
+
+<script src="{% static 'js/auth/auth.js' %}"></script>
+
+</body>
+</html>
