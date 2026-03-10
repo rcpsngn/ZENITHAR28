@@ -1,21 +1,39 @@
-<div class="flex justify-between items-center mb-6">
+{% load static %}
+<!DOCTYPE html>
+<html lang="tr">
 
-  <div class="flex-1 max-w-md">
+<head>
+<meta charset="UTF-8">
+<title>Çalışanlar</title>
+<link rel="stylesheet" href="{% static 'css/index.css' %}">
+</head>
 
-    <input
-      id="employee-search"
-      type="text"
-      placeholder="Personel ara..."
-      class="w-full border rounded px-4 py-2"
-    />
+<body>
 
-  </div>
+<div class="layout">
+
+<div class="sidebar">
+
+<div class="logo">ZENITHAR</div>
+
+<a href="/">Dashboard</a>
+<a href="/personnel">Personel</a>
+<a href="/leaves">İzinler</a>
+<a href="/invoices">Faturalar</a>
 
 </div>
 
-<div id="employee-list"></div>
+<div class="main">
 
-<script type="module">
-import EmployeeList from "/static/js/personnel/EmployeeList.js";
-EmployeeList();
-</script>
+<h1>Çalışanlar</h1>
+
+<div class="card">
+Çalışan listesi burada olacak
+</div>
+
+</div>
+
+</div>
+
+</body>
+</html>

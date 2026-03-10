@@ -5,7 +5,8 @@
 <head>
 
 <meta charset="UTF-8">
-<title>ZENITHAR Giriş</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZENITHAR Kayıt</title>
 
 <link rel="stylesheet" href="{% static 'css/login.css' %}">
 
@@ -17,23 +18,42 @@
 
 <div class="login-container">
 
-<h2>ZENITHAR Giriş</h2>
+<h2>ZENITHAR Kayıt Ol</h2>
 
 <form method="POST">
 
 {% csrf_token %}
 
-<input type="text" name="username" placeholder="Kullanıcı Adı" required>
+<input
+type="text"
+name="username"
+placeholder="Kullanıcı Adı"
+required
+>
 
-<input type="password" name="password" placeholder="Şifre" required>
+<input
+type="email"
+name="email"
+placeholder="Email"
+required
+>
 
-<button type="submit">Giriş Yap</button>
+<input
+type="password"
+name="password"
+placeholder="Şifre"
+required
+>
+
+<button type="submit">
+Kayıt Ol
+</button>
 
 </form>
 
 <div class="links">
 
-<a href="{% url 'register' %}">Kayıt Ol</a>
+<a href="{% url 'login' %}">Giriş Yap</a>
 
 <a href="{% url 'password_reset' %}">Şifremi Unuttum</a>
 

@@ -2,6 +2,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone
 from datetime import timedelta
+from django.contrib.auth.models import User
 
 
 class User(AbstractUser):
@@ -84,3 +85,19 @@ class Subscription(models.Model):
         db_table = "subscriptions"
         verbose_name = "Abonelik"
         verbose_name_plural = "Abonelikler"
+
+
+class Notification(models.Model):
+
+    user = models.ForeignKey(User,on_delete=models.CASCADE)
+
+    title = models.CharField(max_length=255)
+
+    message = models.TextField()
+
+    is_read = models.BooleanField(default=False)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title

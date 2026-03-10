@@ -1,165 +1,153 @@
-import React, { useState } from "react";
-import { Routes, Route, Link, useNavigate, useLocation } from "react-router-dom";
-import {
-  LayoutDashboard,
-  FileText,
-  Users,
-  CheckCircle,
-  Banknote,
-  Settings,
-  LogOut,
-  Menu,
-  X,
-} from "lucide-react";
+/* USER DROPDOWN */
 
-import DashboardHome from "../dashboard/DashboardHome";
-import PersonnelPage from "../personnel/PersonnelPage";
-import InvoicePage from "../invoices/InvoicePage";
+function toggleMenu(){
 
-const LOGO_URL =
-  "https://static.prod-images.emergentagent.com/jobs/1fb06072-670b-49e1-9107-e57d39d3aeac/images/48d24952772b007d8f1595c8f786b20ff8832a50d29b7a2c9de063350c241f5c.png";
+const menu = document.getElementById("userDropdown")
 
-const Dashboard = ({ user, onLogout }) => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+if(menu.style.display === "block"){
+menu.style.display = "none"
+}else{
+menu.style.display = "block"
+}
 
-  const navigate = useNavigate();
-  const location = useLocation();
+}
 
-  const menuItems = [
-    { icon: LayoutDashboard, label: "Ana Sayfa", path: "/dashboard" },
-    { icon: FileText, label: "E-Fatura/İrsaliye", path: "/dashboard/invoices" },
-    { icon: Users, label: "Personel", path: "/dashboard/personnel" },
-    { icon: CheckCircle, label: "Çek/Senet", path: "/dashboard/checks" },
-    { icon: Banknote, label: "Cari Hesap", path: "/dashboard/accounts" },
-    { icon: Settings, label: "Ayarlar", path: "/dashboard/settings" },
-  ];
+/* CLICK OUTSIDE CLOSE */
 
-  const handleLogout = () => {
-    onLogout();
-    navigate("/");
-  };
+window.onclick = function(event){
 
-  return (
-    <div className="min-h-screen bg-slate-50">
+if(!event.target.closest('.user-menu')){
 
-      <div className="fixed top-0 w-full bg-white border-b border-slate-200 z-40 h-16">
-        <div className="h-full px-4 flex items-center justify-between">
+const menu = document.getElementById("userDropdown")
 
-          <div className="flex items-center gap-4">
-            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="lg:hidden">
-              {sidebarOpen ? <X /> : <Menu />}
-            </button>
+if(menu){
+menu.style.display = "none"
+}
 
-            <div className="flex items-center gap-3">
-              <img src={LOGO_URL} alt="ZENITHAR" className="h-8 w-8" />
-              <span className="text-xl font-black text-slate-900">ZENITHAR</span>
-            </div>
-          </div>
+}
 
-          <div className="flex items-center gap-4">
+}
 
-            <span className="text-sm text-slate-600 hidden sm:block">
-              {user?.username}
-            </span>
+/* DARK MODE */
 
-            <button
-              onClick={handleLogout}
-              className="p-2 rounded hover:bg-slate-100"
-            >
-              <LogOut className="h-4 w-4" />
-            </button>
+function toggleDarkMode(){
 
-          </div>
-        </div>
-      </div>
+document.body.classList.toggle("dark-mode")
 
-      <aside
-        className={`fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 bg-white border-r border-slate-200 z-30 transition-transform lg:translate-x-0 ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        <nav className="p-4 space-y-2">
+localStorage.setItem(
+"darkmode",
+document.body.classList.contains("dark-mode")
+)
 
-          {menuItems.map((item) => {
-            const isActive = location.pathname.startsWith(item.path);
+}
 
-            return (
-              <Link key={item.path} to={item.path} onClick={() => setSidebarOpen(false)}>
-                <div
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                    isActive
-                      ? "bg-primary text-white"
-                      : "text-slate-700 hover:bg-slate-100"
-                  }`}
-                >
-                  <item.icon className="h-5 w-5" strokeWidth={1.5} />
-                  <span className="font-medium">{item.label}</span>
-                </div>
-              </Link>
-            );
-          })}
+/* LOAD DARK MODE */
 
-        </nav>
-      </aside>
+if(localStorage.getItem("darkmode") === "true"){
 
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-20 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+document.body.classList.add("dark-mode")
 
-      <main className="lg:ml-64 pt-16">
-        <div className="p-4 sm:p-6 lg:p-8">
+}
 
-          <Routes>
+/* ZENITHAR AI PANEL */
 
-            <Route path="/" element={<DashboardHome user={user} />} />
+const aiBtn = document.querySelector(".ai-btn")
 
-            <Route path="/invoices" element={<InvoicePage />} />
+if(aiBtn){
 
-            <Route path="/personnel/*" element={<PersonnelPage />} />
+aiBtn.onclick = function(){
 
-            <Route
-              path="/checks"
-              element={
-                <div className="text-center p-12">
-                  <h2 className="text-2xl font-bold">
-                    Çek/Senet modülü yakında...
-                  </h2>
-                </div>
-              }
-            />
+alert("ZENITHAR AI yakında aktif olacak")
 
-            <Route
-              path="/accounts"
-              element={
-                <div className="text-center p-12">
-                  <h2 className="text-2xl font-bold">
-                    Cari Hesap modülü yakında...
-                  </h2>
-                </div>
-              }
-            />
+}
 
-            <Route
-              path="/settings"
-              element={
-                <div className="text-center p-12">
-                  <h2 className="text-2xl font-bold">
-                    Ayarlar modülü yakında...
-                  </h2>
-                </div>
-              }
-            />
+}
 
-          </Routes>
+/* CHARTS */
 
-        </div>
-      </main>
+const revenueCanvas = document.getElementById("revenueChart")
 
-    </div>
-  );
-};
+if(revenueCanvas){
 
-export default Dashboard;
+new Chart(revenueCanvas,{
+
+type:"line",
+
+data:{
+labels:["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran"],
+
+datasets:[{
+label:"Gelir",
+
+data:[12000,19000,15000,21000,25000,28000],
+
+borderColor:"#3b82f6",
+
+backgroundColor:"rgba(59,130,246,0.2)",
+
+tension:0.4,
+
+fill:true
+
+}]
+
+}
+
+})
+
+}
+
+const expenseCanvas = document.getElementById("expenseChart")
+
+if(expenseCanvas){
+
+new Chart(expenseCanvas,{
+
+type:"doughnut",
+
+data:{
+labels:["Maaş","Vergi","Ofis","Diğer"],
+
+datasets:[{
+
+data:[40,25,20,15],
+
+backgroundColor:[
+"#3b82f6",
+"#f43f5e",
+"#fb923c",
+"#facc15"
+]
+
+}]
+
+}
+
+})
+
+}
+
+/* DASHBOARD SEARCH */
+
+function dashboardSearch(){
+
+let input = document
+.getElementById("dashboardSearch")
+.value
+.toLowerCase()
+
+let cards = document.querySelectorAll(".card,.panel")
+
+cards.forEach(el => {
+
+let text = el.innerText.toLowerCase()
+
+if(text.includes(input)){
+el.style.display = "block"
+}else{
+el.style.display = "none"
+}
+
+})
+
+}

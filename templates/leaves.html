@@ -1,6 +1,39 @@
-<div id="leave-list"></div>
+{% load static %}
+<!DOCTYPE html>
+<html lang="tr">
 
-<script type="module">
-import LeaveList from "/static/js/pages/personnel/LeaveList.js";
-LeaveList();
-</script>
+<head>
+<meta charset="UTF-8">
+<title>İzinler</title>
+<link rel="stylesheet" href="{% static 'css/index.css' %}">
+</head>
+
+<body>
+
+<div class="layout">
+
+<div class="sidebar">
+
+<div class="logo">ZENITHAR</div>
+
+<a href="/">Dashboard</a>
+<a href="/personnel">Personel</a>
+<a href="/leaves">İzinler</a>
+<a href="/invoices">Faturalar</a>
+
+</div>
+
+<div class="main">
+
+<h1>İzinler</h1>
+
+<div class="card">
+İzin listesi burada olacak
+</div>
+
+</div>
+
+</div>
+
+</body>
+</html>

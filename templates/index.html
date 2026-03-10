@@ -1,62 +1,286 @@
 {% load static %}
-
 <!DOCTYPE html>
-
 <html lang="tr">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-```
-<title>ZENITHAR | Muhasebe Platformu</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<link rel="icon" href="{% static 'img/favicon.png' %}">
+<title>ZENITHAR</title>
 
-<!-- Google Font -->
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-<!-- Main CSS -->
-<link rel="stylesheet" href="{% static 'css/style.css' %}">
-```
+<link rel="stylesheet" href="{% static 'css/index.css' %}">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
 
 </head>
 
 <body>
 
-<header class="navbar">
+<div class="layout">
 
-```
+<!-- SIDEBAR -->
+
+<div class="sidebar">
+
 <div class="logo">
-    ZENITHAR
+<img src="{% static 'img/logo.png' %}">
+<span>ZENITHAR</span>
 </div>
 
-<nav>
-    <a href="/">Dashboard</a>
-    <a href="/current-accounts">Cari Hesaplar</a>
-    <a href="/invoices">Faturalar</a>
-    <a href="/checks">Çekler</a>
-    <a href="/personnel">Personel</a>
-</nav>
-```
+<a href="#" class="active"><i class="bi bi-speedometer2"></i> Dashboard</a>
+<a href="#"><i class="bi bi-people"></i> Personel</a>
+<a href="#"><i class="bi bi-calendar-check"></i> İzinler</a>
+<a href="#"><i class="bi bi-receipt"></i> Faturalar</a>
+<a href="#"><i class="bi bi-person-badge"></i> Çalışanlar</a>
 
-</header>
+</div>
 
-<main class="container">
+<!-- MAIN -->
 
-```
-<h1>ZENITHAR Muhasebe Platformu</h1>
+<div class="main">
 
-<p>
-    Django backend başarıyla çalışıyor 🚀
-</p>
-```
+<!-- TOPBAR -->
 
-</main>
+<div class="topbar">
 
-<!-- JS MODULE -->
+<div class="topbar-left"></div>
 
-<script type="module" src="{% static 'js/personnel/SalaryList.js' %}"></script>
+<div class="topbar-center">
+
+<button class="dark-btn" onclick="toggleDarkMode()">
+🌙
+</button>
+
+    <div class="notifications">
+
+<div class="notif-icon" onclick="toggleNotifications()">
+🔔
+<span class="notif-count">{{ notifications|length }}</span>
+</div>
+
+<div class="notif-dropdown" id="notifDropdown">
+
+{% for n in notifications %}
+
+<div class="notif-item">
+<strong>{{ n.title }}</strong><br>
+{{ n.message }}
+</div>
+
+{% empty %}
+
+<div class="notif-item">
+Bildirim yok
+</div>
+
+{% endfor %}
+
+</div>
+
+</div>
+<input
+type="text"
+id="dashboardSearch"
+placeholder="Dashboard ara..."
+onkeyup="dashboardSearch()"
+class="search-input"
+>
+
+</div>
+
+<div class="topbar-right">
+
+<div class="user-menu">
+
+<div class="user-button" onclick="toggleMenu()">
+👤 {{ request.user.username }} ▼
+</div>
+
+<div class="dropdown" id="userDropdown">
+
+<a href="#">Profil</a>
+<a href="#">Ayarlar</a>
+<a href="{% url 'logout' %}" class="logout">Çıkış Yap</a>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+<h1>Hoş Geldiniz</h1>
+
+<!-- STAT CARDS -->
+
+<div class="stats">
+
+<div class="card">
+<div class="card-title">Toplam Personel</div>
+<div class="value">24</div>
+</div>
+
+<div class="card">
+<div class="card-title">Aktif Fatura</div>
+<div class="value">312</div>
+</div>
+
+<div class="card">
+<div class="card-title">Gelir</div>
+<div class="value">₺120,000</div>
+</div>
+
+<div class="card">
+<div class="card-title">Gider</div>
+<div class="value">₺42,000</div>
+</div>
+
+</div>
+
+<!-- PANELS -->
+
+<div class="dashboard-panels">
+
+<div class="panel">
+<div class="panel-header">
+<span class="icon green">↗</span>
+<h3>Son İşlemler</h3>
+</div>
+<div class="panel-body">
+Henüz işlem bulunmuyor
+</div>
+</div>
+
+<div class="panel">
+<div class="panel-header">
+<span class="icon orange">!</span>
+<h3>Hatırlatmalar</h3>
+</div>
+<div class="panel-body">
+Henüz hatırlatma bulunmuyor
+</div>
+</div>
+
+</div>
+
+<!-- CHARTS -->
+
+<div class="charts">
+
+<div class="chart-box">
+<h3>Aylık Gelir</h3>
+<canvas id="revenueChart"></canvas>
+</div>
+
+<div class="chart-box">
+<h3>Gider Analizi</h3>
+<canvas id="expenseChart"></canvas>
+</div>
+
+</div>
+
+<!-- İPUÇLARI -->
+
+<div class="tips-box">
+
+<h3>Başlamak için ipuçları</h3>
+
+<ul>
+<li>Sol menüden <b>E-Fatura/İrsaliye</b> bölümüne giderek ilk faturanızı oluşturun</li>
+<li><b>Personel</b> bölümünden çalışanlarınızı sisteme ekleyin</li>
+<li><b>Cari Hesap</b> bölümünden müşteri ve tedarikçilerinizi tanımlayın</li>
+<li>KDV işlemleri için rehberlik almak istiyorsanız ilgili modüle göz atın</li>
+</ul>
+
+</div>
+
+<!-- 7 GÜNLÜK DENEME -->
+
+<div class="trial-box">
+<b>7 Günlük Deneme</b>
+<span>12.03.2026 tarihine kadar</span>
+</div>
+
+<!-- ZENITHAR AI -->
+
+<div class="zenithar-ai">
+<button class="ai-btn">
+🤖 ZENITHAR AI
+</button>
+</div>
+
+</div>
+</div>
+
+<!-- CHART JS -->
+
+<script>
+
+const revenueChart = new Chart(
+document.getElementById('revenueChart'),
+{
+type:'line',
+data:{
+labels:["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran"],
+datasets:[{
+label:"Gelir",
+data:[12000,19000,15000,21000,25000,28000],
+borderColor:"#3b82f6",
+backgroundColor:"rgba(59,130,246,0.2)",
+tension:0.4,
+fill:true
+}]
+}
+});
+
+const expenseChart = new Chart(
+document.getElementById('expenseChart'),
+{
+type:'doughnut',
+data:{
+labels:["Maaş","Vergi","Ofis","Diğer"],
+datasets:[{
+data:[40,25,20,15],
+backgroundColor:[
+"#3b82f6",
+"#f43f5e",
+"#fb923c",
+"#facc15"
+]
+}]
+}
+});
+
+</script>
+
+<script src="{% static 'js/dashboard/Dashboard.js' %}"></script>
+
+<script>
+
+/* DARK MODE */
+
+function toggleDarkMode(){
+
+document.body.classList.toggle("dark-mode")
+
+localStorage.setItem(
+"darkmode",
+document.body.classList.contains("dark-mode")
+)
+
+}
+
+/* LOAD DARK MODE */
+
+if(localStorage.getItem("darkmode") === "true"){
+
+document.body.classList.add("dark-mode")
+
+}
+
+</script>
 
 </body>
 </html>
