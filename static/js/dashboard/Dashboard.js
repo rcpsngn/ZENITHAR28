@@ -1,4 +1,6 @@
+/* ============================= */
 /* USER DROPDOWN */
+/* ============================= */
 
 function toggleMenu(){
 
@@ -12,7 +14,9 @@ menu.style.display = "block"
 
 }
 
+/* ============================= */
 /* CLICK OUTSIDE CLOSE */
+/* ============================= */
 
 window.onclick = function(event){
 
@@ -28,7 +32,9 @@ menu.style.display = "none"
 
 }
 
+/* ============================= */
 /* DARK MODE */
+/* ============================= */
 
 function toggleDarkMode(){
 
@@ -41,29 +47,51 @@ document.body.classList.contains("dark-mode")
 
 }
 
+/* ============================= */
 /* LOAD DARK MODE */
+/* ============================= */
 
 if(localStorage.getItem("darkmode") === "true"){
-
 document.body.classList.add("dark-mode")
-
 }
 
+/* ============================= */
 /* ZENITHAR AI PANEL */
+/* ============================= */
 
 const aiBtn = document.querySelector(".ai-btn")
 
 if(aiBtn){
 
 aiBtn.onclick = function(){
-
 alert("ZENITHAR AI yakında aktif olacak")
-
 }
 
 }
 
+/* ============================= */
+/* SIDEBAR DROPDOWN MENÜ */
+/* ============================= */
+
+document.querySelectorAll(".menu-title").forEach(menu => {
+
+menu.addEventListener("click", () => {
+
+const submenu = menu.nextElementSibling
+
+if(submenu.style.display === "flex"){
+submenu.style.display = "none"
+}else{
+submenu.style.display = "flex"
+}
+
+})
+
+})
+
+/* ============================= */
 /* CHARTS */
+/* ============================= */
 
 const revenueCanvas = document.getElementById("revenueChart")
 
@@ -77,6 +105,7 @@ data:{
 labels:["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran"],
 
 datasets:[{
+
 label:"Gelir",
 
 data:[12000,19000,15000,21000,25000,28000],
@@ -91,11 +120,20 @@ fill:true
 
 }]
 
+},
+
+options:{
+responsive:true,
+maintainAspectRatio:false
 }
 
 })
 
 }
+
+/* ============================= */
+/* EXPENSE CHART */
+/* ============================= */
 
 const expenseCanvas = document.getElementById("expenseChart")
 
@@ -121,13 +159,25 @@ backgroundColor:[
 
 }]
 
+},
+
+options:{
+responsive:true,
+cutout:"70%",
+plugins:{
+legend:{
+position:"top"
+}
+}
 }
 
 })
 
 }
 
+/* ============================= */
 /* DASHBOARD SEARCH */
+/* ============================= */
 
 function dashboardSearch(){
 

@@ -1,35 +1,42 @@
 const canvas = document.getElementById("matrix");
 const ctx = canvas.getContext("2d");
 
+/* CANVAS FULLSCREEN */
+
+function resizeCanvas(){
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
+}
+
+resizeCanvas();
+window.addEventListener("resize", resizeCanvas);
 
 const letters = "01";
 const fontSize = 16;
-const columns = canvas.width / fontSize;
+let columns = canvas.width / fontSize;
 
-const drops = [];
+let drops = [];
 
 for(let i=0;i<columns;i++){
-drops[i]=1;
+drops[i] = 1;
 }
 
 function draw(){
 
-ctx.fillStyle="rgba(15,31,23,0.07)";
+ctx.fillStyle = "rgba(15,31,23,0.08)";
 ctx.fillRect(0,0,canvas.width,canvas.height);
 
-ctx.fillStyle="#1f8f63";
-ctx.font=fontSize+"px monospace";
+ctx.fillStyle = "#1f8f63";
+ctx.font = fontSize + "px monospace";
 
 for(let i=0;i<drops.length;i++){
 
-const text=letters[Math.floor(Math.random()*letters.length)];
+const text = letters[Math.floor(Math.random()*letters.length)];
 
-ctx.fillText(text,i*fontSize,drops[i]*fontSize);
+ctx.fillText(text, i*fontSize, drops[i]*fontSize);
 
-if(drops[i]*fontSize>canvas.height && Math.random()>0.975){
-drops[i]=0;
+if(drops[i]*fontSize > canvas.height && Math.random() > 0.975){
+drops[i] = 0;
 }
 
 drops[i]++;
@@ -38,4 +45,4 @@ drops[i]++;
 
 }
 
-setInterval(draw,33);
+setInterval(draw, 33);

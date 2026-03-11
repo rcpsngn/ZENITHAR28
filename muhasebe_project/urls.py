@@ -1,20 +1,21 @@
 from django.contrib import admin
 from django.urls import path, include
+from django.shortcuts import render
+
+
+def home(request):
+    return render(request, "home.html")
+
 
 urlpatterns = [
 
+    path('', home),
     path('admin/', admin.site.urls),
-
-    # LOGIN SYSTEM
     path('accounts/', include('accounts.urls')),
-
-    # API
-    path('api/accounts/', include('accounts.urls')),
-    path('api/invoices/', include('invoices.urls')),
-    path('api/checks/', include('checks.urls')),
-    path('api/current-accounts/', include('current_accounts.urls')),
-    path('api/personnel/', include('personnel.urls')),
-
+    path('invoices/', include('invoices.urls')),
+    path('checks/', include('checks.urls')),
+    path('current-accounts/', include('current_accounts.urls')),
+    path('personnel/', include('personnel.urls')),
 ]
 
 admin.site.site_header = "ZENITHAR Yönetim Paneli"

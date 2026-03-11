@@ -203,15 +203,44 @@ fill:true
 });
 
 new Chart(document.getElementById("expenseChart"), {
+
 type: "doughnut",
+
 data: {
 labels: ["Maaş","Vergi","Ofis","Diğer"],
+
 datasets: [{
 data: [40,25,20,15],
-backgroundColor:["#3b82f6","#ef4444","#f59e0b","#22c55e"]
+
+backgroundColor:[
+"#3b82f6",
+"#ef4444",
+"#f59e0b",
+"#eab308"
+],
+
+borderWidth:2
 }]
+},
+
+options:{
+responsive:true,
+maintainAspectRatio:false,
+
+cutout:"65%",
+
+plugins:{
+legend:{
+position:"top",
+align:"center",
+
+labels:{
+color:"#fff",
+boxWidth:18,
+padding:15
 }
-});
+}
+}
 
 </script>
 
