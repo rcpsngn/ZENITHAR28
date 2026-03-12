@@ -1,0 +1,30 @@
+.topbar{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:30px;
+}
+
+.topbar-center{
+display:flex;
+align-items:center;
+gap:10px;
+}
+
+.dark-btn{
+background:rgba(15,31,23,0.8);
+border:none;
+padding:8px 10px;
+border-radius:6px;
+color:white;
+cursor:pointer;
+}
+
+.search-input{
+height:32px;
+padding:0 10px;
+background:rgba(15,31,23,0.8);
+border:1px solid rgba(0,255,150,0.25);
+border-radius:6px;
+color:white;
+}

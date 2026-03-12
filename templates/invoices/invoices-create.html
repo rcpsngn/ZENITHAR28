@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="card">
+
+<h2 class="section-title">Genel Fatura Bilgileri</h2>
+
+<div class="form-grid">
+
+<div class="form-group">
+<label>ETTN</label>
+<input type="text" name="ettn">
+</div>
+
+<div class="form-group">
+<label>Fatura Tarihi</label>
+<input type="datetime-local" name="date">
+</div>
+
+<div class="form-group">
+<label>Özelleştirme No</label>
+<input type="text" name="custom_no">
+</div>
+
+<div class="form-group">
+<label>Fatura Tipi</label>
+<select>
+<option>Satış</option>
+<option>İhracat</option>
+</select>
+</div>
+
+<div class="form-group">
+<label>Fatura No</label>
+<input type="text">
+</div>
+
+<div class="form-group">
+<label>Döviz</label>
+<select>
+<option>TL</option>
+<option>EUR</option>
+<option>USD</option>
+</select>
+</div>
+
+</div>
+
+</div>
+
+
+<!-- ALICI -->
+
+<div class="card">
+
+<h2 class="section-title">Alıcı Bilgileri</h2>
+
+<div class="form-grid">
+
+<div class="form-group">
+<label>Alıcı</label>
+<input type="text">
+</div>
+
+<div class="form-group">
+<label>VKN / TCKN</label>
+<input type="text">
+</div>
+
+<div class="form-group">
+<label>Ad</label>
+<input type="text">
+</div>
+
+<div class="form-group">
+<label>Soyad</label>
+<input type="text">
+</div>
+
+<div class="form-group">
+<label>Vergi Dairesi</label>
+<input type="text">
+</div>
+
+</div>
+
+</div>
+
+
+<!-- ADRES -->
+
+<div class="card">
+
+<h2 class="section-title">Adres Bilgileri</h2>
+
+<div class="form-grid">
+
+<div class="form-group">
+<label>Ülke</label>
+<input type="text">
+</div>
+
+<div class="form-group">
+<label>Şehir</label>
+<input type="text">
+</div>
+
+<div class="form-group">
+<label>Mahalle</label>
+<input type="text">
+</div>
+
+<div class="form-group">
+<label>Cadde / Sokak</label>
+<input type="text">
+</div>
+
+<div class="form-group">
+<label>Posta Kodu</label>
+<input type="text">
+</div>
+
+</div>
+
+</div>
+
+
+<!-- ÜRÜNLER -->
+
+<div class="card">
+
+<h2 class="section-title">Mal / Hizmet</h2>
+
+<table class="invoice-table">
+
+<tr>
+<th>No</th>
+<th>Mal/Hizmet</th>
+<th>Miktar</th>
+<th>Birim</th>
+<th>Birim Fiyat</th>
+<th>KDV %</th>
+<th>KDV</th>
+<th>Toplam</th>
+</tr>
+
+<tr>
+<td>1</td>
+<td><input type="text"></td>
+<td><input type="number"></td>
+<td><input type="text"></td>
+<td><input type="number"></td>
+<td><input type="number"></td>
+<td><input type="number"></td>
+<td><input type="number"></td>
+</tr>
+
+</table>
+
+<button class="save-btn" style="margin-top:10px;">
++ Satır Ekle
+</button>
+
+</div>
+
+
+<!-- TOPLAM -->
+
+<div class="card">
+
+<h2 class="section-title">Toplam Bilgileri</h2>
+
+<div class="form-grid">
+
+<div class="form-group">
+<label>Toplam Ana Tutar</label>
+<input type="number">
+</div>
+
+<div class="form-group">
+<label>Toplam KDV</label>
+<input type="number">
+</div>
+
+<div class="form-group">
+<label>Vergili Toplam</label>
+<input type="number">
+</div>
+
+<div class="form-group">
+<label>Ödenecek Tutar</label>
+<input type="number">
+</div>
+
+</div>
+
+</div>
+
+
+<!-- NOT -->
+
+<div class="card">
+
+<h2 class="section-title">Not Bilgileri</h2>
+
+<textarea style="width:100%;height:120px;"></textarea>
+
+</div>
+
+<div style="margin-top:20px">
+
+<button class="save-btn">
+Faturayı Kaydet
+</button>
+
+</div>
+
+{% endblock %}

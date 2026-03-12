@@ -1,0 +1,26 @@
+.stats{
+display:grid;
+grid-template-columns:repeat(4,1fr);
+gap:20px;
+margin-bottom:30px;
+}
+
+.card{
+padding:20px;
+background:rgba(15,31,23,0.65);
+backdrop-filter:blur(10px);
+border:1px solid rgba(0,255,150,0.25);
+border-radius:12px;
+box-shadow:0 8px 25px rgba(0,0,0,0.35);
+}
+
+.card-title{
+font-size:14px;
+opacity:0.8;
+margin-bottom:10px;
+}
+
+.value{
+font-size:26px;
+color:#39ff9c;
+}

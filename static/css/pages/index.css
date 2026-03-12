@@ -1,0 +1,106 @@
+/* ============================= */
+/* PAGE TITLE */
+/* ============================= */
+
+.main h1{
+margin-bottom:25px;
+color:#39ff9c;
+font-weight:600;
+}
+
+/* ============================= */
+/* STATS */
+/* ============================= */
+
+.stats{
+display:grid;
+grid-template-columns:repeat(4,1fr);
+gap:20px;
+margin-bottom:30px;
+}
+
+/* ============================= */
+/* CHARTS */
+/* ============================= */
+
+.charts{
+display:grid;
+grid-template-columns:repeat(2,1fr);
+gap:20px;
+margin-bottom:30px;
+}
+
+/* ============================= */
+/* CHART BOX */
+/* ============================= */
+
+.chart-box{
+padding:20px;
+background:rgba(15,31,23,0.65);
+backdrop-filter:blur(10px);
+border:1px solid rgba(0,255,150,0.25);
+border-radius:12px;
+height:360px;
+box-shadow:0 8px 25px rgba(0,0,0,0.35);
+}
+
+.chart-box h3{
+margin-bottom:15px;
+color:#39ff9c;
+}
+
+.chart-box canvas{
+width:100% !important;
+height:280px !important;
+}
+
+/* ============================= */
+/* INFO BOX */
+/* ============================= */
+
+.info-box{
+padding:22px;
+background:rgba(15,31,23,0.65);
+backdrop-filter:blur(10px);
+border:1px solid rgba(0,255,150,0.25);
+border-radius:12px;
+margin-top:10px;
+box-shadow:0 8px 25px rgba(0,0,0,0.35);
+}
+
+.info-box h3{
+margin-bottom:10px;
+color:#39ff9c;
+}
+
+.info-box ul{
+padding-left:18px;
+}
+
+.info-box li{
+margin-bottom:6px;
+}
+
+/* ============================= */
+/* AI BUTTON */
+/* ============================= */
+
+.zenithar-ai{
+position:fixed;
+right:30px;
+bottom:25px;
+}
+
+.ai-btn{
+background:#001b2e;
+color:white;
+border:none;
+padding:12px 18px;
+border-radius:20px;
+cursor:pointer;
+transition:0.2s;
+}
+
+.ai-btn:hover{
+background:#003a63;
+}

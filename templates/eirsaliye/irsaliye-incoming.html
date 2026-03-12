@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>Gelen E-İrsaliyeler</h2>
+
+<table>
+
+<tr>
+<th>No</th>
+<th>Firma</th>
+<th>Tutar</th>
+<th>Tarih</th>
+</tr>
+
+{% for irsaliye in irsaliyeler %}
+
+<tr>
+
+<td>{{ irsaliye.irsaliye_no }}</td>
+
+<td>{{ irsaliye.customer_name }}</td>
+
+<td>{{ irsaliye.total_amount }}</td>
+
+<td>{{ irsaliye.issue_date }}</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+{% endblock %}

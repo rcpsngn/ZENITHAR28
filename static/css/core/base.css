@@ -1,0 +1,50 @@
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial, Helvetica, sans-serif;
+}
+
+/* BODY */
+
+body{
+background:#071a14;
+color:#dffcf2;
+transition:0.3s;
+}
+
+body.dark-mode{
+background:#0e1317;
+color:#e8fdf5;
+}
+
+/* MATRIX */
+
+#matrix{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+z-index:-1;
+pointer-events:none;
+}
+
+/* SCROLLBAR */
+
+::-webkit-scrollbar{
+width:8px;
+}
+
+::-webkit-scrollbar-track{
+background:#071a14;
+}
+
+::-webkit-scrollbar-thumb{
+background:rgba(0,255,150,0.35);
+border-radius:4px;
+}
+
+::-webkit-scrollbar-thumb:hover{
+background:#39ff9c;
+}

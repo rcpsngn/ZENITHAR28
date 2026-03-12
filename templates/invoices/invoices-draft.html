@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="card">
+
+<h2 class="section-title">Taslak Faturalar</h2>
+
+<table class="invoice-table">
+
+<thead>
+<tr>
+<th>Fatura No</th>
+<th>Tip</th>
+<th>Müşteri</th>
+<th>Tutar</th>
+<th>KDV</th>
+<th>Toplam</th>
+<th>Tarih</th>
+<th>İşlem</th>
+</tr>
+</thead>
+
+<tbody>
+
+{% for invoice in invoices %}
+
+<tr>
+
+<td>{{ invoice.invoice_number }}</td>
+
+<td>{{ invoice.get_type_display }}</td>
+
+<td>{{ invoice.customer_name }}</td>
+
+<td>{{ invoice.amount }} ₺</td>
+
+<td>{{ invoice.vat_amount }} ₺</td>
+
+<td>{{ invoice.total_amount }} ₺</td>
+
+<td>{{ invoice.issue_date }}</td>
+
+<td style="display:flex;gap:5px">
+
+<a href="{% url 'invoice_send' invoice.id %}" class="save-btn">
+Kes
+</a>
+
+<a href="{% url 'invoice_delete' invoice.id %}" class="cancel-btn">
+Sil
+</a>
+
+</td>
+
+</tr>
+
+{% empty %}
+
+<tr>
+<td colspan="8">Henüz taslak fatura yok</td>
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+</table>
+
+</div>
+
+{% endblock %}

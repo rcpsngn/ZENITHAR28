@@ -9,9 +9,10 @@ def home(request):
 
 urlpatterns = [
 
-    path('', home),
+    path('', home, name="home"),
     path('admin/', admin.site.urls),
     path('accounts/', include('accounts.urls')),
+    path('eirsaliye/', include('eirsaliye.urls')),
     path('invoices/', include('invoices.urls')),
     path('checks/', include('checks.urls')),
     path('current-accounts/', include('current_accounts.urls')),
