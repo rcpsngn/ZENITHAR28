@@ -1,43 +1,58 @@
-.topbar{
-display:flex;
-justify-content:space-between;
-align-items:center;
-margin-bottom:30px;
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
 }
 
-.topbar-center{
-display:flex;
-align-items:center;
-gap:10px;
+.topbar-left {
+    /* Sol tarafın esnek kalması için eklendi */
+    flex: 1;
 }
 
-.dark-btn{
-background:rgba(15,31,23,0.8);
-border:none;
-padding:8px 10px;
-border-radius:6px;
-color:white;
-cursor:pointer;
+.topbar-center {
+    display: flex;
+    align-items: center;
+    gap: 16px; /* İkonların ve arama kutusunun nefes alması için hafifçe artırıldı */
 }
 
-.search-input{
-height:32px;
-padding:0 10px;
-background:rgba(15,31,23,0.8);
-border:1px solid rgba(0,255,150,0.25);
-border-radius:6px;
-color:white;
+.dark-btn {
+    background: rgba(15,31,23,0.8);
+    border: none;
+    padding: 8px 10px;
+    border-radius: 6px;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.search-input {
+    height: 32px;
+    padding: 0 10px;
+    background: rgba(15,31,23,0.8);
+    border: 1px solid rgba(0,255,150,0.25);
+    border-radius: 6px;
+    color: white;
+    width: 200px;
+    transition: all 0.2s ease;
+}
+
+/* Arama kutusunun aktif odaklanma parlaması */
+.search-input:focus {
+    outline: none;
+    border-color: #00ff66 !important;
+    width: 240px; /* Odaklanınca şık bir genişleme efekti */
 }
 
 /* --- KULLANICI MENÜSÜ DROPDOWN DÜZENLEMESİ --- */
 
-/* Butonun altındaki açılır kutunun konumunu ayarlar */
 .user-menu {
     position: relative;
     display: inline-block;
 }
 
-/* rcp butonunun genel yazı tipi ve tıklama alanı */
 .user-button {
     color: #00ff66; /* Matrix Yeşili */
     font-size: 14px;
@@ -46,7 +61,6 @@ color:white;
     padding: 5px 10px;
 }
 
-/* Açılır kutunun genel tasarımı ve matrix ışıması */
 .user-menu .dropdown {
     position: absolute;
     right: 0;
@@ -61,7 +75,6 @@ color:white;
     padding: 5px 0;
 }
 
-/* Altı çizili mor ve yan yana duran link yapısını tamamen ezen kesin çözüm */
 .user-menu #userDropdown a {
     color: #a3ffa3 !important; /* Yazıları matrix yeşili yapar */
     text-decoration: none !important; /* Alt çizgiyi kesin olarak kaldırır */
@@ -73,18 +86,15 @@ color:white;
     transition: all 0.2s ease;
 }
 
-/* İkonların renklerini de mor olmaktan kurtarıp yeşile sabitler */
 .user-menu #userDropdown a i {
     color: #00ff66 !important;
 }
 
-/* Üzerine gelindiğinde (Hover) parlaması */
 .user-menu #userDropdown a:hover {
     background-color: #002208 !important;
     color: #00ff66 !important;
 }
 
-/* Çıkış Yap linkine özel kırmızı hover uyarısı */
 .user-menu #userDropdown a.logout-link:hover {
     background-color: #2b0505 !important;
     color: #ff4444 !important;
@@ -93,6 +103,12 @@ color:white;
 /* ==========================================================================
    BİLDİRİM İKONU VE DROPDOWN PANELİ STİLLERİ
    ========================================================================== */
+
+/* HTML yapısına tam uyum için ana taşıyıcı */
+.notification-menu {
+    position: relative;
+    display: inline-block;
+}
 
 .notification-icon {
     position: relative;
@@ -122,7 +138,7 @@ color:white;
 }
 
 /* Bildirim Açılır Paneli */
-.notification-dropdown {
+.notification-dropdown-content {
     position: absolute;
     right: 0;
     top: 100%;
@@ -133,11 +149,10 @@ color:white;
     box-shadow: 0px 8px 16px rgba(0, 255, 102, 0.15);
     z-index: 1100;
     margin-top: 8px;
-    display: none; /* JS ile açılacak */
     overflow: hidden;
 }
 
-.notification-header {
+.notification-dropdown-content .dropdown-header {
     padding: 10px 15px;
     background: #0a1f14;
     font-weight: bold;
@@ -146,22 +161,24 @@ color:white;
     color: #00ff66;
 }
 
-.notification-item {
+.notification-dropdown-content a {
     padding: 12px 15px;
     border-bottom: 1px solid #002208;
     font-size: 13px;
-    color: #a3ffa3;
-    display: flex;
+    color: #a3ffa3 !important;
+    display: flex !important;
     flex-direction: column;
     gap: 4px;
+    text-decoration: none !important;
     transition: background 0.2s;
 }
 
-.notification-item:hover {
-    background: #001a06;
+.notification-dropdown-content a:hover {
+    background: #001a06 !important;
+    color: #00ff66 !important;
 }
 
-.notification-item .time {
+.notification-dropdown-content .time {
     font-size: 11px;
     color: #55aa55;
 }
@@ -174,37 +191,32 @@ html.light-mode .notification-icon {
     color: #2b3a42 !important; /* Gündüz modunda koyu mat ikon */
 }
 
-html.light-mode .notification-dropdown {
+html.light-mode .notification-dropdown-content {
     background-color: #f5f7f8 !important;
     border: 1px solid #ccd1d9 !important;
     box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.08) !important;
 }
 
-html.light-mode .notification-header {
+html.light-mode .notification-dropdown-content .dropdown-header {
     background: #dfe3e6 !important;
     color: #2b3a42 !important;
     border-bottom: 1px solid #ccd1d9 !important;
 }
 
-html.light-mode .notification-item {
+html.light-mode .notification-dropdown-content a {
     color: #2b3a42 !important;
     border-bottom: 1px solid #e9ecef !important;
 }
 
-html.light-mode .notification-item:hover {
+html.light-mode .notification-dropdown-content a:hover {
     background: #e9ecef !important;
-}
-
-html.light-mode .notification-item .time {
-    color: #718096 !important;
-}
-
-/* Arama kutusunun aktif odaklanma parlaması */
-.search-input:focus {
-    outline: none;
-    border-color: #00ff66 !important;
 }
 
 html.light-mode .search-input:focus {
     border-color: #1a508b !important;
+}
+
+.topbar-right {
+    display: flex;
+    align-items: center;
 }

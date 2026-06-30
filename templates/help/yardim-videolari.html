@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="forms-container" style="padding: 10px 24px 40px 24px;">
+    
+    <!-- Üst Başlık -->
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid rgba(0, 255, 150, 0.15); padding-bottom: 12px;">
+        <i class="bi bi-play-btn" style="color: #00ff66; font-size: 24px;"></i>
+        <h2 style="color: #00ff66; margin: 0; font-size: 20px; font-weight: 600;">Eğitim ve Yardım Videoları</h2>
+    </div>
+
+    <!-- VİDEO KARTLARI MATRİSİ -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+        
+        <!-- Kart 1 -->
+        <div class="card" style="background: rgba(15, 31, 23, 0.5); border: 1px solid rgba(0, 255, 150, 0.2); border-radius: 6px; padding: 0; overflow: hidden; margin: 0;">
+            <div style="background: #002208; height: 160px; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid rgba(0, 255, 150, 0.1);">
+                <i class="bi bi-play-circle" style="color: #00ff66; font-size: 48px; cursor: pointer;"></i>
+            </div>
+            <div style="padding: 16px;">
+                <h3 style="color: #00ff66; font-size: 15px; margin: 0 0 8px 0;">Zenithar E-Fatura Nasıl Oluşturulur?</h3>
+                <p style="color: #1a202c; font-size: 13px; margin: 0; font-weight: 500;">Temel faturalama, cari seçimi ve e-fatura gönderme adımları eğitimi.</p>
+            </div>
+        </div>
+
+        <!-- Kart 2 -->
+        <div class="card" style="background: rgba(15, 31, 23, 0.5); border: 1px solid rgba(0, 255, 150, 0.2); border-radius: 6px; padding: 0; overflow: hidden; margin: 0;">
+            <div style="background: #002208; height: 160px; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid rgba(0, 255, 150, 0.1);">
+                <i class="bi bi-play-circle" style="color: #00ff66; font-size: 48px; cursor: pointer;"></i>
+            </div>
+            <div style="padding: 16px;">
+                <h3 style="color: #00ff66; font-size: 15px; margin: 0 0 8px 0;">E-İrsaliye ve Sevkiyat Yönetimi</h3>
+                <p style="color: #1a202c; font-size: 13px; margin: 0; font-weight: 500;">Şoför, araç bilgileri ekleme ve irsaliye düzenleme rehberi.</p>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

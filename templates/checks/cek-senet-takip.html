@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="forms-container" style="padding: 10px 24px 40px 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(0, 255, 150, 0.15); padding-bottom: 12px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <i class="bi bi-file-earmark-check" style="color: #00ff66; font-size: 24px;"></i>
+            <h2 style="color: #00ff66; margin: 0; font-size: 20px; font-weight: 600;">Çek & Senet Portföy Takibi</h2>
+        </div>
+    </div>
+
+    <div class="card" style="background: rgba(15, 31, 23, 0.5); border: 1px solid rgba(0, 255, 150, 0.2); border-radius: 6px; padding: 20px; overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+            <thead>
+                <tr style="border-bottom: 2px solid #004411; color: #00ff66; font-size: 12px;">
+                    <th style="padding: 10px;">Vade Tarihi</th>
+                    <th style="padding: 10px;">Evrak Türü</th>
+                    <th style="padding: 10px;">Borçlu / Keşideci</th>
+                    <th style="padding: 10px;">Banka / Şube</th>
+                    <th style="padding: 10px; text-align: right;">Tutar</th>
+                    <th style="padding: 10px; text-align: center;">Durum</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr style="border-bottom: 1px solid #002206; font-size: 13px; color: #1a202c; font-weight: 500;">
+                    <td style="padding: 12px 10px;">15.08.2026</td>
+                    <td style="padding: 12px 10px;">Müşteri Çeki</td>
+                    <td style="padding: 12px 10px;">X Firması</td>
+                    <td style="padding: 12px 10px;">Z Bankası - Kadıköy</td>
+                    <td style="padding: 12px 10px; text-align: right; font-weight: bold;">75.000,00</td>
+                    <td style="padding: 12px 10px; text-align: center;">
+                        <span style="background: rgba(0, 255, 102, 0.1); border: 1px solid #00ff66; color: #00ff66; font-size: 11px; padding: 3px 8px; border-radius: 4px;">Portföyde</span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

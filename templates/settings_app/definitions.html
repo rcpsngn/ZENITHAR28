@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="forms-container" style="padding: 10px 24px 40px 24px;">
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid rgba(0, 255, 150, 0.15); padding-bottom: 12px;">
+        <i class="bi bi-tags" style="color: #00ff66; font-size: 24px;"></i>
+        <h2 style="color: #00ff66; margin: 0; font-size: 20px; font-weight: 600;">Sistem Tanımlama İşlemleri</h2>
+    </div>
+
+    <div class="card" style="background: rgba(15, 31, 23, 0.5); border: 1px solid rgba(0, 255, 150, 0.2); border-radius: 6px; padding: 16px; margin-bottom: 16px;">
+        <div style="display: flex; gap: 12px; align-items: flex-end;">
+            <div style="flex: 2;">
+                <label style="display: block; color: #1a202c; font-size: 13px; margin-bottom: 6px; font-weight: 600;">Yeni Birim / Parametre Adı</label>
+                <input type="text" class="search-input" style="width: 100%; box-sizing: border-box;" placeholder="Örn: Metre, Adet, Paket, KG...">
+            </div>
+            <div style="flex: 1;">
+                <button type="button" class="dark-btn" style="width: 100%; height: 32px; background: #002208; border: 1px solid #004411; color: #00ff66; cursor: pointer;">+ Tanım Ekle</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card" style="background: rgba(15, 31, 23, 0.5); border: 1px solid rgba(0, 255, 150, 0.2); padding: 16px;">
+        <div style="color: #00ff66; font-size: 12px; font-weight: bold; margin-bottom: 10px;">SİSTEMDE KAYITLI BİRİMLER</div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+            <span style="background: rgba(0,68,17,0.3); border: 1px solid #004411; color: #1a202c; padding: 4px 10px; border-radius: 4px; font-size: 13px; font-weight:600;">Adet</span>
+            <span style="background: rgba(0,68,17,0.3); border: 1px solid #004411; color: #1a202c; padding: 4px 10px; border-radius: 4px; font-size: 13px; font-weight:600;">Metre</span>
+            <span style="background: rgba(0,68,17,0.3); border: 1px solid #004411; color: #1a202c; padding: 4px 10px; border-radius: 4px; font-size: 13px; font-weight:600;">Kilogram</span>
+        </div>
+    </div>
+</div>
+{% endblock %}

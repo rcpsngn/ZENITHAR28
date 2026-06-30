@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="forms-container" style="padding: 10px 24px 40px 24px;">
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid rgba(0, 255, 150, 0.15); padding-bottom: 12px;">
+        <i class="bi bi-palette" style="color: #00ff66; font-size: 24px;"></i>
+        <h2 style="color: #00ff66; margin: 0; font-size: 20px; font-weight: 600;">Belge & Fatura Tasarım Ayarları</h2>
+    </div>
+
+    <div class="card" style="background: rgba(15, 31, 23, 0.5); border: 1px solid rgba(0, 255, 150, 0.2); border-radius: 6px; padding: 20px; max-width: 600px;">
+        <form style="display: flex; flex-direction: column; gap: 16px;">
+            <div>
+                <label style="display: block; color: #1a202c; font-size: 13px; margin-bottom: 6px; font-weight: 600;">E-Fatura Seri No Başlangıcı (Prefix)</label>
+                <input type="text" class="search-input" style="width: 100%; box-sizing: border-box;" value="ZEN2026">
+            </div>
+            <div>
+                <label style="display: block; color: #1a202c; font-size: 13px; margin-bottom: 6px; font-weight: 600;">Fatura Alt Not Şablonu</label>
+                <textarea class="search-input" style="width: 100%; box-sizing: border-box; height: 70px; padding: 6px;">Mal bedeli banka hesaplarımıza ödenmelidir. Gecikme faizi %2 olarak uygulanır.</textarea>
+            </div>
+            <div>
+                <button type="button" class="dark-btn" style="background: #002208; border: 1px solid #004411; color: #00ff66; padding: 8px 16px; cursor: pointer;">Tasarım Şablonunu Kaydet</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

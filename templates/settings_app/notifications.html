@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="forms-container" style="padding: 10px 24px 40px 24px;">
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid rgba(0, 255, 150, 0.15); padding-bottom: 12px;">
+        <i class="bi bi-bell-slash" style="color: #00ff66; font-size: 24px;"></i>
+        <h2 style="color: #00ff66; margin: 0; font-size: 20px; font-weight: 600;">Sistem Bildirim Ayarları</h2>
+    </div>
+
+    <div class="card" style="background: rgba(15, 31, 23, 0.5); border: 1px solid rgba(0, 255, 150, 0.2); border-radius: 6px; padding: 20px; max-width: 500px;">
+        <form style="display: flex; flex-direction: column; gap: 16px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #002206; padding-bottom: 10px;">
+                <span style="color: #1a202c; font-size: 14px; font-weight: 600;">Yeni Bir E-Fatura Geldiğinde E-Posta Gönder</span>
+                <input type="checkbox" checked style="accent-color: #00ff66; width: 18px; height: 18px;">
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #002206; padding-bottom: 10px;">
+                <span style="color: #1a202c; font-size: 14px; font-weight: 600;">Vadesi Geçen Çeklerde Sistem Bildirimi Oluştur</span>
+                <input type="checkbox" checked style="accent-color: #00ff66; width: 18px; height: 18px;">
+            </div>
+            <div>
+                <button type="button" class="dark-btn" style="background: #002208; border: 1px solid #004411; color: #00ff66; padding: 8px 16px; cursor: pointer;">Tercihleri Kaydet</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="forms-container" style="padding: 10px 24px 40px 24px;">
+    
+    <!-- Üst Başlık -->
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid rgba(0, 255, 150, 0.15); padding-bottom: 12px;">
+        <i class="bi bi-lightbulb" style="color: #00ff66; font-size: 24px;"></i>
+        <h2 style="color: #00ff66; margin: 0; font-size: 20px; font-weight: 600;">Pratik Kullanım İpuçları</h2>
+    </div>
+
+    <!-- İPUCU LİSTESİ -->
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+        
+        <div class="card" style="background: rgba(15, 31, 23, 0.5); border: 1px solid rgba(0, 255, 150, 0.2); border-radius: 6px; padding: 16px; margin: 0;">
+            <div style="color: #1a202c; font-size: 14px; font-weight: 600; margin-bottom: 6px;">
+                <i class="bi bi-lightning" style="color: #00ff66;"></i> Klavyeden Hızlı Arama Kullanımı
+            </div>
+            <div style="color: #1a202c; font-size: 13px; font-weight: 500; line-height: 1.5;">
+                Topbar üzerinde yer alan arama çubuğuna tıklayarak rehber paneli açabilir, doğrudan <strong style="color: #004411;">"fatura"</strong> veya <strong style="color: #004411;">"cari"</strong> yazarak ilgili hızlı işlem ekranlarına ışınlanabilirsiniz.
+            </div>
+        </div>
+
+        <div class="card" style="background: rgba(15, 31, 23, 0.5); border: 1px solid rgba(0, 255, 150, 0.2); border-radius: 6px; padding: 16px; margin: 0;">
+            <div style="color: #1a202c; font-size: 14px; font-weight: 600; margin-bottom: 6px;">
+                <i class="bi bi-moon-stars" style="color: #00ff66;"></i> Gece / Gündüz Modu Hafızası
+            </div>
+            <div style="color: #1a202c; font-size: 13px; font-weight: 500; line-height: 1.5;">
+                Üst paneldeki buton yardımıyla geçiş yaptığınız siber mat yeşil teması veya gündüz modu tercihleriniz tarayıcı hafızasında saklanır. Sayfayı yenilediğinizde düzeniniz bozulmaz.
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

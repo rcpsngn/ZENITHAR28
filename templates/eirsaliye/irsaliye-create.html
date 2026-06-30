@@ -1,41 +1,79 @@
 {% extends "base.html" %}
+{% load static %}
+
 {% block content %}
+<div class="forms-container" style="padding: 10px 24px 40px 24px;">
 
-<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(0, 255, 150, 0.15); padding-bottom: 12px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <i class="bi bi-file-earmark-plus" style="color: #00ff66; font-size: 24px;"></i>
+            <h2 style="color: #00ff66; margin: 0; font-size: 20px; font-weight: 600;">E-İrsaliye Düzenle</h2>
+        </div>
+        <button type="submit" form="irsaliyeForm" class="dark-btn" style="background: #004411; border: 1px solid #00ff66; color: #00ff66; font-weight: bold; padding: 8px 18px; border-radius: 4px; cursor: pointer;">
+            <i class="bi bi-check2-circle"></i> İrsaliyeyi Kaydet
+        </button>
+    </div>
 
-<h2>E-İrsaliye Oluştur</h2>
+    <form id="irsaliyeForm" method="POST">
+        {% csrf_token %}
 
-<form method="POST">
-{% csrf_token %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 20px;">
 
-<label>İrsaliye No</label>
-<input type="text" name="irsaliye_no">
+            <div class="card" style="background: rgba(15, 31, 23, 0.5); border: 1px solid rgba(0, 255, 150, 0.2); border-radius: 6px; padding: 20px; margin: 0;">
+                <div style="color: #00ff66; font-size: 14px; font-weight: bold; margin-bottom: 16px; letter-spacing: 0.5px;">
+                    <i class="bi bi-info-square"></i> GENEL BELGE VE CARİ BİLGİLERİ
+                </div>
 
-<label>Müşteri</label>
-<input type="text" name="customer_name">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 14px;">
+                    <div>
+                        <label style="display: block; color: #1a202c; font-size: 12px; margin-bottom: 6px; font-weight: 600;">İrsaliye Seri / Sıra No</label>
+                        <input type="text" name="irsaliye_no" class="search-input" style="width: 100%; box-sizing: border-box;" placeholder="Örn: IRS202600001" value="{{ irsaliye_no }}">
+                    </div>
+                    <div>
+                        <label style="display: block; color: #1a202c; font-size: 12px; margin-bottom: 6px; font-weight: 600;">Düzenleme Tarihi</label>
+                        <input type="date" name="issue_date" class="search-input" style="width: 100%; box-sizing: border-box;">
+                    </div>
+                </div>
 
-<label>Vergi No</label>
-<input type="text" name="customer_tax_id">
+                <div style="margin-bottom: 14px;">
+                    <label style="display: block; color: #1a202c; font-size: 12px; margin-bottom: 6px; font-weight: 600;">Müşteri / Cari Ünvan</label>
+                    <input type="text" name="customer_name" class="search-input" style="width: 100%; box-sizing: border-box;" placeholder="Müşteri adını yazın...">
+                </div>
 
-<label>Tarih</label>
-<input type="date" name="issue_date">
+                <div>
+                    <label style="display: block; color: #1a202c; font-size: 12px; margin-bottom: 6px; font-weight: 600;">VKN / TCKN</label>
+                    <input type="text" name="customer_tax_id" class="search-input" style="width: 100%; box-sizing: border-box;" placeholder="Vergi veya Kimlik Numarası...">
+                </div>
+            </div>
 
-<label>Tutar</label>
-<input type="number" name="amount">
+            <div class="card" style="background: rgba(15, 31, 23, 0.5); border: 1px solid rgba(0, 255, 150, 0.2); border-radius: 6px; padding: 20px; margin: 0;">
+                <div style="color: #00ff66; font-size: 14px; font-weight: bold; margin-bottom: 16px; letter-spacing: 0.5px;">
+                    <i class="bi bi-currency-exchange"></i> MALİ DETAYLAR VE AÇIKLAMALAR
+                </div>
 
-<label>KDV</label>
-<input type="number" name="vat_amount">
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+                    <div>
+                        <label style="display: block; color: #1a202c; font-size: 12px; margin-bottom: 6px; font-weight: 600;">Mal/Hizmet Tutarı</label>
+                        <input type="number" name="amount" class="search-input" style="width: 100%; box-sizing: border-box;" step="0.01" placeholder="0.00">
+                    </div>
+                    <div>
+                        <label style="display: block; color: #1a202c; font-size: 12px; margin-bottom: 6px; font-weight: 600;">Hesaplanan KDV</label>
+                        <input type="number" name="vat_amount" class="search-input" style="width: 100%; box-sizing: border-box;" step="0.01" placeholder="0.00">
+                    </div>
+                    <div>
+                        <label style="display: block; color: #1a202c; font-size: 12px; margin-bottom: 6px; font-weight: 600;">Genel Toplam</label>
+                        <input type="number" name="total_amount" class="search-input" style="width: 100%; box-sizing: border-box;" step="0.01" placeholder="0.00">
+                    </div>
+                </div>
 
-<label>Toplam</label>
-<input type="number" name="total_amount">
+                <div>
+                    <label style="display: block; color: #1a202c; font-size: 12px; margin-bottom: 6px; font-weight: 600;">Belge Notu / Açıklama</label>
+                    <textarea name="notes" class="search-input" style="width: 100%; height: 86px; box-sizing: border-box; padding: 8px 10px; font-family: inherit; resize: none;" placeholder="İrsaliyeye eklenecek özel notlar veya sevk şartları..."></textarea>
+                </div>
+            </div>
 
-<label>Not</label>
-<textarea name="notes"></textarea>
+        </div>
 
-<button type="submit">Kaydet</button>
-
-</form>
-
+    </form>
 </div>
-
 {% endblock %}

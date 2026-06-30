@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="forms-container" style="padding: 10px 24px 40px 24px;">
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid rgba(0, 255, 150, 0.15); padding-bottom: 12px;">
+        <i class="bi bi-person-bounding-box" style="color: #00ff66; font-size: 24px;"></i>
+        <h2 style="color: #00ff66; margin: 0; font-size: 20px; font-weight: 600;">Müşavir Tanımlama</h2>
+    </div>
+
+    <div class="card" style="background: rgba(15, 31, 23, 0.5); border: 1px solid rgba(0, 255, 150, 0.2); border-radius: 6px; padding: 20px;">
+        <form style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: 600px;">
+            <div>
+                <label style="display: block; color: #1a202c; font-size: 13px; margin-bottom: 6px; font-weight: 600;">Mali Müşavir Adı Soyadı</label>
+                <input type="text" class="search-input" style="width: 100%; box-sizing: border-box;" value="Mustafa Yılmaz">
+            </div>
+            <div>
+                <label style="display: block; color: #1a202c; font-size: 13px; margin-bottom: 6px; font-weight: 600;">SMMM Oda Sicil No</label>
+                <input type="text" class="search-input" style="width: 100%; box-sizing: border-box;" value="SMMM-34561">
+            </div>
+            <div style="grid-column: 1 / -1;">
+                <label style="display: block; color: #1a202c; font-size: 13px; margin-bottom: 6px; font-weight: 600;">Müşavir İletişim E-Postası</label>
+                <input type="email" class="search-input" style="width: 100%; box-sizing: border-box;" value="musavir@zenithar.com">
+            </div>
+            <div style="grid-column: 1 / -1;">
+                <button type="button" class="dark-btn" style="background: #002208; border: 1px solid #004411; color: #00ff66; padding: 8px 16px; cursor: pointer;">Müşavir Kartını Kaydet</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

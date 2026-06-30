@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="forms-container" style="padding: 10px 24px 40px 24px;">
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid rgba(0, 255, 150, 0.15); padding-bottom: 12px;">
+        <i class="bi bi-building" style="color: #00ff66; font-size: 24px;"></i>
+        <h2 style="color: #00ff66; margin: 0; font-size: 20px; font-weight: 600;">Firma Genel Bilgileri</h2>
+    </div>
+
+    <div class="card" style="background: rgba(15, 31, 23, 0.5); border: 1px solid rgba(0, 255, 150, 0.2); border-radius: 6px; padding: 20px;">
+        <form style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
+            <div>
+                <label style="display: block; color: #1a202c; font-size: 13px; margin-bottom: 6px; font-weight: 600;">Firma Resmi Ünvanı</label>
+                <input type="text" class="search-input" style="width: 100%; box-sizing: border-box;" value="ZENITHAR GRUP TEKSTİL İTH. İHR. LTD. ŞTİ.">
+            </div>
+            <div>
+                <label style="display: block; color: #1a202c; font-size: 13px; margin-bottom: 6px; font-weight: 600;">Vergi Dairesi & Numarası</label>
+                <input type="text" class="search-input" style="width: 100%; box-sizing: border-box;" value="Esenler V.D. - 1234567890">
+            </div>
+            <div>
+                <label style="display: block; color: #1a202c; font-size: 13px; margin-bottom: 6px; font-weight: 600;">Mersis Numarası</label>
+                <input type="text" class="search-input" style="width: 100%; box-sizing: border-box;" value="0123456789000014">
+            </div>
+            <div style="grid-column: 1 / -1;">
+                <label style="display: block; color: #1a202c; font-size: 13px; margin-bottom: 6px; font-weight: 600;">Firma Resmi Adresi</label>
+                <textarea class="search-input" style="width: 100%; box-sizing: border-box; height: 60px; padding: 6px;">Tekstilken Ticaret Merkezi, B Blok No: 45 Esenler / İstanbul</textarea>
+            </div>
+            <div style="grid-column: 1 / -1;">
+                <button type="button" class="dark-btn" style="background: #002208; border: 1px solid #004411; color: #00ff66; padding: 8px 20px; cursor: pointer;">Firma Bilgilerini Güncelle</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
