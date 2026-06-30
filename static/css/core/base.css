@@ -48,3 +48,103 @@ border-radius:4px;
 ::-webkit-scrollbar-thumb:hover{
 background:#39ff9c;
 }
+
+/* ==========================================================================
+   MAT VE GÖZÜ HİÇ YORMAYAN GÜNDÜZ MODU (SUPER SOFT MATTE LIGHT MODE)
+   ========================================================================== */
+
+/* 1. Sayfa Geneli - Parlamayı Kesen Mat Pastel Gri/Krem Arka Plan */
+html.light-mode body {
+    background: #e9ecef !important; /* Tamamen matlaştırılmış, parlama yapmayan arka plan */
+    color: #2b3a42 !important; /* Gözü yormayan yumuşak koyu ton */
+}
+
+/* 2. Sol Menü (Sidebar) - Arka Planla Uyumlu Mat Ton */
+html.light-mode .sidebar {
+    background: #dfe3e6 !important; /* Göze ışık vurmayan mat gri */
+    border-right: 1px solid #ccd1d9 !important;
+}
+
+html.light-mode .sidebar .logo span {
+    color: #2b3a42 !important;
+}
+
+html.light-mode .sidebar .menu a,
+html.light-mode .sidebar .menu-title {
+    color: #4f5d65 !important;
+}
+
+html.light-mode .sidebar .menu a:hover,
+html.light-mode .sidebar .menu-item.active .menu-title {
+    background: #d3d8dc !important;
+    color: #1a508b !important; /* Parlamayan kurumsal koyu mavi */
+}
+
+html.light-mode .sidebar .submenu a {
+    color: #65747c !important;
+}
+
+html.light-mode .trial-sidebar {
+    background: #d3d8dc !important;
+    color: #4f5d65 !important;
+}
+
+/* 3. Üst Bar (Topbar) Elementleri */
+html.light-mode .search-input {
+    background: #f5f7f8 !important; /* Parlamayan çok hafif kırık beyaz */
+    border: 1px solid #ccd1d9 !important;
+    color: #2b3a42 !important;
+}
+
+html.light-mode .dark-btn {
+    background: #d3d8dc !important;
+    color: #2b3a42 !important;
+}
+
+/* 4. Bilgi Kartları, Grafik Alanları ve Tüm Paneller (Saf Beyaz Yasaklandı) */
+html.light-mode .card,
+html.light-mode .chart-container,
+html.light-mode .main-card,
+html.light-mode .topbar,
+html.light-mode div[class*="card"],
+html.light-mode div[class*="panel"],
+html.light-mode div[class*="chart"],
+html.light-mode .main div {
+    background: #f5f7f8 !important; /* Saf beyaz yerine gözü dinlendiren soft mat fildişi/gri */
+    color: #2b3a42 !important;
+    border: 1px solid #ccd1d9 !important;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02) !important; /* Parlamayı önlemek için gölge azaltıldı */
+}
+
+/* Parlak yeşil sayıları ve canlı mavi çizgileri daha ağır/mat tonlara çekiyoruz */
+html.light-mode .card data,
+html.light-mode div[class*="count"],
+html.light-mode .main div span[style*="color"] {
+    color: #1a508b !important; /* Parlak yeşiller yerine gözü yormayan ağır mavi tonu */
+}
+
+/* Başlıklar ve Metinler */
+html.light-mode h1,
+html.light-mode h2,
+html.light-mode h3,
+html.light-mode h4,
+html.light-mode .card-title,
+html.light-mode p,
+html.light-mode li {
+    color: #2b3a42 !important;
+}
+
+/* 5. Matrix Efektini Gizleme */
+html.light-mode #matrix {
+    display: none !important;
+}
+
+/* 6. Scrollbar */
+html.light-mode ::webkit-scrollbar-track {
+    background: #e9ecef !important;
+}
+
+html.light-mode ::webkit-scrollbar-thumb {
+    background: #ccd1d9 !important;
+    border-radius: 4px;
+}
