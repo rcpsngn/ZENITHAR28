@@ -116,14 +116,14 @@ class LeaveViewSet(viewsets.ModelViewSet):
 
 @login_required
 def calisanlar(request):
-    return render(request, 'personnel/calisanlar.html')
+    return render(request, 'personnel/employee-list.html')
 
 
 @login_required
 def giris_cikis(request):
-    return render(request, 'personnel/giris-cikis.html')
+    return render(request, 'personnel/check-in-out.html')
 
 
 @login_required
 def yillik_izin(request):
-    return render(request, 'personnel/yillik-izin.html')
+    return render(request, 'personnel/annual-leave.html')
