@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="invoice-container">
+    <div class="top-action-bar">
+        <div class="action-bar-title">👀 Fatura Detay Görüntüleme <span class="badge-type">{{ invoice.status }}</span></div>
+        <div class="action-bar-buttons">
+            <button class="bar-btn btn-grey" onclick="window.print()">🖨️ Yazdır / PDF İndir</button>
+            <a href="{% url 'invoices_draft' %}" class="bar-btn btn-orange" style="text-decoration:none;">⬅️ Listeye Dön</a>
+        </div>
+    </div>
+
+    <div class="erp-box">
+        <div class="box-header">📋 Fatura Künye ve Resmi Kodları</div>
+        <div class="grid-2" style="font-size:13px; line-height:1.8;">
+            <div><strong>ETTN (UUID):</strong> {{ invoice.ettn }}</div>
+            <div><strong>Fatura Numarası:</strong> {{ invoice.invoice_number }}</div>
+            <div><strong>Fatura Tarihi:</strong> {{ invoice.issue_date }}</div>
+            <div><strong>Para Birimi & Kur:</strong> {{ invoice.currency }} ({{ invoice.exchange_rate }})</div>
+        </div>
+    </div>
+
+    <div class="panel-layout-grid">
+        <div class="erp-box">
+            <div class="box-header">🏢 Alıcı Kurum Bilgileri</div>
+            <p style="font-size:14px; margin:4px 0;"><strong>{{ invoice.customer_name }}</strong></p>
+            <p style="font-size:12px; opacity:0.8; margin:2px 0;">VKN: {{ invoice.customer_tax_id }} | V.D: {{ invoice.customer_tax_office }}</p>
+        </div>
+        <div class="erp-box">
+            <div class="box-header">📍 Sevk ve Adres Tanımı</div>
+            <p style="font-size:12px; opacity:0.8; margin:2px 0;">{{ invoice.customer_street }} {{ invoice.customer_district }} / {{ invoice.customer_city }}</p>
+        </div>
+    </div>
+
+    <div class="erp-box padding-none">
+        <div class="box-header" style="padding:16px 20px;">📦 Faturalandırılmış Mal/Hizmet Satırları</div>
+        <table class="erp-table">
+            <thead>
+                <tr>
+                    <th>No</th>
+                    <th>Açıklama</th>
+                    <th>Miktar</th>
+                    <th>Birim</th>
+                    <th>Birim Fiyat</th>
+                    <th>KDV %</th>
+                    <th>Toplam Tutar</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in invoice.items.all %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ item.description }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td>{{ item.unit }}</td>
+                    <td>{{ item.unit_price }}</td>
+                    <td>{{ item.vat_rate }}</td>
+                    <td>{{ item.total }} {{ invoice.currency }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="erp-box">
+        <div class="box-header">📊 Finansal İcmal</div>
+        <div class="box-content grid-4 text-center-summary">
+            <div class="sum-box">Ara Toplam: {{ invoice.amount }} {{ invoice.currency }}</div>
+            <div class="sum-box">KDV Toplam: {{ invoice.vat_amount }} {{ invoice.currency }}</div>
+            <div class="sum-box highlight-total">Genel Ödenecek: {{ invoice.total_amount }} {{ invoice.currency }}</div>
+        </div>
+    </div>
+</div>
+<style>
+    /* Oluşturma ekranındaki CSS stillerinin aynısı buraya da etki eder, temiz kalır */
+    .badge-type { background:#eab308; color:#000; font-size:11px; padding:2px 6px; border-radius:4px; font-weight:800; }
+    @media print { .top-action-bar { display:none; } body { background:white; color:black; } }
+</style>
+{% endblock %}

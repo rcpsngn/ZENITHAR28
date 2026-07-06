@@ -28,14 +28,14 @@ INSTALLED_APPS = [
     "corsheaders",
 
     # ERP MODÜLLERİ
-    'accounts',
-    'invoices',
-    'waybill',
-    'checks',
-    'current_accounts',
-    'personnel',
-    'help',
-    'settings_app',
+    'apps.accounts',
+    'apps.invoices',
+    'apps.waybill',
+    'apps.checks',
+    'apps.current_accounts',
+    'apps.personnel',
+    'apps.help',
+    'apps.settings_app',
 ]
 
 # ======================

@@ -1,218 +1,202 @@
 {% extends "base.html" %}
+{% load static %}
+
 {% block content %}
+<link rel="stylesheet" href="{% static 'css/invoice-premium-layout.css' %}">
 
-<div class="card">
+<div class="invoice-container">
+    <div class="top-action-bar">
+        <div class="action-bar-title">📑 Fatura Düzenle <span class="badge-type">E-Fatura</span></div>
+        <div class="action-bar-buttons">
+            <button type="button" class="bar-btn btn-grey">🔄 Kopyala</button>
+            <button type="button" class="bar-btn btn-orange" onclick="submitMainForm()">💾 Faturayı Kaydet</button>
+        </div>
+    </div>
 
-<h2 class="section-title">Genel Fatura Bilgileri</h2>
+    <form id="mainInvoiceForm" method="POST" action="{% url 'invoices_create' %}">
+        {% csrf_token %}
+        <input type="hidden" name="items_json_data" id="items_json_data" value="[]">
 
-<div class="form-grid">
+        <div class="panel-layout-grid">
+            <div class="erp-box">
+                <div class="box-header">📰 Genel Fatura Bilgileri</div>
+                <div class="box-content grid-2">
+                    <div class="input-unit">
+                        <label>Fatura Tarihi</label>
+                        <input type="date" name="date" required value="2026-07-03">
+                    </div>
+                    <div class="input-unit">
+                        <label>Fatura Tipi / Senaryo</label>
+                        <select name="invoice_type">
+                            <option value="satis" selected>Satış</option>
+                            <option value="tevkiat">Tevkifat</option>
+                            <option value="ihracat">İhracat</option>
+                        </select>
+                    </div>
+                    <div class="input-unit">
+                        <label>Doküman Para Birimi</label>
+                        <select name="currency" id="invoice_currency" onchange="fetchExchangeRate()">
+                            <option value="TL">TRY - Türk Lirası</option>
+                            <option value="USD">USD - Amerikan Doları</option>
+                            <option value="EUR">EUR - Euro</option>
+                            <option value="GBP">GBP - İngiliz Sterlini</option>
+                        </select>
+                    </div>
+                    <div class="input-unit">
+                        <label>Döviz Kuru (TCMB)</label>
+                        <div style="display: flex; gap: 4px;">
+                            <input type="text" name="exchange_rate" id="exchange_rate_input" value="1.0000">
+                            <button type="button" class="btn-inside" onclick="fetchExchangeRate()">🔄</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-<div class="form-group">
-<label>ETTN</label>
-<input type="text" name="ettn">
+            <div class="erp-box">
+                <div class="box-header">👤 Alıcı Bilgileri</div>
+                <div class="box-content grid-2">
+                    <div class="input-unit span-all">
+                        <label>VKN / TCKN</label>
+                        <div style="display: flex; gap: 8px;">
+                            <input type="text" id="vkn_input" name="customer_tax_id" placeholder="Mükellef yoksa serbestçe elle yazın...">
+                            <button type="button" class="btn-query" onclick="triggerGibQuery()">GİB'den Sorgula</button>
+                        </div>
+                    </div>
+                    <div class="input-unit span-all">
+                        <label>Alıcı Ünvanı / Adı Soyadı</label>
+                        <input type="text" id="customer_name_input" name="customer_name" required placeholder="Firma unvanı veya şahıs adı...">
+                    </div>
+                    <div class="input-unit">
+                        <label>Vergi Dairesi</label>
+                        <input type="text" id="customer_tax_office_input" name="customer_tax_office" placeholder="Örn: Beyoğlu V.D.">
+                    </div>
+                    <div class="input-unit">
+                        <label>Şehir</label>
+                        <input type="text" id="customer_city_input" name="customer_city" placeholder="Örn: İstanbul">
+                    </div>
+                    <div style="display:none;">
+                        <input type="text" id="customer_first_name_input" name="customer_first_name">
+                        <input type="text" id="customer_last_name_input" name="customer_last_name">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="erp-box">
+            <div class="box-header">📍 Sevk ve Adres Detayları</div>
+            <div class="box-content grid-4">
+                <div class="input-unit">
+                    <label>Ülke</label>
+                    <input type="text" name="customer_country" value="Türkiye">
+                </div>
+                <div class="input-unit">
+                    <label>İlçe / Mahalle</label>
+                    <input type="text" id="customer_district_input" name="customer_district" placeholder="Örn: Kadıköy">
+                </div>
+                <div class="input-unit">
+                    <label>Posta Kodu</label>
+                    <input type="text" id="customer_postal_code_input" name="customer_postal_code" placeholder="34000">
+                </div>
+                <div class="input-unit">
+                    <label>Cadde / Sokak / Açık Adres</label>
+                    <input type="text" id="customer_street_input" name="customer_street" placeholder="Açık adres detayları...">
+                </div>
+            </div>
+        </div>
+
+        <div class="erp-box padding-none">
+            <div class="box-header" style="padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;">
+                <span>📦 Mal ve Hizmet Bilgileri</span>
+                <button type="button" class="btn-top-green" onclick="openItemModal()">+ Vergi Dahil Mal/Hizmet Ekle</button>
+            </div>
+            <div class="table-scroll">
+                <table class="erp-table" id="itemGridDisplayTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px;">No</th>
+                            <th>Mal/Hizmet</th>
+                            <th>Miktar</th>
+                            <th>Birim</th>
+                            <th>Birim Fiyat</th>
+                            <th>KDV %</th>
+                            <th>KDV Tutarı</th>
+                            <th>Kdv Dahil Tutar</th>
+                            <th style="width: 60px; text-align: center;">Sil</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="erp-box">
+            <div class="box-header">📊 Toplam Bilgileri</div>
+            <div class="box-content grid-3 text-center-summary">
+                <div class="sum-box">Matrah Tutar: <span id="lbl_base">0.00</span></div>
+                <div class="sum-box">KDV Toplamı: <span id="lbl_vat">0.00</span></div>
+                <div class="sum-box highlight-total">Ödenecek Tutar: <span id="lbl_final">0.00</span></div>
+            </div>
+        </div>
+
+        <div class="erp-box">
+            <div class="box-header">📝 Fatura Açıklamaları / Notları</div>
+            <textarea name="notes" class="invoice-notes-textarea" placeholder="Özel şartlar, banka transfer/IBAN detayları..."></textarea>
+        </div>
+
+        <div class="invoice-submit-zone">
+            <button type="submit" class="bar-btn btn-orange" style="padding: 12px 30px; font-size: 14px;">💾 Faturayı Taslak Olarak Kaydet</button>
+        </div>
+    </form>
 </div>
 
-<div class="form-group">
-<label>Fatura Tarihi</label>
-<input type="datetime-local" name="date">
+<div id="itemModal" class="modal-overlay">
+    <div class="modal-window">
+        <div class="modal-top">Mal/Hizmet Bilgisi Ekle/Düzenle <span class="close-x" onclick="closeItemModal()">×</span></div>
+        <div class="modal-tabs">
+            <div class="tab-item active">📝 Genel Bilgiler</div>
+            <div class="tab-item" style="opacity: 0.5;">⚙️ Diğer Seçenekler</div>
+        </div>
+        <div class="modal-body-grid">
+            <div class="input-unit span-all">
+                <label>Mal/Hizmet Tanımı</label>
+                <input type="text" id="m_desc" placeholder="Ürün veya malzeme adını giriniz...">
+            </div>
+            <div class="input-unit">
+                <label>Miktar</label>
+                <input type="number" id="m_qty" value="1.00" step="0.01" oninput="runModalMath()">
+            </div>
+            <div class="input-unit">
+                <label>Birim</label>
+                <select id="m_unit">
+                    <option value="Adet">Adet</option>
+                    <option value="KG">Kilogram</option>
+                    <option value="Metre">Metre</option>
+                    <option value="Litre">Litre</option>
+                </select>
+            </div>
+            <div class="input-unit">
+                <label>Birim Fiyatı</label>
+                <input type="number" id="m_price" value="0.00" step="0.01" oninput="runModalMath()">
+            </div>
+            <div class="input-unit">
+                <label>KDV Oranı (%)</label>
+                <input type="number" id="m_vat" value="20" oninput="runModalMath()">
+            </div>
+            <div class="input-unit">
+                <label>Hesaplanan KDV</label>
+                <input type="text" id="m_vat_calc" readonly class="readonly-style" value="0.00">
+            </div>
+            <div class="input-unit">
+                <label>Kdv Dahil Tutar</label>
+                <input type="text" id="m_total_calc" readonly class="readonly-style" value="0.00">
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="m-btn m-cancel" onclick="closeItemModal()">İptal</button>
+            <button type="button" class="m-btn m-ok" onclick="pushItemToGrid()">Tamam</button>
+        </div>
+    </div>
 </div>
 
-<div class="form-group">
-<label>Özelleştirme No</label>
-<input type="text" name="custom_no">
-</div>
-
-<div class="form-group">
-<label>Fatura Tipi</label>
-<select>
-<option>Satış</option>
-<option>İhracat</option>
-</select>
-</div>
-
-<div class="form-group">
-<label>Fatura No</label>
-<input type="text">
-</div>
-
-<div class="form-group">
-<label>Döviz</label>
-<select>
-<option>TL</option>
-<option>EUR</option>
-<option>USD</option>
-</select>
-</div>
-
-</div>
-
-</div>
-
-
-<!-- ALICI -->
-
-<div class="card">
-
-<h2 class="section-title">Alıcı Bilgileri</h2>
-
-<div class="form-grid">
-
-<div class="form-group">
-<label>Alıcı</label>
-<input type="text">
-</div>
-
-<div class="form-group">
-<label>VKN / TCKN</label>
-<input type="text">
-</div>
-
-<div class="form-group">
-<label>Ad</label>
-<input type="text">
-</div>
-
-<div class="form-group">
-<label>Soyad</label>
-<input type="text">
-</div>
-
-<div class="form-group">
-<label>Vergi Dairesi</label>
-<input type="text">
-</div>
-
-</div>
-
-</div>
-
-
-<!-- ADRES -->
-
-<div class="card">
-
-<h2 class="section-title">Adres Bilgileri</h2>
-
-<div class="form-grid">
-
-<div class="form-group">
-<label>Ülke</label>
-<input type="text">
-</div>
-
-<div class="form-group">
-<label>Şehir</label>
-<input type="text">
-</div>
-
-<div class="form-group">
-<label>Mahalle</label>
-<input type="text">
-</div>
-
-<div class="form-group">
-<label>Cadde / Sokak</label>
-<input type="text">
-</div>
-
-<div class="form-group">
-<label>Posta Kodu</label>
-<input type="text">
-</div>
-
-</div>
-
-</div>
-
-
-<!-- ÜRÜNLER -->
-
-<div class="card">
-
-<h2 class="section-title">Mal / Hizmet</h2>
-
-<table class="invoice-table">
-
-<tr>
-<th>No</th>
-<th>Mal/Hizmet</th>
-<th>Miktar</th>
-<th>Birim</th>
-<th>Birim Fiyat</th>
-<th>KDV %</th>
-<th>KDV</th>
-<th>Toplam</th>
-</tr>
-
-<tr>
-<td>1</td>
-<td><input type="text"></td>
-<td><input type="number"></td>
-<td><input type="text"></td>
-<td><input type="number"></td>
-<td><input type="number"></td>
-<td><input type="number"></td>
-<td><input type="number"></td>
-</tr>
-
-</table>
-
-<button class="save-btn" style="margin-top:10px;">
-+ Satır Ekle
-</button>
-
-</div>
-
-
-<!-- TOPLAM -->
-
-<div class="card">
-
-<h2 class="section-title">Toplam Bilgileri</h2>
-
-<div class="form-grid">
-
-<div class="form-group">
-<label>Toplam Ana Tutar</label>
-<input type="number">
-</div>
-
-<div class="form-group">
-<label>Toplam KDV</label>
-<input type="number">
-</div>
-
-<div class="form-group">
-<label>Vergili Toplam</label>
-<input type="number">
-</div>
-
-<div class="form-group">
-<label>Ödenecek Tutar</label>
-<input type="number">
-</div>
-
-</div>
-
-</div>
-
-
-<!-- NOT -->
-
-<div class="card">
-
-<h2 class="section-title">Not Bilgileri</h2>
-
-<textarea style="width:100%;height:120px;"></textarea>
-
-</div>
-
-<div style="margin-top:20px">
-
-<button class="save-btn">
-Faturayı Kaydet
-</button>
-
-</div>
-
+<script src="{% static 'js/invoice-calculator.js' %}"></script>
 {% endblock %}

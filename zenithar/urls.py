@@ -29,15 +29,15 @@ urlpatterns = [
 
     path('', home, name="home"),
     path('admin/', admin.site.urls),
-    path('accounts/', include('accounts.urls')),
-    path('waybill/', include('waybill.urls')),
-    path('invoices/', include('invoices.urls')),
-    path('checks/', include('checks.urls')),
-    path('current-accounts/', include('current_accounts.urls')),
-    path('personnel/', include('personnel.urls')),
+    path('accounts/', include('apps.accounts.urls')),
+    path('waybill/', include('apps.waybill.urls')),
+    path('invoices/', include('apps.invoices.urls')),
+    path('checks/', include('apps.checks.urls')),
+    path('current-accounts/', include('apps.current_accounts.urls')),
+    path('personnel/', include('apps.personnel.urls')),
     path('reports/', reports_view, name="reports"),
-    path('help/', include('help.urls')),
-    path('settings/', include('settings_app.urls')),
+    path('help/', include('apps.help.urls')),
+    path('settings/', include('apps.settings_app.urls')),
 ]
 
 admin.site.site_header = "ZENITHAR Yönetim Paneli"
