@@ -1,19 +1,20 @@
 {% extends "base.html" %}
 {% load static %}
+{% load l10n %}
 
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/invoice-premium-layout.css' %}">
 
 <div class="invoice-container">
     <div class="top-action-bar">
-        <div class="action-bar-title">📑 Fatura Düzenle <span class="badge-type">E-Fatura</span></div>
+        <div class="action-bar-title">📑 {% if invoice %}Fatura Düzenle{% else %}Yeni Fatura{% endif %} <span class="badge-type">E-Fatura</span></div>
         <div class="action-bar-buttons">
             <button type="button" class="bar-btn btn-grey">🔄 Kopyala</button>
-            <button type="button" class="bar-btn btn-orange" onclick="submitMainForm()">💾 Faturayı Kaydet</button>
+            <button type="button" class="bar-btn btn-orange" onclick="submitMainForm()">💾 {% if invoice %}Değişiklikleri Kaydet{% else %}Faturayı Kaydet{% endif %}</button>
         </div>
     </div>
 
-    <form id="mainInvoiceForm" method="POST" action="{% url 'invoices_create' %}">
+    <form id="mainInvoiceForm" method="POST" action="{% if invoice %}{% url 'invoice_edit' invoice.id %}{% else %}{% url 'invoices_create' %}{% endif %}">
         {% csrf_token %}
         <input type="hidden" name="items_json_data" id="items_json_data" value="[]">
 
@@ -23,29 +24,29 @@
                 <div class="box-content grid-2">
                     <div class="input-unit">
                         <label>Fatura Tarihi</label>
-                        <input type="date" name="date" required value="2026-07-03">
+                        <input type="date" name="date" required value="{% if invoice %}{{ invoice.issue_date|date:'Y-m-d' }}{% else %}{% now 'Y-m-d' %}{% endif %}">
                     </div>
                     <div class="input-unit">
                         <label>Fatura Tipi / Senaryo</label>
                         <select name="invoice_type">
-                            <option value="satis" selected>Satış</option>
-                            <option value="tevkiat">Tevkifat</option>
-                            <option value="ihracat">İhracat</option>
+                            <option value="satis" {% if not invoice or invoice.invoice_type == "satis" %}selected{% endif %}>Satış</option>
+                            <option value="tevkiat" {% if invoice.invoice_type == "tevkiat" %}selected{% endif %}>Tevkifat</option>
+                            <option value="ihracat" {% if invoice.invoice_type == "ihracat" %}selected{% endif %}>İhracat</option>
                         </select>
                     </div>
                     <div class="input-unit">
                         <label>Doküman Para Birimi</label>
                         <select name="currency" id="invoice_currency" onchange="fetchExchangeRate()">
-                            <option value="TL">TRY - Türk Lirası</option>
-                            <option value="USD">USD - Amerikan Doları</option>
-                            <option value="EUR">EUR - Euro</option>
-                            <option value="GBP">GBP - İngiliz Sterlini</option>
+                            <option value="TL" {% if not invoice or invoice.currency == "TL" %}selected{% endif %}>TRY - Türk Lirası</option>
+                            <option value="USD" {% if invoice.currency == "USD" %}selected{% endif %}>USD - Amerikan Doları</option>
+                            <option value="EUR" {% if invoice.currency == "EUR" %}selected{% endif %}>EUR - Euro</option>
+                            <option value="GBP" {% if invoice.currency == "GBP" %}selected{% endif %}>GBP - İngiliz Sterlini</option>
                         </select>
                     </div>
                     <div class="input-unit">
                         <label>Döviz Kuru (TCMB)</label>
                         <div style="display: flex; gap: 4px;">
-                            <input type="text" name="exchange_rate" id="exchange_rate_input" value="1.0000">
+                            <input type="text" name="exchange_rate" id="exchange_rate_input" value="{% if invoice %}{{ invoice.exchange_rate|unlocalize }}{% else %}1.0000{% endif %}">
                             <button type="button" class="btn-inside" onclick="fetchExchangeRate()">🔄</button>
                         </div>
                     </div>
@@ -58,25 +59,25 @@
                     <div class="input-unit span-all">
                         <label>VKN / TCKN</label>
                         <div style="display: flex; gap: 8px;">
-                            <input type="text" id="vkn_input" name="customer_tax_id" placeholder="Mükellef yoksa serbestçe elle yazın...">
+                            <input type="text" id="vkn_input" name="customer_tax_id" value="{% if invoice %}{{ invoice.customer_tax_id }}{% endif %}" placeholder="Mükellef yoksa serbestçe elle yazın...">
                             <button type="button" class="btn-query" onclick="triggerGibQuery()">GİB'den Sorgula</button>
                         </div>
                     </div>
                     <div class="input-unit span-all">
                         <label>Alıcı Ünvanı / Adı Soyadı</label>
-                        <input type="text" id="customer_name_input" name="customer_name" required placeholder="Firma unvanı veya şahıs adı...">
+                        <input type="text" id="customer_name_input" name="customer_name" required value="{% if invoice %}{{ invoice.customer_name }}{% endif %}" placeholder="Firma unvanı veya şahıs adı...">
                     </div>
                     <div class="input-unit">
                         <label>Vergi Dairesi</label>
-                        <input type="text" id="customer_tax_office_input" name="customer_tax_office" placeholder="Örn: Beyoğlu V.D.">
+                        <input type="text" id="customer_tax_office_input" name="customer_tax_office" value="{% if invoice %}{{ invoice.customer_tax_office }}{% endif %}" placeholder="Örn: Beyoğlu V.D.">
                     </div>
                     <div class="input-unit">
                         <label>Şehir</label>
-                        <input type="text" id="customer_city_input" name="customer_city" placeholder="Örn: İstanbul">
+                        <input type="text" id="customer_city_input" name="customer_city" value="{% if invoice %}{{ invoice.customer_city }}{% endif %}" placeholder="Örn: İstanbul">
                     </div>
                     <div style="display:none;">
-                        <input type="text" id="customer_first_name_input" name="customer_first_name">
-                        <input type="text" id="customer_last_name_input" name="customer_last_name">
+                        <input type="text" id="customer_first_name_input" name="customer_first_name" value="{% if invoice %}{{ invoice.customer_first_name }}{% endif %}">
+                        <input type="text" id="customer_last_name_input" name="customer_last_name" value="{% if invoice %}{{ invoice.customer_last_name }}{% endif %}">
                     </div>
                 </div>
             </div>
@@ -87,19 +88,19 @@
             <div class="box-content grid-4">
                 <div class="input-unit">
                     <label>Ülke</label>
-                    <input type="text" name="customer_country" value="Türkiye">
+                    <input type="text" name="customer_country" value="{% if invoice %}{{ invoice.customer_country }}{% else %}Türkiye{% endif %}">
                 </div>
                 <div class="input-unit">
                     <label>İlçe / Mahalle</label>
-                    <input type="text" id="customer_district_input" name="customer_district" placeholder="Örn: Kadıköy">
+                    <input type="text" id="customer_district_input" name="customer_district" value="{% if invoice %}{{ invoice.customer_district }}{% endif %}" placeholder="Örn: Kadıköy">
                 </div>
                 <div class="input-unit">
                     <label>Posta Kodu</label>
-                    <input type="text" id="customer_postal_code_input" name="customer_postal_code" placeholder="34000">
+                    <input type="text" id="customer_postal_code_input" name="customer_postal_code" value="{% if invoice %}{{ invoice.customer_postal_code }}{% endif %}" placeholder="34000">
                 </div>
                 <div class="input-unit">
                     <label>Cadde / Sokak / Açık Adres</label>
-                    <input type="text" id="customer_street_input" name="customer_street" placeholder="Açık adres detayları...">
+                    <input type="text" id="customer_street_input" name="customer_street" value="{% if invoice %}{{ invoice.customer_street }}{% endif %}" placeholder="Açık adres detayları...">
                 </div>
             </div>
         </div>
@@ -140,11 +141,11 @@
 
         <div class="erp-box">
             <div class="box-header">📝 Fatura Açıklamaları / Notları</div>
-            <textarea name="notes" class="invoice-notes-textarea" placeholder="Özel şartlar, banka transfer/IBAN detayları..."></textarea>
+            <textarea name="notes" class="invoice-notes-textarea" placeholder="Özel şartlar, banka transfer/IBAN detayları...">{% if invoice %}{{ invoice.notes }}{% endif %}</textarea>
         </div>
 
         <div class="invoice-submit-zone">
-            <button type="submit" class="bar-btn btn-orange" style="padding: 12px 30px; font-size: 14px;">💾 Faturayı Taslak Olarak Kaydet</button>
+            <button type="submit" class="bar-btn btn-orange" style="padding: 12px 30px; font-size: 14px;">💾 {% if invoice %}Değişiklikleri Kaydet{% else %}Faturayı Taslak Olarak Kaydet{% endif %}</button>
         </div>
     </form>
 </div>
@@ -199,4 +200,12 @@
 </div>
 
 <script src="{% static 'js/invoice-calculator.js' %}"></script>
+{% if invoice %}
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        tempItemsList = {{ items_json|safe }};
+        renderTableGrid();
+    });
+</script>
+{% endif %}
 {% endblock %}

@@ -177,3 +177,22 @@ REST_FRAMEWORK = {
 # ======================
 
 AUTH_USER_MODEL = "accounts.User"
+
+# ======================
+# DIŞ ENTEGRASYONLAR (VKN/GİB sorgulama, e-Fatura gönderimi vb.)
+# ======================
+# Şu an bilerek BOŞ/pasif bırakıldı -> apps/invoices/integrations.py
+# simülasyon modunda çalışıyor.
+#
+# Gerçek bir GİB entegratörüyle (Foriba, Uyumsoft, Logo, Mikro vb.)
+# anlaştığında, bu bilgileri BURAYA DEĞİL, .env dosyasına yaz ve
+# os.environ.get(...) ile buraya çek. Aşağıdaki satırları o zaman
+# yorumdan çıkar:
+#
+# GIB_INTEGRATION_PROVIDER = os.environ.get("GIB_INTEGRATION_PROVIDER")
+# GIB_API_URL = os.environ.get("GIB_API_URL")
+# GIB_API_KEY = os.environ.get("GIB_API_KEY")
+
+GIB_INTEGRATION_PROVIDER = None
+GIB_API_URL = None
+GIB_API_KEY = None

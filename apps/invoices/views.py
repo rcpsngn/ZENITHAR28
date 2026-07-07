@@ -2,12 +2,26 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from .models import Invoice, InvoiceItem
+from . import integrations
 import uuid
 import json
-import urllib.request
-import xml.etree.ElementTree as ET
 from datetime import datetime
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
+
+
+def to_decimal(value, default="0"):
+    """
+    Formdan/JSON'dan gelen sayı metnini Decimal'e çevirir.
+    Türkçe yerel ayar (LANGUAGE_CODE = 'tr-tr') sayıları bazen virgüllü
+    (ör. '1,0000') gösterebildiği için, virgülü noktaya çevirerek
+    dönüştürmeyi güvenli hale getirir.
+    """
+    if value is None or value == "":
+        value = default
+    try:
+        return Decimal(str(value).replace(",", "."))
+    except (InvalidOperation, ValueError):
+        return Decimal(default)
 
 
 def invoices_home(request):
@@ -15,40 +29,20 @@ def invoices_home(request):
 
 
 # API: TCMB CANLI DÖVİZ KURU ÇEKİCİ
+# Gerçek çağrı apps/invoices/integrations.py içinde toplanıyor.
 def get_tcmb_rate(request):
-    currency_code = request.GET.get("code", "TL").upper()
-    if currency_code in ["TL", "TRY"]:
-        return JsonResponse({"rate": "1.0000"})
-    try:
-        req = urllib.request.Request(
-            "https://www.tcmb.gov.tr/kurlar/today.xml",
-            headers={'User-Agent': 'Mozilla/5.0'}
-        )
-        with urllib.request.urlopen(req, timeout=5) as response:
-            xml_data = response.read()
-        root = ET.fromstring(xml_data)
-        for currency in root.findall('Currency'):
-            if currency.get('CurrencyCode') == currency_code:
-                rate_str = currency.find('ForexBuying').text
-                return JsonResponse({"rate": str(round(float(rate_str), 4))})
-    except Exception:
-        fallbacks = {"USD": "34.2500", "EUR": "37.1200", "GBP": "44.5000"}
-        return JsonResponse({"rate": fallbacks.get(currency_code, "1.0000")})
-    return JsonResponse({"rate": "1.0000"})
+    currency_code = request.GET.get("code", "TL")
+    rate = integrations.get_exchange_rate(currency_code)
+    return JsonResponse({"rate": rate})
 
 
-# API: GİB VERGİ DAİRESİ OTOMATİK SORGULAMA SİMÜLASYONU
+# API: GİB VERGİ DAİRESİ OTOMATİK SORGULAMA
+# Şu an simülasyon modunda çalışıyor. Gerçek entegrasyon için
+# apps/invoices/integrations.py -> lookup_vkn() fonksiyonuna bak.
 def vkn_sorgula(request):
     vkn = request.GET.get("vkn", "")
-    if vkn == "1234567890":
-        return JsonResponse({
-            "success": True,
-            "title": "ZENITHAR YAZILIM VE TEKNOLOJİ ANONİM ŞİRKETİ",
-            "office": "BEYOĞLU VERGİ DAİRESİ",
-            "city": "İSTANBUL", "district": "BEYOĞLU",
-            "street": "İSTİKLAL CADDESİ NO:100 KAT:3", "zip": "34430"
-        })
-    return JsonResponse({"success": False, "message": "Mükellef bulunamadı. Lütfen bilgileri elle doldurunuz."})
+    result = integrations.lookup_vkn(vkn)
+    return JsonResponse(result)
 
 
 # FATURA OLUŞTURMA
@@ -81,7 +75,7 @@ def invoices_page(request):
             invoice_type=request.POST.get("invoice_type", "satis"),
             issue_date=request.POST.get("date") or datetime.now().date(),
             currency=request.POST.get("currency", "TL"),
-            exchange_rate=Decimal(request.POST.get("exchange_rate", "1.0000") or "1.0000"),
+            exchange_rate=to_decimal(request.POST.get("exchange_rate"), "1.0000"),
             customer_name=request.POST.get("customer_name"),
             customer_tax_id=request.POST.get("customer_tax_id", ""),
             customer_tax_office=request.POST.get("customer_tax_office", ""),
@@ -102,10 +96,10 @@ def invoices_page(request):
                 InvoiceItem.objects.create(
                     invoice=invoice,
                     description=item.get("desc"),
-                    quantity=Decimal(str(item.get("qty"))),
+                    quantity=to_decimal(item.get("qty"), "1"),
                     unit=item.get("unit"),
-                    unit_price=Decimal(str(item.get("price"))),
-                    vat_rate=Decimal(str(item.get("vat")))
+                    unit_price=to_decimal(item.get("price"), "0"),
+                    vat_rate=to_decimal(item.get("vat"), "0")
                 )
         except Exception:
             pass
@@ -113,6 +107,65 @@ def invoices_page(request):
         return redirect("invoices_draft")
 
     return render(request, "invoices/invoices-create.html")
+
+
+# FATURA DÜZENLEME (sadece taslak durumundaki faturalar düzenlenebilir)
+@login_required
+def invoice_edit(request, id):
+    invoice = get_object_or_404(Invoice, id=id, user=request.user, status="draft")
+
+    if request.method == "POST":
+        invoice.invoice_type = request.POST.get("invoice_type", invoice.invoice_type)
+        invoice.issue_date = request.POST.get("date") or invoice.issue_date
+        invoice.currency = request.POST.get("currency", invoice.currency)
+        invoice.exchange_rate = to_decimal(request.POST.get("exchange_rate"), "1.0000")
+        invoice.customer_name = request.POST.get("customer_name")
+        invoice.customer_tax_id = request.POST.get("customer_tax_id", "")
+        invoice.customer_tax_office = request.POST.get("customer_tax_office", "")
+        invoice.customer_first_name = request.POST.get("customer_first_name", "")
+        invoice.customer_last_name = request.POST.get("customer_last_name", "")
+        invoice.customer_country = request.POST.get("customer_country", "Türkiye")
+        invoice.customer_city = request.POST.get("customer_city", "")
+        invoice.customer_district = request.POST.get("customer_district", "")
+        invoice.customer_street = request.POST.get("customer_street", "")
+        invoice.customer_postal_code = request.POST.get("customer_postal_code", "")
+        invoice.notes = request.POST.get("notes", "")
+        invoice.save()
+
+        # Mevcut kalemleri silip, formdan gelen güncel kalem listesini yeniden oluştur.
+        invoice.items.all().delete()
+        items_json = request.POST.get("items_json_data", "[]")
+        try:
+            items_list = json.loads(items_json)
+            for item in items_list:
+                InvoiceItem.objects.create(
+                    invoice=invoice,
+                    description=item.get("desc"),
+                    quantity=to_decimal(item.get("qty"), "1"),
+                    unit=item.get("unit"),
+                    unit_price=to_decimal(item.get("price"), "0"),
+                    vat_rate=to_decimal(item.get("vat"), "0")
+                )
+        except Exception:
+            pass
+
+        return redirect("invoices_draft")
+
+    items_json = json.dumps([
+        {
+            "desc": item.description,
+            "qty": float(item.quantity),
+            "unit": item.unit,
+            "price": float(item.unit_price),
+            "vat": float(item.vat_rate),
+        }
+        for item in invoice.items.all()
+    ])
+
+    return render(request, "invoices/invoices-create.html", {
+        "invoice": invoice,
+        "items_json": items_json,
+    })
 
 
 # DETAY GÖRÜNTÜLEME VE POPUP JSON ÖNİZLEME KÖPRÜSÜ
@@ -170,6 +223,9 @@ def invoices_sent(request):
 @login_required
 def invoice_send(request, id):
     invoice = get_object_or_404(Invoice, id=id, user=request.user)
+    # Gerçek e-Fatura entegrasyonu eklendiğinde bu satır gerçek gönderimi
+    # tetikleyecek. Şu an simülasyon: apps/invoices/integrations.py -> send_efatura()
+    integrations.send_efatura(invoice)
     invoice.status = "sent"
     invoice.save()
     return redirect("invoices_sent")
