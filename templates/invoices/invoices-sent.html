@@ -1,55 +1,67 @@
 {% extends "base.html" %}
+{% load static %}
+<link rel="stylesheet" href="{% static 'css/invoice-actions.css' %}">
+
 {% block content %}
 
 <div class="card">
+    <h2 class="section-title">Giden Faturalar</h2>
+    <p style="font-size:12px; color:#64748b; margin-top:-8px; margin-bottom:16px;">
+        Resmi olarak kesilmiş faturalar yasal kayıt gereği silinemez. Hatalı bir fatura için "İptal Et" seçeneğini kullanın.
+    </p>
 
-<h2 class="section-title">Giden Faturalar</h2>
-
-<table class="invoice-table">
-
-<thead>
-<tr>
-<th>Fatura No</th>
-<th>Müşteri</th>
-<th>Tutar</th>
-<th>KDV</th>
-<th>Toplam</th>
-<th>Tarih</th>
-</tr>
-</thead>
-
-<tbody>
-
-{% for invoice in invoices %}
-
-<tr>
-
-<td>{{ invoice.invoice_number }}</td>
-
-<td>{{ invoice.customer_name }}</td>
-
-<td>{{ invoice.amount }} ₺</td>
-
-<td>{{ invoice.vat_amount }} ₺</td>
-
-<td>{{ invoice.total_amount }} ₺</td>
-
-<td>{{ invoice.issue_date }}</td>
-
-</tr>
-
-{% empty %}
-
-<tr>
-<td colspan="6">Henüz gönderilmiş fatura yok</td>
-</tr>
-
-{% endfor %}
-
-</tbody>
-
-</table>
-
+    <table class="invoice-table">
+        <thead>
+            <tr>
+                <th>Fatura No</th>
+                <th>Müşteri</th>
+                <th>Tutar</th>
+                <th>KDV</th>
+                <th>Toplam</th>
+                <th>Tarih</th>
+                <th style="text-align:center;">İşlem</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for invoice in invoices %}
+            <tr>
+                <td>{{ invoice.invoice_number }}</td>
+                <td>{{ invoice.customer_name }}</td>
+                <td>{{ invoice.amount }} {{ invoice.currency }}</td>
+                <td>{{ invoice.vat_amount }} {{ invoice.currency }}</td>
+                <td>{{ invoice.total_amount }} {{ invoice.currency }}</td>
+                <td>{{ invoice.issue_date }}</td>
+                <td style="text-align: center;">
+                    <div class="invoice-actions">
+                        <button type="button" class="action-btn btn-view" onclick="openInvoicePreview('{{ invoice.id }}')">👁️ Görüntüle</button>
+                        <a href="{% url 'invoice_duplicate' invoice.id %}" class="action-btn btn-copy">📋 Kopyala</a>
+                        <a href="{% url 'invoice_cancel' invoice.id %}" class="action-btn btn-cancel" onclick="return confirm('Bu resmi faturayı iptal etmek istediğinize emin misiniz? İptal edilen faturalar kayıtlarda kalır ama artık geçerli sayılmaz.');">🚫 İptal Et</a>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" style="text-align:center; padding:20px;">Henüz gönderilmiş fatura yok</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
+
+<div id="invoicePreviewModal" class="modal-overlay">
+    <div class="modal-window-large">
+        <div class="modal-preview-header">
+            <span>📄 Resmi e-Fatura Belge Önizleme</span>
+            <span class="close-x" onclick="closeInvoicePreview()">×</span>
+        </div>
+        <div class="modal-preview-body" id="invoiceEmbedTarget"></div>
+        <div class="modal-preview-footer">
+            <button class="m-btn m-cancel" onclick="closeInvoicePreview()">Kapat</button>
+            <button class="m-btn m-ok" onclick="printModalInvoice()">🖨️ Yazdır / PDF</button>
+        </div>
+    </div>
+</div>
+
+<script src="{% static 'js/invoice-preview.js' %}"></script>
 
 {% endblock %}

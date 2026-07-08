@@ -233,8 +233,89 @@ def invoice_send(request, id):
 
 @login_required
 def invoice_delete(request, id):
-    invoice = get_object_or_404(Invoice, id=id, user=request.user)
+    """Sadece TASLAK faturalar silinebilir. Gönderilmiş/resmi fatura asla silinmez, sadece iptal edilir (bkz. invoice_cancel)."""
+    invoice = get_object_or_404(Invoice, id=id, user=request.user, status="draft")
     invoice.delete()
+    return redirect("invoices_draft")
+
+
+def generate_invoice_number():
+    """create/duplicate akışlarında kullanılan otomatik fatura no üretici."""
+    current_year = datetime.now().year
+    prefix = f"ZNT{current_year}"
+    last_invoice = Invoice.objects.filter(invoice_number__startswith=prefix).order_by('-invoice_number').first()
+    if last_invoice:
+        try:
+            new_sequence = int(last_invoice.invoice_number[7:]) + 1
+        except ValueError:
+            new_sequence = 1
+    else:
+        new_sequence = 1
+    return f"{prefix}{str(new_sequence).zfill(9)}"
+
+
+@login_required
+def invoice_cancel(request, id):
+    """
+    Resmi olarak kesilmiş (gönderilmiş) bir faturayı GERÇEK e-Fatura mantığına
+    uygun şekilde İPTAL EDER. Silme değildir — kayıt yasal/denetim amacıyla
+    veritabanında durumu 'cancelled' olarak kalır, listeden çıkar.
+    """
+    invoice = get_object_or_404(Invoice, id=id, user=request.user, status="sent")
+    invoice.status = "cancelled"
+    invoice.save()
+    return redirect("invoices_sent")
+
+
+@login_required
+def invoice_duplicate(request, id):
+    """Var olan bir faturanın (kalemleriyle birlikte) kopyasını yeni bir taslak olarak oluşturur."""
+    original = get_object_or_404(Invoice, id=id, user=request.user)
+
+    new_invoice = Invoice.objects.create(
+        user=request.user,
+        ettn=str(uuid.uuid4()),
+        custom_no=original.custom_no,
+        type=original.type,
+        invoice_type=original.invoice_type,
+        invoice_number=generate_invoice_number(),
+        currency=original.currency,
+        exchange_rate=original.exchange_rate,
+        customer_name=original.customer_name,
+        customer_first_name=original.customer_first_name,
+        customer_last_name=original.customer_last_name,
+        customer_tax_id=original.customer_tax_id,
+        customer_tax_office=original.customer_tax_office,
+        customer_country=original.customer_country,
+        customer_city=original.customer_city,
+        customer_district=original.customer_district,
+        customer_street=original.customer_street,
+        customer_postal_code=original.customer_postal_code,
+        notes=original.notes,
+        issue_date=datetime.now().date(),
+        status="draft",
+    )
+
+    for item in original.items.all():
+        InvoiceItem.objects.create(
+            invoice=new_invoice,
+            description=item.description,
+            quantity=item.quantity,
+            unit=item.unit,
+            unit_price=item.unit_price,
+            vat_rate=item.vat_rate,
+        )
+
+    new_invoice.update_totals()
+    return redirect("invoices_draft")
+
+
+@login_required
+def invoices_bulk_delete(request):
+    """Taslaklar listesinde işaretlenen faturaları topluca siler. Güvenlik için sadece 'draft' durumundakiler silinir."""
+    if request.method == "POST":
+        ids = request.POST.getlist("selected_ids")
+        Invoice.objects.filter(id__in=ids, user=request.user, status="draft").delete()
     return redirect("invoices_draft")
 
 

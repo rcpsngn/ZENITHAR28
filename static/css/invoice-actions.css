@@ -1,0 +1,55 @@
+/* static/css/invoice-actions.css
+   Tüm fatura sayfalarında (taslak, gönderilen, gelen, e-arşiv) ortak kullanılan
+   buton ve resmi belge önizleme stilleri. Tek yerden yönetilir. */
+
+.bulk-bar { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+
+.invoice-actions { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+
+.action-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 15px; font-size: 12px; font-weight: 600;
+    border-radius: 999px; border: none; cursor: pointer;
+    text-decoration: none; color: #fff; line-height: 1;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    white-space: nowrap;
+}
+.action-btn:hover  { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(0,0,0,0.18); filter: brightness(1.06); }
+.action-btn:active { transform: translateY(0); filter: brightness(0.97); }
+
+.btn-view   { background: #64748b; }   /* nötr gri-mavi: bilgi amaçlı */
+.btn-edit   { background: #d97706; }   /* amber: düzenleme */
+.btn-issue  { background: #2563eb; }   /* mavi: resmi işlem (kesme) */
+.btn-copy   { background: #059669; }   /* yeşil: yeni kayıt oluşturma */
+.btn-cancel { background: #ea580c; }   /* turuncu: iptal (silme değil!) */
+.btn-delete { background: #e11d48; }   /* kırmızı: sadece TASLAK silme için */
+
+/* ---- Resmi belge önizleme modalı ---- */
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(15,23,42,0.55); backdrop-filter: blur(2px); align-items:center; justify-content:center; z-index: 10000; }
+.modal-window-large { background:#fff; width:900px; max-width:95vw; max-height:90vh; border-radius:10px; overflow:hidden; display:flex; flex-direction:column; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+.modal-preview-header { display:flex; justify-content:space-between; align-items:center; padding:14px 20px; border-bottom:1px solid #e2e8f0; font-weight:700; }
+.close-x { cursor:pointer; font-size:20px; color:#64748b; }
+.modal-preview-body { padding:24px; overflow-y:auto; background:#f8fafc; }
+.modal-preview-footer { display:flex; justify-content:flex-end; gap:10px; padding:14px 20px; border-top:1px solid #e2e8f0; }
+.m-btn { padding:9px 18px; border-radius:6px; border:none; cursor:pointer; font-weight:600; font-size:13px; }
+.m-cancel { background:#e2e8f0; color:#1e293b; }
+.m-ok { background:#059669; color:#fff; }
+
+.gib-invoice-template { position: relative; background:#fff; padding:24px; border-radius:6px; }
+.mali-degeri-yoktur-watermark { position: absolute; top: 35%; left: 5%; width: 90%; background: none !important; background-color: transparent !important; background-image: none !important; box-shadow: none !important; border: none !important; color: rgba(220, 38, 38, 0.5) !important; font-size: 64px; font-weight: 900; text-transform: uppercase; text-align: center; transform: rotate(-25deg); pointer-events: none; user-select: none; z-index: 9999; letter-spacing: 2px; }
+.gib-header { display: flex; justify-content: space-between; border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 16px; font-size: 12px; }
+.gib-grid-info { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; font-size: 12px; }
+.gib-box-border { border: 1px solid #000; padding: 10px; border-radius: 4px; }
+.gib-title-sub { font-size: 14px; font-weight: bold; border-bottom: 1px solid #000; padding-bottom: 4px; margin-bottom: 8px; text-transform: uppercase; }
+.gib-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; }
+.gib-table th { border: 1px solid #000; padding: 6px; background: #f8fafc; font-weight: bold; }
+.gib-table td { border: 1px solid #000; padding: 6px; }
+.gib-flex-end-totals { display: flex; flex-direction: column; align-items: flex-end; margin-top: 16px; }
+.gib-total-row { display: flex; width: 280px; justify-content: space-between; font-size: 12px; padding: 3px 0; }
+.gib-grand-total { border-top: 1px solid #000; font-weight: bold; font-size: 13px; padding-top: 5px; }
+
+/* durum etiketleri (Gelen Faturalar vb. için) */
+.status { display:inline-block; padding: 4px 12px; border-radius:999px; font-size:11px; font-weight:700; }
+.status.received  { background:#dbeafe; color:#1d4ed8; }
+.status.cancelled { background:#ffedd5; color:#c2410c; }

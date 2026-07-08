@@ -1,69 +1,72 @@
 {% extends "base.html" %}
+{% load static %}
+<link rel="stylesheet" href="{% static 'css/invoice-actions.css' %}">
+
 {% block content %}
 
 <div class="card">
+    <h2 class="section-title">Gelen E-Faturalar</h2>
 
-<h2 class="section-title">Gelen E-Faturalar</h2>
-
-<table class="invoice-table">
-
-<thead>
-<tr>
-
-<th>Fatura No</th>
-<th>Gönderen Firma</th>
-<th>Vergi No</th>
-<th>Tutar</th>
-<th>KDV</th>
-<th>Toplam</th>
-<th>Tarih</th>
-<th>Durum</th>
-
-</tr>
-</thead>
-
-<tbody>
-
-{% for invoice in invoices %}
-
-<tr>
-
-<td>{{ invoice.invoice_number }}</td>
-
-<td>{{ invoice.customer_name }}</td>
-
-<td>{{ invoice.customer_tax_id }}</td>
-
-<td>{{ invoice.amount }} ₺</td>
-
-<td>{{ invoice.vat_amount }} ₺</td>
-
-<td>{{ invoice.total_amount }} ₺</td>
-
-<td>{{ invoice.issue_date }}</td>
-
-<td>
-
-<span class="status received">
-Alındı
-</span>
-
-</td>
-
-</tr>
-
-{% empty %}
-
-<tr>
-<td colspan="8">Henüz gelen fatura yok</td>
-</tr>
-
-{% endfor %}
-
-</tbody>
-
-</table>
-
+    <table class="invoice-table">
+        <thead>
+            <tr>
+                <th>Fatura No</th>
+                <th>Gönderen Firma</th>
+                <th>Vergi No</th>
+                <th>Tutar</th>
+                <th>KDV</th>
+                <th>Toplam</th>
+                <th>Tarih</th>
+                <th>Durum</th>
+                <th style="text-align:center;">İşlem</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for invoice in invoices %}
+            <tr>
+                <td>{{ invoice.invoice_number }}</td>
+                <td>{{ invoice.customer_name }}</td>
+                <td>{{ invoice.customer_tax_id }}</td>
+                <td>{{ invoice.amount }} {{ invoice.currency }}</td>
+                <td>{{ invoice.vat_amount }} {{ invoice.currency }}</td>
+                <td>{{ invoice.total_amount }} {{ invoice.currency }}</td>
+                <td>{{ invoice.issue_date }}</td>
+                <td>
+                    {% if invoice.status == "cancelled" %}
+                        <span class="status cancelled">İptal Edildi</span>
+                    {% else %}
+                        <span class="status received">Alındı</span>
+                    {% endif %}
+                </td>
+                <td style="text-align: center;">
+                    <div class="invoice-actions">
+                        <button type="button" class="action-btn btn-view" onclick="openInvoicePreview('{{ invoice.id }}')">👁️ Görüntüle</button>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="9" style="text-align:center; padding:20px;">Henüz gelen fatura yok</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
+
+<div id="invoicePreviewModal" class="modal-overlay">
+    <div class="modal-window-large">
+        <div class="modal-preview-header">
+            <span>📄 Resmi e-Fatura Belge Önizleme</span>
+            <span class="close-x" onclick="closeInvoicePreview()">×</span>
+        </div>
+        <div class="modal-preview-body" id="invoiceEmbedTarget"></div>
+        <div class="modal-preview-footer">
+            <button class="m-btn m-cancel" onclick="closeInvoicePreview()">Kapat</button>
+            <button class="m-btn m-ok" onclick="printModalInvoice()">🖨️ Yazdır / PDF</button>
+        </div>
+    </div>
+</div>
+
+<script src="{% static 'js/invoice-preview.js' %}"></script>
 
 {% endblock %}

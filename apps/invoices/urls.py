@@ -11,7 +11,10 @@ urlpatterns = [
     path("earchive/incoming/", views.earchive_incoming, name="earchive_incoming"),
     path("earchive/sent/", views.earchive_sent, name="earchive_sent"),
     path("send/<int:id>/", views.invoice_send, name="invoice_send"),
+    path("cancel/<int:id>/", views.invoice_cancel, name="invoice_cancel"),
     path("delete/<int:id>/", views.invoice_delete, name="invoice_delete"),
+    path("duplicate/<int:id>/", views.invoice_duplicate, name="invoice_duplicate"),
+    path("bulk-delete/", views.invoices_bulk_delete, name="invoices_bulk_delete"),
 
     # Yeni Eklenen API ve Detay Görüntüleme Rotaları
     path("view/<int:id>/", views.invoice_view, name="invoice_view"),
