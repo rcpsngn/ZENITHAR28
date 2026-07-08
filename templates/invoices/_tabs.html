@@ -1,0 +1,15 @@
+{% load static %}
+<link rel="stylesheet" href="{% static 'css/invoice-actions.css' %}?v=2">
+<div class="efatura-tabs">
+    <a href="{% url 'invoices_draft' %}" class="{% if active_tab == 'draft' %}active{% endif %}">Taslaklar</a>
+    <a href="{% url 'invoices_incoming' %}" class="{% if active_tab == 'incoming' %}active{% endif %}">
+        Gelen E-Faturalar
+        {% if unread_count %}<span class="unread-badge">{{ unread_count }}</span>{% endif %}
+    </a>
+    <a href="{% url 'invoices_sent' %}" class="{% if active_tab == 'sent' %}active{% endif %}">Giden E-Faturalar</a>
+    <a href="{% url 'earchive_incoming' %}" class="{% if active_tab == 'earchive_incoming' %}active{% endif %}">
+        Gelen E-Arşiv Faturalar
+        {% if unread_count_earchive %}<span class="unread-badge">{{ unread_count_earchive }}</span>{% endif %}
+    </a>
+    <a href="{% url 'earchive_sent' %}" class="{% if active_tab == 'earchive_sent' %}active{% endif %}">Giden E-Arşiv Faturalar</a>
+</div>

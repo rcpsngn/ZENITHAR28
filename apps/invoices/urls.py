@@ -15,6 +15,12 @@ urlpatterns = [
     path("delete/<int:id>/", views.invoice_delete, name="invoice_delete"),
     path("duplicate/<int:id>/", views.invoice_duplicate, name="invoice_duplicate"),
     path("bulk-delete/", views.invoices_bulk_delete, name="invoices_bulk_delete"),
+    path("toggle-read/<int:id>/", views.invoice_toggle_read, name="invoice_toggle_read"),
+    path("toggle-archive/<int:id>/", views.invoice_toggle_archive, name="invoice_toggle_archive"),
+    path("approve/<int:id>/", views.invoice_approve, name="invoice_approve"),
+    path("reject/<int:id>/", views.invoice_reject, name="invoice_reject"),
+    path("bulk-mark-read/", views.invoices_bulk_mark_read, name="invoices_bulk_mark_read"),
+    path("bulk-mark-unread/", views.invoices_bulk_mark_unread, name="invoices_bulk_mark_unread"),
 
     # Yeni Eklenen API ve Detay Görüntüleme Rotaları
     path("view/<int:id>/", views.invoice_view, name="invoice_view"),

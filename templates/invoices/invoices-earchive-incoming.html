@@ -1,63 +1,95 @@
 {% extends "base.html" %}
+{% load static %}
+
 {% block content %}
 
 <div class="card">
+    {% include "invoices/_tabs.html" %}
 
-<h2 class="section-title">Gelen E-Arşiv Faturalar</h2>
+    <h2 class="section-title">Gelen E-Arşiv Faturalar</h2>
 
-<table class="invoice-table">
+    <form id="bulkForm" method="POST" action="{% url 'invoices_bulk_mark_read' %}">
+        {% csrf_token %}
+        <div class="top-action-bar">
+            <label style="display:flex; align-items:center; gap:6px; font-size:13px;">
+                <input type="checkbox" id="selectAllCheckbox" onclick="toggleAllInvoices(this)"> Tümünü Seç
+            </label>
+            <button type="submit" formaction="{% url 'invoices_bulk_mark_read' %}" class="action-btn btn-copy">✔️ Okundu Olarak İşaretle</button>
+            <button type="submit" formaction="{% url 'invoices_bulk_mark_unread' %}" class="action-btn btn-edit">✉️ Okunmadı Olarak İşaretle</button>
+        </div>
 
-<thead>
-<tr>
-<th>Fatura No</th>
-<th>Firma</th>
-<th>Vergi No</th>
-<th>Tutar</th>
-<th>KDV</th>
-<th>Toplam</th>
-<th>Tarih</th>
-<th>Durum</th>
-</tr>
-</thead>
-
-<tbody>
-
-{% for invoice in invoices %}
-
-<tr>
-
-<td>{{ invoice.invoice_number }}</td>
-
-<td>{{ invoice.customer_name }}</td>
-
-<td>{{ invoice.customer_tax_id }}</td>
-
-<td>{{ invoice.amount }} ₺</td>
-
-<td>{{ invoice.vat_amount }} ₺</td>
-
-<td>{{ invoice.total_amount }} ₺</td>
-
-<td>{{ invoice.issue_date }}</td>
-
-<td>
-<span class="status received">Alındı</span>
-</td>
-
-</tr>
-
-{% empty %}
-
-<tr>
-<td colspan="8">Henüz gelen e-arşiv fatura yok</td>
-</tr>
-
-{% endfor %}
-
-</tbody>
-
-</table>
-
+        <table class="invoice-table">
+            <thead>
+                <tr>
+                    <th style="width:30px;"></th>
+                    <th>Fatura No / ETTN</th>
+                    <th>Gönderen VKN-TCKN / Ünvan</th>
+                    <th>Toplam Tutar</th>
+                    <th>KDV</th>
+                    <th>Fatura Durumu</th>
+                    <th style="text-align:center;">Detay</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for invoice in invoices %}
+                <tr style="{% if not invoice.is_read %}font-weight:700; background:#f8fafc;{% endif %}">
+                    <td><input type="checkbox" name="selected_ids" value="{{ invoice.id }}" class="invoice-row-checkbox row-checkbox"></td>
+                    <td>
+                        <span style="color:#dc2626;">{{ invoice.invoice_number }}</span><br>
+                        <small style="color:#94a3b8;">{{ invoice.ettn }}</small>
+                    </td>
+                    <td>
+                        <span style="color:#dc2626;">{{ invoice.customer_tax_id }}</span><br>
+                        <strong>{{ invoice.customer_name }}</strong>
+                    </td>
+                    <td>{{ invoice.total_amount }} {{ invoice.currency }}</td>
+                    <td>{{ invoice.vat_amount }} {{ invoice.currency }}</td>
+                    <td>
+                        {% if invoice.status == "cancelled" %}<span class="status cancelled">İptal Edildi</span>
+                        {% else %}<span class="status received">Alındı</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align:center;">
+                        <div class="invoice-actions">
+                            <button type="button" class="action-btn btn-view" onclick="openInvoicePreview('{{ invoice.id }}')">🔍</button>
+                            <div class="detail-menu-wrapper">
+                                <button type="button" class="detail-menu-btn" onclick="toggleDetailMenu(this)">▦</button>
+                                <div class="detail-menu">
+                                    <a href="{% url 'invoice_toggle_read' invoice.id %}">{% if invoice.is_read %}✉️ Okunmadı Yap{% else %}✔️ Okundu Yap{% endif %}</a>
+                                    <a href="{% url 'invoice_toggle_archive' invoice.id %}">🗄️ Arşive Kaldır</a>
+                                    <hr>
+                                    <button type="button" onclick="notReadyYet('Xml İndir')">🗂️ Xml İndir</button>
+                                    <button type="button" onclick="openInvoicePreview('{{ invoice.id }}')">📄 Pdf İndir (Yazdır)</button>
+                                    <button type="button" onclick="notReadyYet('Yönlendir')">↪️ Yönlendir</button>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" style="text-align:center; padding:20px;">Henüz gelen e-arşiv fatura yok</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </form>
 </div>
+
+<div id="invoicePreviewModal" class="modal-overlay">
+    <div class="modal-window-large">
+        <div class="modal-preview-header">
+            <span>📄 Resmi e-Arşiv Fatura Belge Önizleme</span>
+            <span class="close-x" onclick="closeInvoicePreview()">×</span>
+        </div>
+        <div class="modal-preview-body" id="invoiceEmbedTarget"></div>
+        <div class="modal-preview-footer">
+            <button class="m-btn m-cancel" onclick="closeInvoicePreview()">Kapat</button>
+            <button class="m-btn m-ok" onclick="printModalInvoice()">🖨️ Yazdır / PDF</button>
+        </div>
+    </div>
+</div>
+
+<script src="{% static 'js/invoice-preview.js' %}?v=2"></script>
 
 {% endblock %}

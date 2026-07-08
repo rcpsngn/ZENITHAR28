@@ -1,56 +1,101 @@
 {% extends "base.html" %}
 {% load static %}
-<link rel="stylesheet" href="{% static 'css/invoice-actions.css' %}">
 
 {% block content %}
 
 <div class="card">
+    {% include "invoices/_tabs.html" %}
+
     <h2 class="section-title">Gelen E-Faturalar</h2>
 
-    <table class="invoice-table">
-        <thead>
-            <tr>
-                <th>Fatura No</th>
-                <th>Gönderen Firma</th>
-                <th>Vergi No</th>
-                <th>Tutar</th>
-                <th>KDV</th>
-                <th>Toplam</th>
-                <th>Tarih</th>
-                <th>Durum</th>
-                <th style="text-align:center;">İşlem</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for invoice in invoices %}
-            <tr>
-                <td>{{ invoice.invoice_number }}</td>
-                <td>{{ invoice.customer_name }}</td>
-                <td>{{ invoice.customer_tax_id }}</td>
-                <td>{{ invoice.amount }} {{ invoice.currency }}</td>
-                <td>{{ invoice.vat_amount }} {{ invoice.currency }}</td>
-                <td>{{ invoice.total_amount }} {{ invoice.currency }}</td>
-                <td>{{ invoice.issue_date }}</td>
-                <td>
-                    {% if invoice.status == "cancelled" %}
-                        <span class="status cancelled">İptal Edildi</span>
-                    {% else %}
-                        <span class="status received">Alındı</span>
-                    {% endif %}
-                </td>
-                <td style="text-align: center;">
-                    <div class="invoice-actions">
-                        <button type="button" class="action-btn btn-view" onclick="openInvoicePreview('{{ invoice.id }}')">👁️ Görüntüle</button>
-                    </div>
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="9" style="text-align:center; padding:20px;">Henüz gelen fatura yok</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <form id="bulkForm" method="POST" action="{% url 'invoices_bulk_mark_read' %}">
+        {% csrf_token %}
+        <div class="top-action-bar">
+            <label style="display:flex; align-items:center; gap:6px; font-size:13px;">
+                <input type="checkbox" id="selectAllCheckbox" onclick="toggleAllInvoices(this)"> Tümünü Seç
+            </label>
+            <button type="submit" formaction="{% url 'invoices_bulk_mark_read' %}" class="action-btn btn-copy">✔️ Okundu Olarak İşaretle</button>
+            <button type="submit" formaction="{% url 'invoices_bulk_mark_unread' %}" class="action-btn btn-edit">✉️ Okunmadı Olarak İşaretle</button>
+        </div>
+
+        <table class="invoice-table">
+            <thead>
+                <tr>
+                    <th style="width:30px;"></th>
+                    <th>Fatura No / ETTN</th>
+                    <th>Gönderen VKN-TCKN / Ünvan</th>
+                    <th>Ödenecek Tutar / Vergiler Hariç</th>
+                    <th>KDV</th>
+                    <th>Senaryo / Tipi</th>
+                    <th>Fatura Durumu</th>
+                    <th style="text-align:center;">İşlem</th>
+                    <th style="text-align:center;">Detay</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for invoice in invoices %}
+                <tr style="{% if not invoice.is_read %}font-weight:700; background:#f8fafc;{% endif %}">
+                    <td><input type="checkbox" name="selected_ids" value="{{ invoice.id }}" class="invoice-row-checkbox row-checkbox"></td>
+                    <td>
+                        <span style="color:#dc2626;">{{ invoice.invoice_number }}</span><br>
+                        <small style="color:#94a3b8;">{{ invoice.ettn }}</small>
+                    </td>
+                    <td>
+                        <span style="color:#dc2626;">{{ invoice.customer_tax_id }}</span><br>
+                        <strong>{{ invoice.customer_name }}</strong>
+                    </td>
+                    <td>
+                        {{ invoice.total_amount }} {{ invoice.currency }}<br>
+                        <small style="color:#64748b;">VHTT: {{ invoice.amount }} {{ invoice.currency }}</small>
+                    </td>
+                    <td>%{{ invoice.items.first.vat_rate|default:"—" }}<br><small>Top = {{ invoice.vat_amount }}</small></td>
+                    <td>
+                        <span class="status received">Temel</span>
+                        <span class="status pending">{{ invoice.get_invoice_type_display }}</span>
+                    </td>
+                    <td>
+                        {% if invoice.status == "approved" %}<span class="status approved">Onaylandı</span>
+                        {% elif invoice.status == "rejected" %}<span class="status rejected">Reddedildi</span>
+                        {% elif invoice.status == "cancelled" %}<span class="status cancelled">İptal Edildi</span>
+                        {% else %}<span class="status pending">Onay Bekliyor</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align:center;">
+                        <div class="invoice-actions">
+                            <a href="{% url 'invoice_approve' invoice.id %}" class="action-btn btn-copy" title="Onayla">✔️</a>
+                            <a href="{% url 'invoice_reject' invoice.id %}" class="action-btn btn-delete" title="Reddet" onclick="return confirm('Bu faturayı reddetmek istediğinize emin misiniz?');">✖️</a>
+                        </div>
+                    </td>
+                    <td style="text-align:center;">
+                        <div class="invoice-actions">
+                            <button type="button" class="action-btn btn-view" onclick="openInvoicePreview('{{ invoice.id }}')" title="Görüntüle">🔍</button>
+                            <div class="detail-menu-wrapper">
+                                <button type="button" class="detail-menu-btn" onclick="toggleDetailMenu(this)">▦</button>
+                                <div class="detail-menu">
+                                    <a href="{% url 'invoice_toggle_read' invoice.id %}">{% if invoice.is_read %}✉️ Okunmadı Yap{% else %}✔️ Okundu Yap{% endif %}</a>
+                                    <a href="{% url 'invoice_toggle_archive' invoice.id %}">🗄️ Arşive Kaldır</a>
+                                    <hr>
+                                    <button type="button" onclick="notReadyYet('Log Kayıtlarını Göster')">🧾 Log Kayıtlarını Göster</button>
+                                    <button type="button" onclick="notReadyYet('İmza Bilgisi')">🔏 İmza Bilgisi</button>
+                                    <button type="button" onclick="notReadyYet('Xml İndir')">🗂️ Xml İndir</button>
+                                    <button type="button" onclick="openInvoicePreview('{{ invoice.id }}')">📄 Pdf İndir (Yazdır)</button>
+                                    <hr>
+                                    <button type="button" onclick="notReadyYet('Ek Belgeler')">📎 Ek Belgeler</button>
+                                    <button type="button" onclick="notReadyYet('Etiketler')">🏷️ Etiketler</button>
+                                    <button type="button" onclick="notReadyYet('Yönlendir')">↪️ Yönlendir</button>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9" style="text-align:center; padding:20px;">Henüz gelen fatura yok</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </form>
 </div>
 
 <div id="invoicePreviewModal" class="modal-overlay">
@@ -67,6 +112,6 @@
     </div>
 </div>
 
-<script src="{% static 'js/invoice-preview.js' %}"></script>
+<script src="{% static 'js/invoice-preview.js' %}?v=2"></script>
 
 {% endblock %}

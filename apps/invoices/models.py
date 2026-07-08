@@ -18,6 +18,7 @@ class Invoice(models.Model):
     STATUS_CHOICES = [
         ('draft', 'Taslak'),
         ('sent', 'Gönderildi'),
+        ('approved', 'Onaylandı'),
         ('paid', 'Ödendi'),
         ('cancelled', 'İptal'),
         ('rejected', 'Reddedildi'),
@@ -25,6 +26,10 @@ class Invoice(models.Model):
     ]
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='invoices')
+
+    # Gelen kutusu / arşiv yönetimi (Uyumsoft tarzı ekran için)
+    is_read = models.BooleanField(default=True)
+    is_archived = models.BooleanField(default=False)
 
     # Otomatik & Genel Bilgiler
     ettn = models.CharField(max_length=100, unique=True, blank=True, null=True)

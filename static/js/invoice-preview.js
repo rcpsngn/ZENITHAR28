@@ -6,6 +6,29 @@ function toggleAllInvoices(source) {
     document.querySelectorAll(".invoice-row-checkbox").forEach(cb => cb.checked = source.checked);
 }
 
+// "Detay Göster" acilir menu kontrolu
+function toggleDetailMenu(btn) {
+    const menu = btn.nextElementSibling;
+    const isOpen = menu.classList.contains("open");
+    document.querySelectorAll(".detail-menu.open").forEach(m => m.classList.remove("open"));
+    if (!isOpen) menu.classList.add("open");
+}
+document.addEventListener("click", function (e) {
+    if (!e.target.closest(".detail-menu-wrapper")) {
+        document.querySelectorAll(".detail-menu.open").forEach(m => m.classList.remove("open"));
+    }
+});
+
+// Henuz gercek bir GIB/e-posta/WhatsApp entegrasyonu bagli olmayan
+// ozellikler icin durust bir bilgilendirme (sahte "basarili" mesaji GOSTERMEZ).
+function notReadyYet(featureName) {
+    alert(
+        featureName + " özelliği arayüzde hazır, ancak gerçek bir e-Fatura " +
+        "entegratörü (GİB/Uyumsoft/Foriba vb.) bağlanmadan çalışmaz.\n\n" +
+        "apps/invoices/integrations.py dosyasına gerçek API bilgilerini ekleyince aktifleşecek."
+    );
+}
+
 function openInvoicePreview(invoiceId) {
     fetch(`/invoices/view/${invoiceId}/?format=json`)
         .then(res => res.json())

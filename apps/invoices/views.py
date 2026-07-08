@@ -210,14 +210,14 @@ def invoice_view(request, id):
 
 @login_required
 def invoices_draft(request):
-    invoices = Invoice.objects.filter(user=request.user, status="draft")
-    return render(request, "invoices/invoices-draft.html", {"invoices": invoices})
+    invoices = Invoice.objects.filter(user=request.user, status="draft", is_archived=False)
+    return render(request, "invoices/invoices-draft.html", {"invoices": invoices, "active_tab": "draft"})
 
 
 @login_required
 def invoices_sent(request):
-    invoices = Invoice.objects.filter(user=request.user, status="sent")
-    return render(request, "invoices/invoices-sent.html", {"invoices": invoices})
+    invoices = Invoice.objects.filter(user=request.user, status="sent", is_archived=False)
+    return render(request, "invoices/invoices-sent.html", {"invoices": invoices, "active_tab": "sent"})
 
 
 @login_required
@@ -321,17 +321,81 @@ def invoices_bulk_delete(request):
 
 @login_required
 def invoices_incoming(request):
-    invoices = Invoice.objects.filter(user=request.user, type="e-fatura")
-    return render(request, "invoices/invoices-incoming.html", {"invoices": invoices})
+    invoices = Invoice.objects.filter(user=request.user, type="e-fatura", is_archived=False).exclude(status="draft")
+    unread_count = invoices.filter(is_read=False).count()
+    return render(request, "invoices/invoices-incoming.html", {
+        "invoices": invoices, "active_tab": "incoming", "unread_count": unread_count,
+    })
 
 
 @login_required
 def earchive_incoming(request):
-    invoices = Invoice.objects.filter(user=request.user, type="e-arsiv", status="incoming")
-    return render(request, "invoices/invoices-earchive-incoming.html", {"invoices": invoices})
+    invoices = Invoice.objects.filter(user=request.user, type="e-arsiv", is_archived=False).exclude(status="draft")
+    unread_count_earchive = invoices.filter(is_read=False).count()
+    return render(request, "invoices/invoices-earchive-incoming.html", {
+        "invoices": invoices, "active_tab": "earchive_incoming", "unread_count_earchive": unread_count_earchive,
+    })
 
 
 @login_required
 def earchive_sent(request):
-    invoices = Invoice.objects.filter(user=request.user, type="e-arsiv", status="sent")
-    return render(request, "invoices/invoices-earchive-sent.html", {"invoices": invoices})
+    invoices = Invoice.objects.filter(user=request.user, type="e-arsiv", status="sent", is_archived=False)
+    return render(request, "invoices/invoices-earchive-sent.html", {
+        "invoices": invoices, "active_tab": "earchive_sent",
+    })
+
+
+# ---- Gelen kutusu / arşiv yönetimi aksiyonları (Uyumsoft tarzı ekran için) ----
+
+def _safe_redirect(request, fallback):
+    """Kullanıcıyı işlem yaptığı sayfaya geri döndürür (Gelen E-Fatura / E-Arşiv fark etmeksizin)."""
+    referer = request.META.get("HTTP_REFERER")
+    return redirect(referer) if referer else redirect(fallback)
+
+
+@login_required
+def invoice_toggle_read(request, id):
+    invoice = get_object_or_404(Invoice, id=id, user=request.user)
+    invoice.is_read = not invoice.is_read
+    invoice.save(update_fields=["is_read"])
+    return _safe_redirect(request, "invoices_incoming")
+
+
+@login_required
+def invoice_toggle_archive(request, id):
+    invoice = get_object_or_404(Invoice, id=id, user=request.user)
+    invoice.is_archived = not invoice.is_archived
+    invoice.save(update_fields=["is_archived"])
+    return _safe_redirect(request, "invoices_incoming")
+
+
+@login_required
+def invoice_approve(request, id):
+    invoice = get_object_or_404(Invoice, id=id, user=request.user)
+    invoice.status = "approved"
+    invoice.save(update_fields=["status"])
+    return _safe_redirect(request, "invoices_incoming")
+
+
+@login_required
+def invoice_reject(request, id):
+    invoice = get_object_or_404(Invoice, id=id, user=request.user)
+    invoice.status = "rejected"
+    invoice.save(update_fields=["status"])
+    return _safe_redirect(request, "invoices_incoming")
+
+
+@login_required
+def invoices_bulk_mark_read(request):
+    if request.method == "POST":
+        ids = request.POST.getlist("selected_ids")
+        Invoice.objects.filter(id__in=ids, user=request.user).update(is_read=True)
+    return _safe_redirect(request, "invoices_incoming")
+
+
+@login_required
+def invoices_bulk_mark_unread(request):
+    if request.method == "POST":
+        ids = request.POST.getlist("selected_ids")
+        Invoice.objects.filter(id__in=ids, user=request.user).update(is_read=False)
+    return _safe_redirect(request, "invoices_incoming")
