@@ -22,27 +22,116 @@
             <div class="erp-box">
                 <div class="box-header">📰 Genel Fatura Bilgileri</div>
                 <div class="box-content grid-2">
+
+                    <!-- Ekran Görüntüsü 2'de olup sizde eksik olan yeni alanlar -->
+                    <div class="input-unit">
+                        <label>ETTN</label>
+                        <input type="text" name="uuid" readonly value="{% if invoice %}{{ invoice.uuid }}{% else %}8ba26364-e29f-4277-87ce-ec4f8e8950a6{% endif %}">
+                    </div>
+
+                    <div class="input-unit">
+                        <label>Özelleştirme Numarası</label>
+                        <input type="text" name="customization_number" readonly value="{% if invoice %}{{ invoice.customization_number }}{% else %}TR1.2{% endif %}">
+                    </div>
+
+                    <div class="input-unit">
+                        <label>Fatura Numarası</label>
+                        <input type="text" name="invoice_number" value="{% if invoice %}{{ invoice.invoice_number }}{% endif %}" placeholder="Boş ise gönderme anında otomatik atanacaktır">
+                    </div>
+
+                    <div class="input-unit">
+                        <label>Fatura Şablonu</label>
+                        <select name="invoice_template">
+                            <option value="varsayilan" {% if not invoice or invoice.invoice_template == 'varsayilan' %}selected{% endif %}>Varsayılan Şablon</option>
+                        </select>
+                    </div>
+                    <!-- Eksik alanların sonu -->
+
                     <div class="input-unit">
                         <label>Fatura Tarihi</label>
                         <input type="date" name="date" required value="{% if invoice %}{{ invoice.issue_date|date:'Y-m-d' }}{% else %}{% now 'Y-m-d' %}{% endif %}">
                     </div>
+
                     <div class="input-unit">
-                        <label>Fatura Tipi / Senaryo</label>
+                        <label>Senaryo Tipi</label>
                         <select name="invoice_type">
-                            <option value="satis" {% if not invoice or invoice.invoice_type == "satis" %}selected{% endif %}>Satış</option>
-                            <option value="tevkiat" {% if invoice.invoice_type == "tevkiat" %}selected{% endif %}>Tevkifat</option>
+                            <option value="temel" {% if not invoice or invoice.invoice_type == "temel" %}selected{% endif %}>Temel</option>
+                            <option value="ticari" {% if invoice.invoice_type == "ticari" %}selected{% endif %}>Ticari</option>
+                            <option value="yolcu_beraber" {% if invoice.invoice_type == "yolcu_beraber" %}selected{% endif %}>Yolcu Beraber</option>
                             <option value="ihracat" {% if invoice.invoice_type == "ihracat" %}selected{% endif %}>İhracat</option>
+                            <option value="hal" {% if invoice.invoice_type == "hal" %}selected{% endif %}>Hal</option>
+                            <option value="kamu" {% if invoice.invoice_type == "kamu" %}selected{% endif %}>Kamu</option>
+                            <option value="enerji" {% if invoice.invoice_type == "enerji" %}selected{% endif %}>Enerji</option>
+                            <option value="ilac_tibbi_cihaz" {% if invoice.invoice_type == "ilac_tibbi_cihaz" %}selected{% endif %}>İlaç ve Tıbbi Cihaz</option>
+                            <option value="yatirim_tesvik" {% if invoice.invoice_type == "yatirim_tesvik" %}selected{% endif %}>Yatırım Teşvik</option>
+                            <option value="insaat_demiri_izleme_sistemi" {% if invoice.invoice_type == "insaat_demiri_izleme_sistemi" %}selected{% endif %}>İnşaat Demiri İzleme Sistemi</option>
                         </select>
                     </div>
+
+                    <div class="input-unit">
+                        <label>Fatura Tipi</label>
+                        <select name="invoice_category">
+                            <option value="satis" {% if not invoice or invoice.invoice_category == 'satis' %}selected{% endif %}>Satış</option>
+                            <option value="iade" {% if invoice and invoice.invoice_category == 'iade' %}selected{% endif %}>İade</option>
+                            <option value="tevkifat" {% if invoice and invoice.invoice_category == 'tevkifat' %}selected{% endif %}>Tevkifat</option>
+                            <option value="istisna" {% if invoice and invoice.invoice_category == 'istisna' %}selected{% endif %}>İstisna</option>
+                            <option value="ozel_matrah" {% if invoice and invoice.invoice_category == 'ozel_matrah' %}selected{% endif %}>Özel Matrah</option>
+                            <option value="ihrac_kayitli" {% if invoice and invoice.invoice_category == 'ihrac_kayitli' %}selected{% endif %}>İhraç Kayıtlı</option>
+                            <option value="sgk" {% if invoice and invoice.invoice_category == 'sgk' %}selected{% endif %}>SGK</option>
+                            <option value="komisyoncu" {% if invoice and invoice.invoice_category == 'komisyoncu' %}selected{% endif %}>Komisyoncu</option>
+                            <option value="hks_satis" {% if invoice and invoice.invoice_category == 'hks_satis' %}selected{% endif %}>HKS Satış</option>
+                            <option value="hks_komisyoncu" {% if invoice and invoice.invoice_category == 'hks_komisyoncu' %}selected{% endif %}>HKS Komisyoncu</option>
+                            <option value="tevkifat_iade" {% if invoice and invoice.invoice_category == 'tevkifat_iade' %}selected{% endif %}>Tevkifat İade</option>
+                            <option value="konaklama_vergisi" {% if invoice and invoice.invoice_category == 'konaklama_vergisi' %}selected{% endif %}>Konaklama Vergisi</option>
+                            <option value="sarj" {% if invoice and invoice.invoice_category == 'sarj' %}selected{% endif %}>Şarj</option>
+                            <option value="sarj_anlik" {% if invoice and invoice.invoice_category == 'sarj_anlik' %}selected{% endif %}>Şarj Anlık</option>
+                            <option value="teknoloji_destek" {% if invoice and invoice.invoice_category == 'teknoloji_destek' %}selected{% endif %}>Teknoloji Destek</option>
+                            <option value="ytb_satis" {% if invoice and invoice.invoice_category == 'ytb_satis' %}selected{% endif %}>YTB Satış</option>
+                            <option value="ytb_istisna" {% if invoice and invoice.invoice_category == 'ytb_istisna' %}selected{% endif %}>YTB İstisna</option>
+                            <option value="ytb_iade" {% if invoice and invoice.invoice_category == 'ytb_iade' %}selected{% endif %}>YTB İade</option>
+                            <option value="ytb_tevkifat" {% if invoice and invoice.invoice_category == 'ytb_tevkifat' %}selected{% endif %}>YTB Tevkifat</option>
+                            <option value="ytb_tevkifat_iade" {% if invoice and invoice.invoice_category == 'ytb_tevkifat_iade' %}selected{% endif %}>YTB Tevkifat İade</option>
+                        </select>
+                    </div>
+
                     <div class="input-unit">
                         <label>Doküman Para Birimi</label>
                         <select name="currency" id="invoice_currency" onchange="fetchExchangeRate()">
-                            <option value="TL" {% if not invoice or invoice.currency == "TL" %}selected{% endif %}>TRY - Türk Lirası</option>
-                            <option value="USD" {% if invoice.currency == "USD" %}selected{% endif %}>USD - Amerikan Doları</option>
-                            <option value="EUR" {% if invoice.currency == "EUR" %}selected{% endif %}>EUR - Euro</option>
-                            <option value="GBP" {% if invoice.currency == "GBP" %}selected{% endif %}>GBP - İngiliz Sterlini</option>
+                            <option value="TRY" {% if not invoice or invoice.currency == 'TRY' %}selected{% endif %}>TRY - Türk Lirası</option>
+                            <option value="USD" {% if invoice and invoice.currency == 'USD' %}selected{% endif %}>USD - Amerikan Doları</option>
+                            <option value="EUR" {% if invoice and invoice.currency == 'EUR' %}selected{% endif %}>EUR - Euro</option>
+                            <option value="GBP" {% if invoice and invoice.currency == 'GBP' %}selected{% endif %}>GBP - İngiliz Sterlini</option>
+                            <option value="CHF" {% if invoice and invoice.currency == 'CHF' %}selected{% endif %}>CHF - İsviçre Frangı</option>
+                            <option value="JPY" {% if invoice and invoice.currency == 'JPY' %}selected{% endif %}>JPY - Japon Yeni</option>
+                            <option value="CAD" {% if invoice and invoice.currency == 'CAD' %}selected{% endif %}>CAD - Kanada Doları</option>
+                            <option value="AUD" {% if invoice and invoice.currency == 'AUD' %}selected{% endif %}>AUD - Avustralya Doları</option>
+                            <option value="CNY" {% if invoice and invoice.currency == 'CNY' %}selected{% endif %}>CNY - Çin Yuanı</option>
+                            <option value="RUB" {% if invoice and invoice.currency == 'RUB' %}selected{% endif %}>RUB - Rus Rublesi</option>
+                            <option value="SAR" {% if invoice and invoice.currency == 'SAR' %}selected{% endif %}>SAR - Suudi Arabistan Riyali</option>
+                            <option value="AED" {% if invoice and invoice.currency == 'AED' %}selected{% endif %}>AED - Birleşik Arap Emirlikleri Dirhemi</option>
+                            <option value="QAR" {% if invoice and invoice.currency == 'QAR' %}selected{% endif %}>QAR - Katar Riyali</option>
+                            <option value="KWD" {% if invoice and invoice.currency == 'KWD' %}selected{% endif %}>KWD - Kuveyt Dinarı</option>
+                            <option value="BHD" {% if invoice and invoice.currency == 'BHD' %}selected{% endif %}>BHD - Bahreyn Dinarı</option>
+                            <option value="OMR" {% if invoice and invoice.currency == 'OMR' %}selected{% endif %}>OMR - Umman Riyali</option>
+                            <option value="NOK" {% if invoice and invoice.currency == 'NOK' %}selected{% endif %}>NOK - Norveç Kronu</option>
+                            <option value="SEK" {% if invoice and invoice.currency == 'SEK' %}selected{% endif %}>SEK - İsveç Kronu</option>
+                            <option value="DKK" {% if invoice and invoice.currency == 'DKK' %}selected{% endif %}>DKK - Danimarka Kronu</option>
+                            <option value="PLN" {% if invoice and invoice.currency == 'PLN' %}selected{% endif %}>PLN - Polonya Zlotisi</option>
+                            <option value="CZK" {% if invoice and invoice.currency == 'CZK' %}selected{% endif %}>CZK - Çek Korunası</option>
+                            <option value="HUF" {% if invoice and invoice.currency == 'HUF' %}selected{% endif %}>HUF - Macar Forinti</option>
+                            <option value="RON" {% if invoice and invoice.currency == 'RON' %}selected{% endif %}>RON - Romen Leyi</option>
+                            <option value="BGN" {% if invoice and invoice.currency == 'BGN' %}selected{% endif %}>BGN - Bulgar Levası</option>
+                            <option value="INR" {% if invoice and invoice.currency == 'INR' %}selected{% endif %}>INR - Hindistan Rupisi</option>
+                            <option value="KRW" {% if invoice and invoice.currency == 'KRW' %}selected{% endif %}>KRW - Güney Kore Wonu</option>
+                            <option value="SGD" {% if invoice and invoice.currency == 'SGD' %}selected{% endif %}>SGD - Singapur Doları</option>
+                            <option value="HKD" {% if invoice and invoice.currency == 'HKD' %}selected{% endif %}>HKD - Hong Kong Doları</option>
+                            <option value="NZD" {% if invoice and invoice.currency == 'NZD' %}selected{% endif %}>NZD - Yeni Zelanda Doları</option>
+                            <option value="MXN" {% if invoice and invoice.currency == 'MXN' %}selected{% endif %}>MXN - Meksika Pesosu</option>
+                            <option value="BRL" {% if invoice and invoice.currency == 'BRL' %}selected{% endif %}>BRL - Brezilya Reali</option>
+                            <option value="ZAR" {% if invoice and invoice.currency == 'ZAR' %}selected{% endif %}>ZAR - Güney Afrika Randı</option>
                         </select>
                     </div>
+
                     <div class="input-unit">
                         <label>Döviz Kuru (TCMB)</label>
                         <div style="display: flex; gap: 4px;">
@@ -50,6 +139,7 @@
                             <button type="button" class="btn-inside" onclick="fetchExchangeRate()">🔄</button>
                         </div>
                     </div>
+
                 </div>
             </div>
 

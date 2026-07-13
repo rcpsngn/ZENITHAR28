@@ -41,6 +41,11 @@ function openInvoicePreview(invoiceId) {
                 watermarkHTML = `<div class="mali-degeri-yoktur-watermark">İptal Edildi</div>`;
             }
 
+            const isWaybill = data.type === 'e-irsaliye';
+            const docLabel = isWaybill ? 'e-İRSALİYE' : 'e-FATURA';
+            const numberLabel = isWaybill ? 'İrsaliye No' : 'Fatura No';
+            const dateLabel = isWaybill ? 'İrsaliye Tarihi' : 'Fatura Tarihi';
+
             let itemsRows = "";
             (data.items || []).forEach((item, index) => {
                 itemsRows += `
@@ -65,7 +70,7 @@ function openInvoicePreview(invoiceId) {
                             Merkez Mah. İstiklal Cad. No:44 Beyoğlu / İstanbul<br>
                             VKN: 9999999999 | Telefon: 0212 555 00 00
                         </div>
-                        <div style="text-align: right; font-size: 16px; font-weight: bold; color: #ef4444;">e-FATURA</div>
+                        <div style="text-align: right; font-size: 16px; font-weight: bold; color: #ef4444;">${docLabel}</div>
                     </div>
                     <div class="gib-grid-info">
                         <div class="gib-box-border">
@@ -78,8 +83,8 @@ function openInvoicePreview(invoiceId) {
                         <div class="gib-box-border">
                             <div class="gib-title-sub">Belge Künyesi</div>
                             <strong>ETTN:</strong> ${data.ettn}<br>
-                            <strong>Fatura No:</strong> ${data.invoice_number}<br>
-                            <strong>Fatura Tarihi:</strong> ${data.issue_date}<br>
+                            <strong>${numberLabel}:</strong> ${data.invoice_number}<br>
+                            <strong>${dateLabel}:</strong> ${data.issue_date}<br>
                             <strong>Para Birimi / Kur:</strong> ${data.currency} (${data.exchange_rate})
                         </div>
                     </div>

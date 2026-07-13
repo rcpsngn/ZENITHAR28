@@ -1,0 +1,11 @@
+{% load static %}
+<link rel="stylesheet" href="{% static 'css/invoice-actions.css' %}?v=2">
+<div class="efatura-tabs">
+    <a href="{% url 'waybill_create' %}" class="{% if active_tab == 'create' %}active{% endif %}">Oluştur</a>
+    <a href="{% url 'waybill_draft' %}" class="{% if active_tab == 'draft' %}active{% endif %}">Taslak</a>
+    <a href="{% url 'waybill_incoming' %}" class="{% if active_tab == 'incoming' %}active{% endif %}">
+        Gelen E-İrsaliyeler
+        {% if unread_count %}<span class="unread-badge">{{ unread_count }}</span>{% endif %}
+    </a>
+    <a href="{% url 'waybill_sent' %}" class="{% if active_tab == 'sent' %}active{% endif %}">Giden E-İrsaliyeler</a>
+</div>

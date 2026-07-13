@@ -1,50 +1,257 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from apps.invoices.models import Invoice
+from django.http import JsonResponse
+import json
+import uuid
+from datetime import datetime
 
+from apps.invoices.models import Invoice, InvoiceItem
+from apps.invoices.views import to_decimal, generate_invoice_number, _safe_redirect
+
+
+# ---- OLUŞTUR / DÜZENLE ----
 
 @login_required
 def waybill_create(request):
-    return render(request,"waybill/waybill-create.html")
+    if request.method == "POST":
+        waybill = Invoice.objects.create(
+            user=request.user,
+            ettn=str(uuid.uuid4()),
+            custom_no="TR1.2",
+            invoice_number=generate_invoice_number("IRS"),
+            type="e-irsaliye",
+            invoice_type=request.POST.get("invoice_type", "satis"),
+            issue_date=request.POST.get("date") or datetime.now().date(),
+            currency=request.POST.get("currency", "TL"),
+            exchange_rate=to_decimal(request.POST.get("exchange_rate"), "1.0000"),
+            customer_name=request.POST.get("customer_name"),
+            customer_tax_id=request.POST.get("customer_tax_id", ""),
+            customer_tax_office=request.POST.get("customer_tax_office", ""),
+            customer_first_name=request.POST.get("customer_first_name", ""),
+            customer_last_name=request.POST.get("customer_last_name", ""),
+            customer_country=request.POST.get("customer_country", "Türkiye"),
+            customer_city=request.POST.get("customer_city", ""),
+            customer_district=request.POST.get("customer_district", ""),
+            customer_street=request.POST.get("customer_street", ""),
+            customer_postal_code=request.POST.get("customer_postal_code", ""),
+            notes=request.POST.get("notes", ""),
+            status="draft",
+        )
+
+        items_json = request.POST.get("items_json_data", "[]")
+        try:
+            for item in json.loads(items_json):
+                InvoiceItem.objects.create(
+                    invoice=waybill,
+                    description=item.get("desc"),
+                    quantity=to_decimal(item.get("qty"), "1"),
+                    unit=item.get("unit"),
+                    unit_price=to_decimal(item.get("price"), "0"),
+                    vat_rate=to_decimal(item.get("vat"), "0"),
+                )
+        except Exception:
+            pass
+
+        return redirect("waybill_draft")
+
+    return render(request, "waybill/waybill-create.html", {"active_tab": "create"})
 
 
 @login_required
+def waybill_edit(request, id):
+    waybill = get_object_or_404(Invoice, id=id, user=request.user, type="e-irsaliye", status="draft")
+
+    if request.method == "POST":
+        waybill.invoice_type = request.POST.get("invoice_type", waybill.invoice_type)
+        waybill.issue_date = request.POST.get("date") or waybill.issue_date
+        waybill.currency = request.POST.get("currency", waybill.currency)
+        waybill.exchange_rate = to_decimal(request.POST.get("exchange_rate"), "1.0000")
+        waybill.customer_name = request.POST.get("customer_name")
+        waybill.customer_tax_id = request.POST.get("customer_tax_id", "")
+        waybill.customer_tax_office = request.POST.get("customer_tax_office", "")
+        waybill.customer_first_name = request.POST.get("customer_first_name", "")
+        waybill.customer_last_name = request.POST.get("customer_last_name", "")
+        waybill.customer_country = request.POST.get("customer_country", "Türkiye")
+        waybill.customer_city = request.POST.get("customer_city", "")
+        waybill.customer_district = request.POST.get("customer_district", "")
+        waybill.customer_street = request.POST.get("customer_street", "")
+        waybill.customer_postal_code = request.POST.get("customer_postal_code", "")
+        waybill.notes = request.POST.get("notes", "")
+        waybill.save()
+
+        waybill.items.all().delete()
+        items_json = request.POST.get("items_json_data", "[]")
+        try:
+            for item in json.loads(items_json):
+                InvoiceItem.objects.create(
+                    invoice=waybill,
+                    description=item.get("desc"),
+                    quantity=to_decimal(item.get("qty"), "1"),
+                    unit=item.get("unit"),
+                    unit_price=to_decimal(item.get("price"), "0"),
+                    vat_rate=to_decimal(item.get("vat"), "0"),
+                )
+        except Exception:
+            pass
+
+        return redirect("waybill_draft")
+
+    items_json = json.dumps([
+        {
+            "desc": item.description,
+            "qty": float(item.quantity),
+            "unit": item.unit,
+            "price": float(item.unit_price),
+            "vat": float(item.vat_rate),
+        }
+        for item in waybill.items.all()
+    ])
+
+    return render(request, "waybill/waybill-create.html", {"invoice": waybill, "items_json": items_json, "active_tab": "draft"})
+
+
+# ---- LİSTELER ----
+
+@login_required
 def waybill_draft(request):
-
-    invoices = Invoice.objects.filter(
-        user=request.user,
-        type="e-irsaliye",
-        status="draft"
-    )
-
-    return render(request,"waybill/waybill-draft.html",{
-        "invoices": invoices
-    })
+    invoices = Invoice.objects.filter(user=request.user, type="e-irsaliye", status="draft", is_archived=False)
+    return render(request, "waybill/waybill-draft.html", {"invoices": invoices, "active_tab": "draft"})
 
 
 @login_required
 def waybill_incoming(request):
-
-    invoices = Invoice.objects.filter(
-        user=request.user,
-        type="e-irsaliye",
-        status="incoming"
-    )
-
-    return render(request,"waybill/waybill-incoming.html",{
-        "invoices": invoices
+    invoices = Invoice.objects.filter(user=request.user, type="e-irsaliye", is_archived=False).exclude(status="draft")
+    unread_count = invoices.filter(is_read=False).count()
+    return render(request, "waybill/waybill-incoming.html", {
+        "invoices": invoices, "active_tab": "incoming", "unread_count": unread_count,
     })
 
 
 @login_required
 def waybill_sent(request):
+    invoices = Invoice.objects.filter(user=request.user, type="e-irsaliye", status="sent", is_archived=False)
+    return render(request, "waybill/waybill-sent.html", {"invoices": invoices, "active_tab": "sent"})
 
-    invoices = Invoice.objects.filter(
+
+# ---- İŞLEMLER (fatura modülüyle aynı mantık) ----
+
+@login_required
+def waybill_send(request, id):
+    waybill = get_object_or_404(Invoice, id=id, user=request.user, type="e-irsaliye")
+    waybill.status = "sent"
+    waybill.save(update_fields=["status"])
+    return redirect("waybill_sent")
+
+
+@login_required
+def waybill_cancel(request, id):
+    waybill = get_object_or_404(Invoice, id=id, user=request.user, type="e-irsaliye", status="sent")
+    waybill.status = "cancelled"
+    waybill.save(update_fields=["status"])
+    return redirect("waybill_sent")
+
+
+@login_required
+def waybill_delete(request, id):
+    """Sadece TASLAK irsaliyeler silinebilir. Gönderilmiş irsaliye asla silinmez, sadece iptal edilir."""
+    waybill = get_object_or_404(Invoice, id=id, user=request.user, type="e-irsaliye", status="draft")
+    waybill.delete()
+    return redirect("waybill_draft")
+
+
+@login_required
+def waybill_duplicate(request, id):
+    original = get_object_or_404(Invoice, id=id, user=request.user, type="e-irsaliye")
+
+    new_waybill = Invoice.objects.create(
         user=request.user,
+        ettn=str(uuid.uuid4()),
+        custom_no=original.custom_no,
         type="e-irsaliye",
-        status="sent"
+        invoice_type=original.invoice_type,
+        invoice_number=generate_invoice_number("IRS"),
+        currency=original.currency,
+        exchange_rate=original.exchange_rate,
+        customer_name=original.customer_name,
+        customer_first_name=original.customer_first_name,
+        customer_last_name=original.customer_last_name,
+        customer_tax_id=original.customer_tax_id,
+        customer_tax_office=original.customer_tax_office,
+        customer_country=original.customer_country,
+        customer_city=original.customer_city,
+        customer_district=original.customer_district,
+        customer_street=original.customer_street,
+        customer_postal_code=original.customer_postal_code,
+        notes=original.notes,
+        issue_date=datetime.now().date(),
+        status="draft",
     )
 
-    return render(request,"waybill/waybill-sent.html",{
-        "invoices": invoices
-    })
+    for item in original.items.all():
+        InvoiceItem.objects.create(
+            invoice=new_waybill,
+            description=item.description,
+            quantity=item.quantity,
+            unit=item.unit,
+            unit_price=item.unit_price,
+            vat_rate=item.vat_rate,
+        )
+
+    new_waybill.update_totals()
+    return redirect("waybill_draft")
+
+
+@login_required
+def waybill_approve(request, id):
+    waybill = get_object_or_404(Invoice, id=id, user=request.user, type="e-irsaliye")
+    waybill.status = "approved"
+    waybill.save(update_fields=["status"])
+    return _safe_redirect(request, "waybill_incoming")
+
+
+@login_required
+def waybill_reject(request, id):
+    waybill = get_object_or_404(Invoice, id=id, user=request.user, type="e-irsaliye")
+    waybill.status = "rejected"
+    waybill.save(update_fields=["status"])
+    return _safe_redirect(request, "waybill_incoming")
+
+
+@login_required
+def waybill_toggle_read(request, id):
+    waybill = get_object_or_404(Invoice, id=id, user=request.user, type="e-irsaliye")
+    waybill.is_read = not waybill.is_read
+    waybill.save(update_fields=["is_read"])
+    return _safe_redirect(request, "waybill_incoming")
+
+
+@login_required
+def waybill_toggle_archive(request, id):
+    waybill = get_object_or_404(Invoice, id=id, user=request.user, type="e-irsaliye")
+    waybill.is_archived = not waybill.is_archived
+    waybill.save(update_fields=["is_archived"])
+    return _safe_redirect(request, "waybill_incoming")
+
+
+@login_required
+def waybill_bulk_delete(request):
+    if request.method == "POST":
+        ids = request.POST.getlist("selected_ids")
+        Invoice.objects.filter(id__in=ids, user=request.user, type="e-irsaliye", status="draft").delete()
+    return redirect("waybill_draft")
+
+
+@login_required
+def waybill_bulk_mark_read(request):
+    if request.method == "POST":
+        ids = request.POST.getlist("selected_ids")
+        Invoice.objects.filter(id__in=ids, user=request.user, type="e-irsaliye").update(is_read=True)
+    return _safe_redirect(request, "waybill_incoming")
+
+
+@login_required
+def waybill_bulk_mark_unread(request):
+    if request.method == "POST":
+        ids = request.POST.getlist("selected_ids")
+        Invoice.objects.filter(id__in=ids, user=request.user, type="e-irsaliye").update(is_read=False)
+    return _safe_redirect(request, "waybill_incoming")

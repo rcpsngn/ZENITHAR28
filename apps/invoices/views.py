@@ -188,6 +188,7 @@ def invoice_view(request, id):
 
         return JsonResponse({
             "status": invoice.status,
+            "type": invoice.type,
             "ettn": invoice.ettn,
             "invoice_number": invoice.invoice_number,
             "issue_date": str(invoice.issue_date),
@@ -239,14 +240,14 @@ def invoice_delete(request, id):
     return redirect("invoices_draft")
 
 
-def generate_invoice_number():
-    """create/duplicate akışlarında kullanılan otomatik fatura no üretici."""
+def generate_invoice_number(prefix_code="ZNT"):
+    """create/duplicate akışlarında kullanılan otomatik belge no üretici. prefix_code: 'ZNT' (fatura) veya 'IRS' (irsaliye)."""
     current_year = datetime.now().year
-    prefix = f"ZNT{current_year}"
+    prefix = f"{prefix_code}{current_year}"
     last_invoice = Invoice.objects.filter(invoice_number__startswith=prefix).order_by('-invoice_number').first()
     if last_invoice:
         try:
-            new_sequence = int(last_invoice.invoice_number[7:]) + 1
+            new_sequence = int(last_invoice.invoice_number[len(prefix):]) + 1
         except ValueError:
             new_sequence = 1
     else:

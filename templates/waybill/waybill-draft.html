@@ -1,46 +1,93 @@
 {% extends "base.html" %}
+{% load static %}
+
 {% block content %}
 
-<h2>Taslak E-İrsaliyeler</h2>
+<div class="card">
+    {% include "waybill/_tabs.html" %}
 
-<table>
+    <h2 class="section-title">Taslak İrsaliyeler</h2>
 
-<tr>
-<th>No</th>
-<th>Müşteri</th>
-<th>Tutar</th>
-<th>Tarih</th>
-<th>İşlem</th>
-</tr>
+    <form id="bulkForm" method="POST" action="{% url 'waybill_bulk_delete' %}">
+        {% csrf_token %}
+        <div class="top-action-bar">
+            <label style="display:flex; align-items:center; gap:6px; font-size:13px;">
+                <input type="checkbox" id="selectAllCheckbox" onclick="toggleAllInvoices(this)"> Tümünü Seç
+            </label>
+            <button type="submit" class="action-btn btn-delete" onclick="return confirm('Seçilen TASLAK irsaliyeler kalıcı olarak silinecek. Emin misiniz?');">
+                🗑️ Seçilenleri Sil
+            </button>
+        </div>
 
-{% for irsaliye in irsaliyeler %}
+        <table class="invoice-table">
+            <thead>
+                <tr>
+                    <th style="width:32px;"></th>
+                    <th>İrsaliye No</th>
+                    <th>Tip</th>
+                    <th>Müşteri</th>
+                    <th>Tutar</th>
+                    <th>KDV</th>
+                    <th>Toplam</th>
+                    <th>Tarih</th>
+                    <th style="text-align: center;">İşlem</th>
+                    <th style="text-align: center;">Detay</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for invoice in invoices %}
+                <tr>
+                    <td><input type="checkbox" name="selected_ids" value="{{ invoice.id }}" class="invoice-row-checkbox row-checkbox"></td>
+                    <td>{{ invoice.invoice_number }}</td>
+                    <td>{{ invoice.get_invoice_type_display }}</td>
+                    <td>{{ invoice.customer_name }}</td>
+                    <td>{{ invoice.amount }} {{ invoice.currency }}</td>
+                    <td>{{ invoice.vat_amount }} {{ invoice.currency }}</td>
+                    <td>{{ invoice.total_amount }} {{ invoice.currency }}</td>
+                    <td>{{ invoice.issue_date }}</td>
+                    <td style="text-align: center;">
+                        <div class="invoice-actions">
+                            <button type="button" class="action-btn btn-view" onclick="openInvoicePreview('{{ invoice.id }}')">👁️ Görüntüle</button>
+                            <a href="{% url 'waybill_edit' invoice.id %}" class="action-btn btn-edit">✏️ Düzenle</a>
+                            <a href="{% url 'waybill_send' invoice.id %}" class="action-btn btn-issue" onclick="return confirm('İrsaliye resmi olarak kesilecek. Kesilen irsaliyeler bir daha düzenlenemez veya silinemez, sadece iptal edilebilir. Devam edilsin mi?');">📤 İrsaliye Kes</a>
+                        </div>
+                    </td>
+                    <td style="text-align:center;">
+                        <div class="detail-menu-wrapper">
+                            <button type="button" class="detail-menu-btn" onclick="toggleDetailMenu(this)">▦</button>
+                            <div class="detail-menu">
+                                <a href="{% url 'waybill_duplicate' invoice.id %}">📋 Kopyasını Oluştur</a>
+                                <a href="{% url 'waybill_toggle_archive' invoice.id %}">🗄️ Arşive Kaldır</a>
+                                <hr>
+                                <a href="{% url 'waybill_delete' invoice.id %}" style="color:#e11d48;" onclick="return confirm('Bu taslak irsaliyeyi silmek istediğinize emin misiniz?');">🗑️ Sil</a>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="10" style="text-align:center; padding:20px;">Henüz taslak irsaliye yok.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </form>
+</div>
 
-<tr>
+<div id="invoicePreviewModal" class="modal-overlay">
+    <div class="modal-window-large">
+        <div class="modal-preview-header">
+            <span>📄 Resmi e-İrsaliye Belge Önizleme</span>
+            <span class="close-x" onclick="closeInvoicePreview()">×</span>
+        </div>
+        <div class="modal-preview-body" id="invoiceEmbedTarget"></div>
+        <div class="modal-preview-footer">
+            <button class="m-btn m-cancel" onclick="closeInvoicePreview()">Kapat</button>
+            <button class="m-btn m-ok" onclick="printModalInvoice()">🖨️ Yazdır / PDF</button>
+        </div>
+    </div>
+</div>
 
-<td>{{ irsaliye.irsaliye_no }}</td>
-
-<td>{{ irsaliye.customer_name }}</td>
-
-<td>{{ irsaliye.total_amount }}</td>
-
-<td>{{ irsaliye.issue_date }}</td>
-
-<td>
-
-<a href="{% url 'waybill_send' irsaliye.id %}">
-Gönder
-</a>
-
-<a href="{% url 'waybill_delete' irsaliye.id %}">
-Sil
-</a>
-
-</td>
-
-</tr>
-
-{% endfor %}
-
-</table>
+<script src="{% static 'js/invoice-preview.js' %}?v=2"></script>
 
 {% endblock %}

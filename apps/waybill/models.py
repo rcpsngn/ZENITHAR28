@@ -1,50 +1,9 @@
-from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
-from apps.invoices.models import Invoice
-
-
-@login_required
-def waybill_create(request):
-    return render(request,"waybill/waybill-create.html")
-
-
-@login_required
-def waybill_draft(request):
-
-    invoices = Invoice.objects.filter(
-        user=request.user,
-        type="e-irsaliye",
-        status="draft"
-    )
-
-    return render(request,"waybill/waybill-draft.html",{
-        "invoices": invoices
-    })
-
-
-@login_required
-def waybill_incoming(request):
-
-    invoices = Invoice.objects.filter(
-        user=request.user,
-        type="e-irsaliye",
-        status="incoming"
-    )
-
-    return render(request,"waybill/waybill-incoming.html",{
-        "invoices": invoices
-    })
-
-
-@login_required
-def waybill_sent(request):
-
-    invoices = Invoice.objects.filter(
-        user=request.user,
-        type="e-irsaliye",
-        status="sent"
-    )
-
-    return render(request,"waybill/waybill-sent.html",{
-        "invoices": invoices
-    })
+# apps/waybill/models.py
+#
+# E-İrsaliye modülünün kendi modeli YOKTUR — apps.invoices.models.Invoice
+# modelini (type="e-irsaliye" filtresiyle) yeniden kullanır. Bu sayede
+# fatura ve irsaliye aynı alt yapıyı (kalemler, müşteri bilgisi, toplamlar,
+# ETTN vb.) paylaşır, kod tekrarı olmaz.
+#
+# Önceden bu dosyaya yanlışlıkla view fonksiyonları kopyalanmıştı, kaldırıldı.
+# Gerçek view'lar için apps/waybill/views.py dosyasına bakın.

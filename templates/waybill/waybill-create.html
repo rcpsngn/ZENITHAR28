@@ -1,79 +1,213 @@
 {% extends "base.html" %}
 {% load static %}
+{% load l10n %}
 
 {% block content %}
-<div class="forms-container" style="padding: 10px 24px 40px 24px;">
+<link rel="stylesheet" href="{% static 'css/invoice-premium-layout.css' %}">
 
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(0, 255, 150, 0.15); padding-bottom: 12px;">
-        <div style="display: flex; align-items: center; gap: 10px;">
-            <i class="bi bi-file-earmark-plus" style="color: #00ff66; font-size: 24px;"></i>
-            <h2 style="color: #00ff66; margin: 0; font-size: 20px; font-weight: 600;">E-İrsaliye Düzenle</h2>
+<div class="invoice-container">
+    {% include "waybill/_tabs.html" %}
+
+    <div class="top-action-bar">
+        <div class="action-bar-title">📦 {% if invoice %}İrsaliye Düzenle{% else %}Yeni E-İrsaliye{% endif %} <span class="badge-type">E-İrsaliye</span></div>
+        <div class="action-bar-buttons">
+            <button type="button" class="bar-btn btn-grey">🔄 Kopyala</button>
+            <button type="button" class="bar-btn btn-orange" onclick="submitMainForm()">💾 {% if invoice %}Değişiklikleri Kaydet{% else %}İrsaliyeyi Kaydet{% endif %}</button>
         </div>
-        <button type="submit" form="irsaliyeForm" class="dark-btn" style="background: #004411; border: 1px solid #00ff66; color: #00ff66; font-weight: bold; padding: 8px 18px; border-radius: 4px; cursor: pointer;">
-            <i class="bi bi-check2-circle"></i> İrsaliyeyi Kaydet
-        </button>
     </div>
 
-    <form id="irsaliyeForm" method="POST">
+    <form id="mainInvoiceForm" method="POST" action="{% if invoice %}{% url 'waybill_edit' invoice.id %}{% else %}{% url 'waybill_create' %}{% endif %}">
         {% csrf_token %}
+        <input type="hidden" name="items_json_data" id="items_json_data" value="[]">
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 20px;">
-
-            <div class="card" style="background: rgba(15, 31, 23, 0.5); border: 1px solid rgba(0, 255, 150, 0.2); border-radius: 6px; padding: 20px; margin: 0;">
-                <div style="color: #00ff66; font-size: 14px; font-weight: bold; margin-bottom: 16px; letter-spacing: 0.5px;">
-                    <i class="bi bi-info-square"></i> GENEL BELGE VE CARİ BİLGİLERİ
-                </div>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 14px;">
-                    <div>
-                        <label style="display: block; color: #1a202c; font-size: 12px; margin-bottom: 6px; font-weight: 600;">İrsaliye Seri / Sıra No</label>
-                        <input type="text" name="irsaliye_no" class="search-input" style="width: 100%; box-sizing: border-box;" placeholder="Örn: IRS202600001" value="{{ irsaliye_no }}">
+        <div class="panel-layout-grid">
+            <div class="erp-box">
+                <div class="box-header">📅 Genel İrsaliye Bilgileri</div>
+                <div class="box-content grid-2">
+                    <div class="input-unit">
+                        <label>İrsaliye Tarihi</label>
+                        <input type="date" name="date" required value="{% if invoice %}{{ invoice.issue_date|date:'Y-m-d' }}{% else %}{% now 'Y-m-d' %}{% endif %}">
                     </div>
-                    <div>
-                        <label style="display: block; color: #1a202c; font-size: 12px; margin-bottom: 6px; font-weight: 600;">Düzenleme Tarihi</label>
-                        <input type="date" name="issue_date" class="search-input" style="width: 100%; box-sizing: border-box;">
+                    <div class="input-unit">
+                        <label>İrsaliye Tipi / Senaryo</label>
+                        <select name="invoice_type">
+                            <option value="satis" {% if not invoice or invoice.invoice_type == "satis" %}selected{% endif %}>Satış</option>
+                            <option value="tevkiat" {% if invoice.invoice_type == "tevkiat" %}selected{% endif %}>Tevkifat</option>
+                            <option value="ihracat" {% if invoice.invoice_type == "ihracat" %}selected{% endif %}>İhracat</option>
+                        </select>
                     </div>
-                </div>
-
-                <div style="margin-bottom: 14px;">
-                    <label style="display: block; color: #1a202c; font-size: 12px; margin-bottom: 6px; font-weight: 600;">Müşteri / Cari Ünvan</label>
-                    <input type="text" name="customer_name" class="search-input" style="width: 100%; box-sizing: border-box;" placeholder="Müşteri adını yazın...">
-                </div>
-
-                <div>
-                    <label style="display: block; color: #1a202c; font-size: 12px; margin-bottom: 6px; font-weight: 600;">VKN / TCKN</label>
-                    <input type="text" name="customer_tax_id" class="search-input" style="width: 100%; box-sizing: border-box;" placeholder="Vergi veya Kimlik Numarası...">
+                    <div class="input-unit">
+                        <label>Doküman Para Birimi</label>
+                        <select name="currency" id="invoice_currency" onchange="fetchExchangeRate()">
+                            <option value="TL" {% if not invoice or invoice.currency == "TL" %}selected{% endif %}>TRY - Türk Lirası</option>
+                            <option value="USD" {% if invoice.currency == "USD" %}selected{% endif %}>USD - Amerikan Doları</option>
+                            <option value="EUR" {% if invoice.currency == "EUR" %}selected{% endif %}>EUR - Euro</option>
+                            <option value="GBP" {% if invoice.currency == "GBP" %}selected{% endif %}>GBP - İngiliz Sterlini</option>
+                        </select>
+                    </div>
+                    <div class="input-unit">
+                        <label>Döviz Kuru (TCMB)</label>
+                        <div style="display: flex; gap: 4px;">
+                            <input type="text" name="exchange_rate" id="exchange_rate_input" value="{% if invoice %}{{ invoice.exchange_rate|unlocalize }}{% else %}1.0000{% endif %}">
+                            <button type="button" class="btn-inside" onclick="fetchExchangeRate()">🔄</button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="card" style="background: rgba(15, 31, 23, 0.5); border: 1px solid rgba(0, 255, 150, 0.2); border-radius: 6px; padding: 20px; margin: 0;">
-                <div style="color: #00ff66; font-size: 14px; font-weight: bold; margin-bottom: 16px; letter-spacing: 0.5px;">
-                    <i class="bi bi-currency-exchange"></i> MALİ DETAYLAR VE AÇIKLAMALAR
-                </div>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 14px;">
-                    <div>
-                        <label style="display: block; color: #1a202c; font-size: 12px; margin-bottom: 6px; font-weight: 600;">Mal/Hizmet Tutarı</label>
-                        <input type="number" name="amount" class="search-input" style="width: 100%; box-sizing: border-box;" step="0.01" placeholder="0.00">
+            <div class="erp-box">
+                <div class="box-header">👤 Alıcı Bilgileri</div>
+                <div class="box-content grid-2">
+                    <div class="input-unit span-all">
+                        <label>VKN / TCKN</label>
+                        <div style="display: flex; gap: 8px;">
+                            <input type="text" id="vkn_input" name="customer_tax_id" value="{% if invoice %}{{ invoice.customer_tax_id }}{% endif %}" placeholder="Mükellef yoksa serbestçe elle yazın...">
+                            <button type="button" class="btn-query" onclick="triggerGibQuery()">GİB'den Sorgula</button>
+                        </div>
                     </div>
-                    <div>
-                        <label style="display: block; color: #1a202c; font-size: 12px; margin-bottom: 6px; font-weight: 600;">Hesaplanan KDV</label>
-                        <input type="number" name="vat_amount" class="search-input" style="width: 100%; box-sizing: border-box;" step="0.01" placeholder="0.00">
+                    <div class="input-unit span-all">
+                        <label>Alıcı Ünvanı / Adı Soyadı</label>
+                        <input type="text" id="customer_name_input" name="customer_name" required value="{% if invoice %}{{ invoice.customer_name }}{% endif %}" placeholder="Firma unvanı veya şahıs adı...">
                     </div>
-                    <div>
-                        <label style="display: block; color: #1a202c; font-size: 12px; margin-bottom: 6px; font-weight: 600;">Genel Toplam</label>
-                        <input type="number" name="total_amount" class="search-input" style="width: 100%; box-sizing: border-box;" step="0.01" placeholder="0.00">
+                    <div class="input-unit">
+                        <label>Vergi Dairesi</label>
+                        <input type="text" id="customer_tax_office_input" name="customer_tax_office" value="{% if invoice %}{{ invoice.customer_tax_office }}{% endif %}" placeholder="Örn: Beyoğlu V.D.">
                     </div>
-                </div>
-
-                <div>
-                    <label style="display: block; color: #1a202c; font-size: 12px; margin-bottom: 6px; font-weight: 600;">Belge Notu / Açıklama</label>
-                    <textarea name="notes" class="search-input" style="width: 100%; height: 86px; box-sizing: border-box; padding: 8px 10px; font-family: inherit; resize: none;" placeholder="İrsaliyeye eklenecek özel notlar veya sevk şartları..."></textarea>
+                    <div class="input-unit">
+                        <label>Şehir</label>
+                        <input type="text" id="customer_city_input" name="customer_city" value="{% if invoice %}{{ invoice.customer_city }}{% endif %}" placeholder="Örn: İstanbul">
+                    </div>
+                    <div style="display:none;">
+                        <input type="text" id="customer_first_name_input" name="customer_first_name" value="{% if invoice %}{{ invoice.customer_first_name }}{% endif %}">
+                        <input type="text" id="customer_last_name_input" name="customer_last_name" value="{% if invoice %}{{ invoice.customer_last_name }}{% endif %}">
+                    </div>
                 </div>
             </div>
-
         </div>
 
+        <div class="erp-box">
+            <div class="box-header">📍 Sevk ve Adres Detayları</div>
+            <div class="box-content grid-4">
+                <div class="input-unit">
+                    <label>Ülke</label>
+                    <input type="text" name="customer_country" value="{% if invoice %}{{ invoice.customer_country }}{% else %}Türkiye{% endif %}">
+                </div>
+                <div class="input-unit">
+                    <label>İlçe / Mahalle</label>
+                    <input type="text" id="customer_district_input" name="customer_district" value="{% if invoice %}{{ invoice.customer_district }}{% endif %}" placeholder="Örn: Kadıköy">
+                </div>
+                <div class="input-unit">
+                    <label>Posta Kodu</label>
+                    <input type="text" id="customer_postal_code_input" name="customer_postal_code" value="{% if invoice %}{{ invoice.customer_postal_code }}{% endif %}" placeholder="34000">
+                </div>
+                <div class="input-unit">
+                    <label>Cadde / Sokak / Açık Adres</label>
+                    <input type="text" id="customer_street_input" name="customer_street" value="{% if invoice %}{{ invoice.customer_street }}{% endif %}" placeholder="Açık adres detayları...">
+                </div>
+            </div>
+        </div>
+
+        <div class="erp-box padding-none">
+            <div class="box-header" style="padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;">
+                <span>📦 Mal ve Hizmet Bilgileri</span>
+                <button type="button" class="btn-top-green" onclick="openItemModal()">+ Vergi Dahil Mal/Hizmet Ekle</button>
+            </div>
+            <div class="table-scroll">
+                <table class="erp-table" id="itemGridDisplayTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px;">No</th>
+                            <th>Mal/Hizmet</th>
+                            <th>Miktar</th>
+                            <th>Birim</th>
+                            <th>Birim Fiyat</th>
+                            <th>KDV %</th>
+                            <th>KDV Tutarı</th>
+                            <th>Kdv Dahil Tutar</th>
+                            <th style="width: 60px; text-align: center;">Sil</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="erp-box">
+            <div class="box-header">📊 Toplam Bilgileri</div>
+            <div class="box-content grid-3 text-center-summary">
+                <div class="sum-box">Matrah Tutar: <span id="lbl_base">0.00</span></div>
+                <div class="sum-box">KDV Toplamı: <span id="lbl_vat">0.00</span></div>
+                <div class="sum-box highlight-total">Ödenecek Tutar: <span id="lbl_final">0.00</span></div>
+            </div>
+        </div>
+
+        <div class="erp-box">
+            <div class="box-header">📝 İrsaliye Açıklamaları / Notları</div>
+            <textarea name="notes" class="invoice-notes-textarea" placeholder="Özel şartlar, banka transfer/IBAN detayları...">{% if invoice %}{{ invoice.notes }}{% endif %}</textarea>
+        </div>
+
+        <div class="invoice-submit-zone">
+            <button type="submit" class="bar-btn btn-orange" style="padding: 12px 30px; font-size: 14px;">💾 {% if invoice %}Değişiklikleri Kaydet{% else %}İrsaliyeyi Taslak Olarak Kaydet{% endif %}</button>
+        </div>
     </form>
 </div>
+
+<div id="itemModal" class="modal-overlay">
+    <div class="modal-window">
+        <div class="modal-top">Mal/Hizmet Bilgisi Ekle/Düzenle <span class="close-x" onclick="closeItemModal()">×</span></div>
+        <div class="modal-tabs">
+            <div class="tab-item active">📝 Genel Bilgiler</div>
+            <div class="tab-item" style="opacity: 0.5;">⚙️ Diğer Seçenekler</div>
+        </div>
+        <div class="modal-body-grid">
+            <div class="input-unit span-all">
+                <label>Mal/Hizmet Tanımı</label>
+                <input type="text" id="m_desc" placeholder="Ürün veya malzeme adını giriniz...">
+            </div>
+            <div class="input-unit">
+                <label>Miktar</label>
+                <input type="number" id="m_qty" value="1.00" step="0.01" oninput="runModalMath()">
+            </div>
+            <div class="input-unit">
+                <label>Birim</label>
+                <select id="m_unit">
+                    <option value="Adet">Adet</option>
+                    <option value="KG">Kilogram</option>
+                    <option value="Metre">Metre</option>
+                    <option value="Litre">Litre</option>
+                </select>
+            </div>
+            <div class="input-unit">
+                <label>Birim Fiyatı</label>
+                <input type="number" id="m_price" value="0.00" step="0.01" oninput="runModalMath()">
+            </div>
+            <div class="input-unit">
+                <label>KDV Oranı (%)</label>
+                <input type="number" id="m_vat" value="20" oninput="runModalMath()">
+            </div>
+            <div class="input-unit">
+                <label>Hesaplanan KDV</label>
+                <input type="text" id="m_vat_calc" readonly class="readonly-style" value="0.00">
+            </div>
+            <div class="input-unit">
+                <label>Kdv Dahil Tutar</label>
+                <input type="text" id="m_total_calc" readonly class="readonly-style" value="0.00">
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="m-btn m-cancel" onclick="closeItemModal()">İptal</button>
+            <button type="button" class="m-btn m-ok" onclick="pushItemToGrid()">Tamam</button>
+        </div>
+    </div>
+</div>
+
+<script src="{% static 'js/invoice-calculator.js' %}"></script>
+{% if invoice %}
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        tempItemsList = {{ items_json|safe }};
+        renderTableGrid();
+    });
+</script>
+{% endif %}
 {% endblock %}
