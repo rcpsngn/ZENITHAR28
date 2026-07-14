@@ -6,7 +6,19 @@
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(0, 255, 150, 0.15); padding-bottom: 12px;">
         <div style="display: flex; align-items: center; gap: 10px;">
             <i class="bi bi-people" style="color: #00ff66; font-size: 24px;"></i>
-            <h2 style="color: #00ff66; margin: 0; font-size: 20px; font-weight: 600;">Cari Bakiye Listesi (Mizan)</h2>
+            <h2 style="color: #00ff66; margin: 0; font-size: 20px; font-weight: 600;">Cari Hesap Bakiyeleri</h2>
+        </div>
+        <button onclick="openAccountModal()" style="background:#00ff66; color:#002208; border:none; padding:9px 18px; border-radius:6px; font-weight:700; cursor:pointer;">➕ Yeni Cari Hesap</button>
+    </div>
+
+    <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:16px; margin-bottom:20px;">
+        <div class="card" style="background: rgba(15, 31, 23, 0.5); border: 1px solid rgba(0, 255, 150, 0.2); border-radius: 6px; padding: 16px;">
+            <div style="color:#1a202c; font-size:12px;">Toplam Alacak (Bize Borçlu)</div>
+            <div style="color:#00ff66; font-size:24px; font-weight:700;">{{ total_receivable|floatformat:2 }} ₺</div>
+        </div>
+        <div class="card" style="background: rgba(15, 31, 23, 0.5); border: 1px solid rgba(255, 68, 68, 0.3); border-radius: 6px; padding: 16px;">
+            <div style="color:#1a202c; font-size:12px;">Toplam Borç (Bizim Borcumuz)</div>
+            <div style="color:#ff4444; font-size:24px; font-weight:700;">{{ total_payable|floatformat:2 }} ₺</div>
         </div>
     </div>
 
@@ -14,33 +26,90 @@
         <table style="width: 100%; border-collapse: collapse; text-align: left;">
             <thead>
                 <tr style="border-bottom: 2px solid #004411; color: #00ff66; font-size: 12px;">
-                    <th style="padding: 10px; width: 100px;">Cari Kod</th>
-                    <th style="padding: 10px;">Cari Ünvan</th>
-                    <th style="padding: 10px; text-align: right;">Toplam Borç</th>
-                    <th style="padding: 10px; text-align: right;">Toplam Alacak</th>
-                    <th style="padding: 10px; text-align: right; color: #ff4444;">Bakiye Borç (Alacağımız)</th>
-                    <th style="padding: 10px; text-align: right; color: #00ff66;">Bakiye Alacak (Borcumuz)</th>
+                    <th style="padding: 10px;">Ad / Ünvan</th>
+                    <th style="padding: 10px;">Tip</th>
+                    <th style="padding: 10px;">Vergi No</th>
+                    <th style="padding: 10px;">Telefon</th>
+                    <th style="padding: 10px; text-align:right;">Bakiye</th>
+                    <th style="padding: 10px; text-align:center;">İşlem</th>
                 </tr>
             </thead>
             <tbody>
+                {% for a in accounts %}
                 <tr style="border-bottom: 1px solid #002206; font-size: 13px; color: #1a202c; font-weight: 500;">
-                    <td style="padding: 12px 10px;">CK-001</td>
-                    <td style="padding: 12px 10px;">X FİRMASI TEKSTİL LTD. ŞTİ.</td>
-                    <td style="padding: 12px 10px; text-align: right;">10.701.502,50</td>
-                    <td style="padding: 12px 10px; text-align: right;">11.330.126,44</td>
-                    <td style="padding: 12px 10px; text-align: right; font-weight: bold; color: #ff4444;">628.623,94</td>
-                    <td style="padding: 12px 10px; text-align: right;">0,00</td>
+                    <td style="padding: 12px 10px;">{{ a.name }}{% if a.company_name %}<br><small style="color:#1a202c;">{{ a.company_name }}</small>{% endif %}</td>
+                    <td style="padding: 12px 10px;">{{ a.get_type_display }}</td>
+                    <td style="padding: 12px 10px;">{{ a.tax_id|default:"—" }}</td>
+                    <td style="padding: 12px 10px;">{{ a.phone|default:"—" }}</td>
+                    <td style="padding: 12px 10px; text-align:right; font-weight:bold; color: {% if a.balance > 0 %}#00ff66{% elif a.balance < 0 %}#ff4444{% else %}#1a202c{% endif %};">{{ a.balance|floatformat:2 }} ₺</td>
+                    <td style="padding: 12px 10px; text-align:center;">
+                        <div class="invoice-actions">
+                            <a href="{% url 'account_statement_detail' a.id %}" class="action-btn btn-view">📄 Ekstre</a>
+                            <button class="action-btn btn-edit" onclick='openAccountModal({{ a.id }}, "{{ a.type }}", "{{ a.name|escapejs }}", "{{ a.company_name|escapejs }}", "{{ a.tax_id|escapejs }}", "{{ a.tax_office|escapejs }}", "{{ a.email|escapejs }}", "{{ a.phone|escapejs }}", "{{ a.address|escapejs }}", "{{ a.credit_limit }}", "{{ a.notes|escapejs }}")'>✏️</button>
+                            <a href="{% url 'account_delete' a.id %}" class="action-btn btn-delete" onclick="return confirm('Bu cari hesabı silmek istediğinize emin misiniz?');">🗑️</a>
+                        </div>
+                    </td>
                 </tr>
-                <tr style="border-bottom: 1px solid #002206; font-size: 13px; color: #1a202c; font-weight: 500;">
-                    <td style="padding: 12px 10px;">CK-002</td>
-                    <td style="padding: 12px 10px;">Y FİRMASI GÜVENLİK A.Ş.</td>
-                    <td style="padding: 12px 10px; text-align: right;">154.901,60</td>
-                    <td style="padding: 12px 10px; text-align: right;">120.776,60</td>
-                    <td style="padding: 12px 10px; text-align: right;">0,00</td>
-                    <td style="padding: 12px 10px; text-align: right; font-weight: bold; color: #00ff66;">34.125,00</td>
-                </tr>
+                {% empty %}
+                <tr><td colspan="6" style="padding:16px; text-align:center; color:#1a202c;">Henüz cari hesap eklenmedi.</td></tr>
+                {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
+
+<div id="accountModal" class="modal-overlay">
+    <div class="modal-window">
+        <div class="modal-preview-header">
+            <span id="accountModalTitle">➕ Yeni Cari Hesap</span>
+            <span class="close-x" onclick="closeAccountModal()">×</span>
+        </div>
+        <form id="accountForm" method="POST" action="{% url 'account_save' %}">
+            {% csrf_token %}
+            <div class="modal-preview-body">
+                <div class="input-unit"><label>Tip</label>
+                    <select name="type" id="a_type">
+                        <option value="customer">Müşteri</option><option value="supplier">Tedarikçi</option><option value="both">Her İkisi</option>
+                    </select>
+                </div>
+                <div class="input-unit"><label>Ad / Ünvan</label><input type="text" name="name" id="a_name" required></div>
+                <div class="input-unit"><label>Firma Adı</label><input type="text" name="company_name" id="a_company_name"></div>
+                <div class="input-unit"><label>Vergi No</label><input type="text" name="tax_id" id="a_tax_id"></div>
+                <div class="input-unit"><label>Vergi Dairesi</label><input type="text" name="tax_office" id="a_tax_office"></div>
+                <div class="input-unit"><label>E-posta</label><input type="email" name="email" id="a_email"></div>
+                <div class="input-unit"><label>Telefon</label><input type="text" name="phone" id="a_phone"></div>
+                <div class="input-unit"><label>Kredi Limiti</label><input type="number" step="0.01" name="credit_limit" id="a_credit_limit" value="0"></div>
+                <div class="input-unit" id="a_balance_wrapper"><label>Açılış Bakiyesi</label><input type="number" step="0.01" name="balance" id="a_balance" value="0"></div>
+                <div class="input-unit" style="grid-column:1/-1;"><label>Adres</label><input type="text" name="address" id="a_address"></div>
+                <div class="input-unit" style="grid-column:1/-1;"><label>Notlar</label><input type="text" name="notes" id="a_notes"></div>
+            </div>
+            <div class="modal-preview-footer">
+                <button type="button" class="m-btn m-cancel" onclick="closeAccountModal()">Vazgeç</button>
+                <button type="submit" class="m-btn m-ok">Kaydet</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<link rel="stylesheet" href="{% static 'css/invoice-actions.css' %}?v=2">
+<script>
+function openAccountModal(id, type, name, company_name, tax_id, tax_office, email, phone, address, credit_limit, notes) {
+    const form = document.getElementById("accountForm");
+    document.getElementById("accountModalTitle").textContent = id ? "✏️ Cari Hesap Düzenle" : "➕ Yeni Cari Hesap";
+    form.action = id ? `/current-accounts/cari-bakiye/kaydet/${id}/` : "{% url 'account_save' %}";
+    document.getElementById("a_type").value = type || "customer";
+    document.getElementById("a_name").value = name || "";
+    document.getElementById("a_company_name").value = company_name || "";
+    document.getElementById("a_tax_id").value = tax_id || "";
+    document.getElementById("a_tax_office").value = tax_office || "";
+    document.getElementById("a_email").value = email || "";
+    document.getElementById("a_phone").value = phone || "";
+    document.getElementById("a_address").value = address || "";
+    document.getElementById("a_credit_limit").value = credit_limit || 0;
+    document.getElementById("a_notes").value = notes || "";
+    document.getElementById("a_balance_wrapper").style.display = id ? "none" : "block";
+    document.getElementById("accountModal").style.display = "flex";
+}
+function closeAccountModal() { document.getElementById("accountModal").style.display = "none"; }
+</script>
 {% endblock %}

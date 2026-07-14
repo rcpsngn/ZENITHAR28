@@ -10,6 +10,17 @@
         </div>
     </div>
 
+    <div class="card" style="background: rgba(15, 31, 23, 0.5); border: 1px solid rgba(0, 255, 150, 0.2); border-radius: 6px; padding: 16px; margin-bottom: 20px;">
+        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 16px; align-items: flex-end;">
+            <div>
+                <label style="display: block; color: #1a202c; font-size: 12px; margin-bottom: 6px; font-weight: 600;">Personel Seç</label>
+                <select id="qe_employee" class="search-input" style="width: 100%; height: 34px; box-sizing: border-box; padding: 0 5px;"></select>
+            </div>
+            <button onclick="quickEntry('entry')" style="height: 34px; background:#00ff66; color:#002208; border:none; border-radius:6px; font-weight:700; cursor:pointer;">🟢 Giriş Kaydet</button>
+            <button onclick="quickEntry('exit')" style="height: 34px; background:#ff4444; color:#3a0000; border:none; border-radius:6px; font-weight:700; cursor:pointer;">🔴 Çıkış Kaydet</button>
+        </div>
+    </div>
+
     <div class="card" style="background: rgba(15, 31, 23, 0.5); border: 1px solid rgba(0, 255, 150, 0.2); border-radius: 6px; padding: 20px; overflow-x: auto;">
         <table style="width: 100%; border-collapse: collapse; text-align: left;">
             <thead>
@@ -21,16 +32,89 @@
                     <th style="padding: 10px;">Çalışma Süresi</th>
                 </tr>
             </thead>
-            <tbody>
-                <tr style="border-bottom: 1px solid #002206; font-size: 13px; color: #1a202c; font-weight: 500;">
-                    <td style="padding: 12px 10px;">30.06.2026</td>
-                    <td style="padding: 12px 10px;">Ahmet Yılmaz</td>
-                    <td style="padding: 12px 10px; color: #004411; font-weight: bold;">08:30</td>
-                    <td style="padding: 12px 10px; color: #660000; font-weight: bold;">18:00</td>
-                    <td style="padding: 12px 10px;">09 Saat 30 Dk</td>
-                </tr>
+            <tbody id="attendanceTableBody">
+                <tr><td colspan="5" style="padding:16px; text-align:center; color:#1a202c;">Yükleniyor...</td></tr>
             </tbody>
         </table>
     </div>
 </div>
+
+<link rel="stylesheet" href="{% static 'css/invoice-actions.css' %}?v=2">
+<script src="{% static 'js/api-utils.js' %}"></script>
+<script>
+async function loadEmployeeOptions() {
+    const select = document.getElementById("qe_employee");
+    try {
+        const data = await apiFetch(`/personnel/api/employees/?is_active=true`);
+        const employees = data.results || data;
+        select.innerHTML = employees.map(e => `<option value="${e.id}">${e.full_name}</option>`).join("");
+    } catch (err) {
+        select.innerHTML = `<option>Personel yüklenemedi</option>`;
+    }
+}
+
+async function quickEntry(type) {
+    const employeeId = document.getElementById("qe_employee").value;
+    if (!employeeId) { alert("Lütfen bir personel seçin."); return; }
+    try {
+        await apiFetch(`/personnel/api/attendance/quick_entry/`, {
+            method: "POST",
+            body: JSON.stringify({ employee: employeeId, type: type }),
+        });
+        loadAttendance();
+    } catch (err) {
+        alert("Kayıt yapılamadı: " + err.message);
+    }
+}
+
+function calcDuration(entryTime, exitTime) {
+    if (!entryTime || !exitTime) return "—";
+    const [eh, em] = entryTime.split(":").map(Number);
+    const [xh, xm] = exitTime.split(":").map(Number);
+    let minutes = (xh * 60 + xm) - (eh * 60 + em);
+    if (minutes < 0) return "—";
+    return `${Math.floor(minutes / 60)} Saat ${minutes % 60} Dk`;
+}
+
+async function loadAttendance() {
+    const tbody = document.getElementById("attendanceTableBody");
+    tbody.innerHTML = `<tr><td colspan="5" style="padding:16px; text-align:center; color:#1a202c;">Yükleniyor...</td></tr>`;
+    try {
+        const data = await apiFetch(`/personnel/api/attendance/?ordering=-date`);
+        const records = data.results || data;
+
+        // ayni personel + ayni gun icin giris/cikis kayitlarini eslestir
+        const grouped = {};
+        records.forEach(r => {
+            const key = `${r.employee}_${r.date}`;
+            if (!grouped[key]) grouped[key] = { date: r.date, employee_name: r.employee_name, entry: null, exit: null };
+            if (r.type === "entry" && !grouped[key].entry) grouped[key].entry = r.time;
+            if (r.type === "exit") grouped[key].exit = r.time;
+        });
+        const rows = Object.values(grouped).sort((a, b) => b.date.localeCompare(a.date));
+
+        if (!rows.length) {
+            tbody.innerHTML = `<tr><td colspan="5" style="padding:16px; text-align:center; color:#1a202c;">Henüz giriş-çıkış kaydı yok.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = rows.map(row => `
+            <tr style="border-bottom: 1px solid #002206; font-size: 13px; color: #1a202c; font-weight: 500;">
+                <td style="padding: 12px 10px;">${row.date}</td>
+                <td style="padding: 12px 10px;">${row.employee_name}</td>
+                <td style="padding: 12px 10px; color: #004411; font-weight: bold;">${row.entry ? row.entry.slice(0,5) : "—"}</td>
+                <td style="padding: 12px 10px; color: #660000; font-weight: bold;">${row.exit ? row.exit.slice(0,5) : "—"}</td>
+                <td style="padding: 12px 10px;">${calcDuration(row.entry, row.exit)}</td>
+            </tr>
+        `).join("");
+    } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="5" style="padding:16px; text-align:center; color:#f87171;">Yüklenemedi: ${err.message}</td></tr>`;
+    }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    loadEmployeeOptions();
+    loadAttendance();
+});
+</script>
 {% endblock %}

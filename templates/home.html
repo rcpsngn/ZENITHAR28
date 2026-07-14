@@ -7,23 +7,23 @@
 <div class="stats">
 
 <div class="card">
-<div class="card-title">Toplam Personel</div>
-<div class="value">24</div>
+<div class="card-title">Aktif Personel</div>
+<div class="value">{{ active_employee_count }}</div>
 </div>
 
 <div class="card">
 <div class="card-title">Aktif Fatura</div>
-<div class="value">312</div>
+<div class="value">{{ active_invoice_count }}</div>
 </div>
 
 <div class="card">
-<div class="card-title">Gelir</div>
-<div class="value">₺120,000</div>
+<div class="card-title">Yıllık Gelir</div>
+<div class="value">₺{{ total_income|floatformat:0 }}</div>
 </div>
 
 <div class="card">
-<div class="card-title">Gider</div>
-<div class="value">₺42,000</div>
+<div class="card-title">Yıllık Gider</div>
+<div class="value">₺{{ total_expense|floatformat:0 }}</div>
 </div>
 
 </div>
@@ -31,7 +31,7 @@
 <div class="charts">
 
 <div class="chart-box">
-<h3>Aylık Gelir</h3>
+<h3>Aylık Gelir (Son 6 Ay)</h3>
 <canvas id="revenueChart"></canvas>
 </div>
 
@@ -62,5 +62,49 @@
 🤖 ZENITHAR AI
 </button>
 </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const monthLabels = {{ month_labels_json|safe }};
+    const monthValues = {{ month_values_json|safe }};
+    const expenseLabels = {{ expense_labels_json|safe }};
+    const expenseValues = {{ expense_values_json|safe }};
+
+    new Chart(document.getElementById("revenueChart"), {
+        type: "line",
+        data: {
+            labels: monthLabels,
+            datasets: [{
+                label: "Gelir (₺)",
+                data: monthValues,
+                borderColor: "#00ff66",
+                backgroundColor: "rgba(0, 255, 102, 0.15)",
+                tension: 0.3,
+                fill: true,
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+
+    new Chart(document.getElementById("expenseChart"), {
+        type: "doughnut",
+        data: {
+            labels: expenseLabels,
+            datasets: [{
+                data: expenseValues,
+                backgroundColor: ["#ff4444", "#f97316", "#00ff66"],
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { position: "bottom" } }
+        }
+    });
+});
+</script>
 
 {% endblock %}

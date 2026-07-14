@@ -105,3 +105,68 @@ function renderTableGrid() {
 function submitMainForm() {
     document.getElementById("mainInvoiceForm").submit();
 }
+
+// Sayfa genelinde TCMB menüsünü yöneten ve kurları işleyen fonksiyonlar
+function toggleTCMBMenu(event) {
+    event.stopPropagation();
+    const menu = document.getElementById('tcmb-menu');
+    if (menu) {
+        menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+    }
+}
+
+// Menü dışına tıklandığında otomatik kapatma
+document.addEventListener('click', function() {
+    const menu = document.getElementById('tcmb-menu');
+    if (menu) menu.style.display = 'none';
+});
+
+// Kur tipi seçildiğinde tetiklenen fonksiyon
+function selectRateType(event, type) {
+    event.preventDefault();
+    const menu = document.getElementById('tcmb-menu');
+    if (menu) menu.style.display = 'none';
+
+    // Sayfadaki döviz türü select elementini buluyoruz (Örn: USD, EUR, TRY)
+    // Eğer şablondaki select id'si farklıysa 'currency_select' kısmını ona göre güncelle
+    const currencySelect = document.getElementById('currency_select') || document.getElementsByName('currency')[0];
+    const currency = currencySelect ? currencySelect.value : 'USD';
+
+    const inputField = document.getElementById('exchange_rate_input');
+
+    if (currency === 'TRY' || currency === 'TL') {
+        if (inputField) inputField.value = '1.0000';
+        return;
+    }
+
+    if (inputField) inputField.value = "Yükleniyor...";
+
+    // Senin views.py içinde güncellediğimiz URL ve parametre yapısı:
+    fetch(`/invoices/api/tcmb-rate/?code=${currency}&type=${type}`)
+        .then(response => {
+            if (!response.ok) throw new Error('Kur çekilemedi.');
+            return response.json();
+        })
+        .then(data => {
+            if (data.success && inputField) {
+                // TCMB'den gelen değeri alıp 4 basamaklı güvenli formata çeviriyoruz
+                const rateFloat = parseFloat(data.rate.replace(',', '.'));
+                inputField.value = rateFloat.toFixed(4);
+
+                // Eğer fatura hesaplayıcında kurlar değiştiğinde tüm sayfayı yeniden
+                // hesaplayan bir fonksiyon varsa (örneğin calculateTotals() gibi), onu burada tetikleyebilirsin:
+                if (typeof calculateTotals === "function") {
+                    calculateTotals();
+                }
+                console.log(`TCMB Kur Tarihi: ${data.date} - Seçilen: ${type}`);
+            } else {
+                alert(data.error || "Kur alınamadı.");
+                if (inputField) inputField.value = "1.0000";
+            }
+        })
+        .catch(error => {
+            alert("Merkez Bankası kurları alınırken bir hata oluştu.");
+            if (inputField) inputField.value = "1.0000";
+            console.error(error);
+        });
+}

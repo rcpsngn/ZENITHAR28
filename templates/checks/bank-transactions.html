@@ -8,24 +8,21 @@
             <i class="bi bi-bank" style="color: #00ff66; font-size: 24px;"></i>
             <h2 style="color: #00ff66; margin: 0; font-size: 20px; font-weight: 600;">Banka Hareketleri</h2>
         </div>
+        <button onclick="document.getElementById('bankModal').style.display='flex'" style="background:#00ff66; color:#002208; border:none; padding:9px 18px; border-radius:6px; font-weight:700; cursor:pointer;">➕ Hareket Ekle</button>
     </div>
 
-    <div class="card" style="background: rgba(15, 31, 23, 0.5); border: 1px solid rgba(0, 255, 150, 0.2); border-radius: 6px; padding: 16px; margin-bottom: 20px;">
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
-            <div>
-                <label style="display: block; color: #1a202c; font-size: 12px; margin-bottom: 6px; font-weight: 600;">Banka Hesabı</label>
-                <select class="search-input" style="width: 100%; height: 32px; box-sizing: border-box; padding: 0 5px;">
-                    <option>Tüm Bankalar</option>
-                    <option>X Bankası Ticari Hesap</option>
-                </select>
-            </div>
-            <div>
-                <label style="display: block; color: #1a202c; font-size: 12px; margin-bottom: 6px; font-weight: 600;">Tarih Dönemi</label>
-                <input type="date" class="search-input" style="width: 100%; box-sizing: border-box;">
-            </div>
-            <div style="display: flex; align-items: flex-end;">
-                <button class="dark-btn" style="width: 100%; height: 32px; background: #002208; border: 1px solid #004411; color: #00ff66; cursor: pointer;">Sorgula</button>
-            </div>
+    <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:16px; margin-bottom:20px;">
+        <div class="card" style="background: rgba(15, 31, 23, 0.5); border: 1px solid rgba(0, 255, 150, 0.2); border-radius: 6px; padding: 16px;">
+            <div style="color:#1a202c; font-size:12px;">Toplam Giriş</div>
+            <div style="color:#00ff66; font-size:22px; font-weight:700;">{{ total_in|floatformat:2 }} ₺</div>
+        </div>
+        <div class="card" style="background: rgba(255, 68, 68, 0.08); border: 1px solid rgba(255, 68, 68, 0.3); border-radius: 6px; padding: 16px;">
+            <div style="color:#1a202c; font-size:12px;">Toplam Çıkış</div>
+            <div style="color:#ff4444; font-size:22px; font-weight:700;">{{ total_out|floatformat:2 }} ₺</div>
+        </div>
+        <div class="card" style="background: rgba(15, 31, 23, 0.5); border: 1px solid rgba(0, 255, 150, 0.2); border-radius: 6px; padding: 16px;">
+            <div style="color:#1a202c; font-size:12px;">Net Bakiye</div>
+            <div style="color:#00ff66; font-size:22px; font-weight:700;">{{ net_balance|floatformat:2 }} ₺</div>
         </div>
     </div>
 
@@ -33,23 +30,53 @@
         <table style="width: 100%; border-collapse: collapse; text-align: left;">
             <thead>
                 <tr style="border-bottom: 2px solid #004411; color: #00ff66; font-size: 12px;">
-                    <th style="padding: 10px;">İşlem Tarihi</th>
-                    <th style="padding: 10px;">Banka / Hesap</th>
-                    <th style="padding: 10px;">Açıklama</th>
-                    <th style="padding: 10px; text-align: right;">Gelen (Borç)</th>
-                    <th style="padding: 10px; text-align: right;">Giden (Alacak)</th>
+                    <th style="padding: 10px;">Tarih</th><th style="padding: 10px;">Banka</th><th style="padding: 10px;">Hesap No</th>
+                    <th style="padding: 10px;">Açıklama</th><th style="padding: 10px;">Tip</th>
+                    <th style="padding: 10px; text-align:right;">Tutar</th><th style="padding: 10px; text-align:center;">İşlem</th>
                 </tr>
             </thead>
             <tbody>
+                {% for t in transactions %}
                 <tr style="border-bottom: 1px solid #002206; font-size: 13px; color: #1a202c; font-weight: 500;">
-                    <td style="padding: 12px 10px;">30.06.2026</td>
-                    <td style="padding: 12px 10px;">X Bankası - TR76...</td>
-                    <td style="padding: 12px 10px;">X Firması Havale Ödemesi</td>
-                    <td style="padding: 12px 10px; text-align: right; color: #00ff66; font-weight: bold;">45.000,00</td>
-                    <td style="padding: 12px 10px; text-align: right;">0,00</td>
+                    <td style="padding: 12px 10px;">{{ t.date }}</td>
+                    <td style="padding: 12px 10px;">{{ t.bank_name }}</td>
+                    <td style="padding: 12px 10px;">{{ t.account_number|default:"—" }}</td>
+                    <td style="padding: 12px 10px;">{{ t.description|default:"—" }}</td>
+                    <td style="padding: 12px 10px;"><span class="status {% if t.type == 'deposit' %}approved{% else %}cancelled{% endif %}">{{ t.get_type_display }}</span></td>
+                    <td style="padding: 12px 10px; text-align:right; font-weight:bold; color: {% if t.type == 'deposit' %}#00ff66{% else %}#ff4444{% endif %};">{{ t.amount|floatformat:2 }} ₺</td>
+                    <td style="padding: 12px 10px; text-align:center;">
+                        <a href="{% url 'bank_transaction_delete' t.id %}" class="action-btn btn-delete" onclick="return confirm('Silinsin mi?');">🗑️</a>
+                    </td>
                 </tr>
+                {% empty %}
+                <tr><td colspan="7" style="padding:16px; text-align:center; color:#1a202c;">Henüz banka hareketi yok.</td></tr>
+                {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
+
+<div id="bankModal" class="modal-overlay">
+    <div class="modal-window">
+        <div class="modal-preview-header"><span>➕ Banka Hareketi Ekle</span><span class="close-x" onclick="document.getElementById('bankModal').style.display='none'">×</span></div>
+        <form method="POST" action="{% url 'bank_transaction_save' %}">
+            {% csrf_token %}
+            <div class="modal-preview-body">
+                <div class="input-unit"><label>Banka Adı</label><input type="text" name="bank_name" required></div>
+                <div class="input-unit"><label>Hesap No / IBAN</label><input type="text" name="account_number"></div>
+                <div class="input-unit"><label>Tip</label>
+                    <select name="type"><option value="deposit">Para Girişi</option><option value="withdrawal">Para Çıkışı</option></select>
+                </div>
+                <div class="input-unit"><label>Tutar</label><input type="number" step="0.01" name="amount" required></div>
+                <div class="input-unit"><label>Tarih</label><input type="date" name="date" required></div>
+                <div class="input-unit" style="grid-column:1/-1;"><label>Açıklama</label><input type="text" name="description"></div>
+            </div>
+            <div class="modal-preview-footer">
+                <button type="button" class="m-btn m-cancel" onclick="document.getElementById('bankModal').style.display='none'">Vazgeç</button>
+                <button type="submit" class="m-btn m-ok">Kaydet</button>
+            </div>
+        </form>
+    </div>
+</div>
+<link rel="stylesheet" href="{% static 'css/invoice-actions.css' %}?v=2">
 {% endblock %}

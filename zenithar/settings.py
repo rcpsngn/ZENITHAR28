@@ -196,3 +196,14 @@ AUTH_USER_MODEL = "accounts.User"
 GIB_INTEGRATION_PROVIDER = None
 GIB_API_URL = None
 GIB_API_KEY = None
+
+# ======================
+# LOGIN / LOGOUT & SESSION CONFIG
+# ======================
+
+LOGIN_URL = '/'
+LOGIN_REDIRECT_URL = 'home'
+LOGOUT_REDIRECT_URL = '/'
+
+# Sadece bu satır kalsın (tarayıcı kapanınca oturumu kapatır, sistemi bozmaz)
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True

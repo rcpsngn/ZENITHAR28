@@ -8,23 +8,25 @@
             <i class="bi bi-person-badge" style="color: #00ff66; font-size: 24px;"></i>
             <h2 style="color: #00ff66; margin: 0; font-size: 20px; font-weight: 600;">Personel / Çalışan Listesi</h2>
         </div>
+        <button onclick="openEmployeeModal()" style="background:#00ff66; color:#002208; border:none; padding:9px 18px; border-radius:6px; font-weight:700; cursor:pointer;">➕ Yeni Personel</button>
     </div>
 
     <div class="card" style="background: rgba(15, 31, 23, 0.5); border: 1px solid rgba(0, 255, 150, 0.2); border-radius: 6px; padding: 16px; margin-bottom: 20px;">
         <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 16px;">
             <div>
                 <label style="display: block; color: #1a202c; font-size: 12px; margin-bottom: 6px; font-weight: 600;">Ad Soyad / TCKN / Departman</label>
-                <input type="text" class="search-input" style="width: 100%; box-sizing: border-box;" placeholder="Personel ara...">
+                <input type="text" id="empSearchInput" class="search-input" style="width: 100%; box-sizing: border-box;" placeholder="Personel ara...">
             </div>
             <div>
                 <label style="display: block; color: #1a202c; font-size: 12px; margin-bottom: 6px; font-weight: 600;">Durum</label>
-                <select class="search-input" style="width: 100%; height: 32px; box-sizing: border-box; padding: 0 5px;">
-                    <option>Aktif Çalışanlar</option>
-                    <option>İşten Ayrılanlar</option>
+                <select id="empStatusFilter" class="search-input" style="width: 100%; height: 32px; box-sizing: border-box; padding: 0 5px;">
+                    <option value="true">Aktif Çalışanlar</option>
+                    <option value="false">İşten Ayrılanlar</option>
+                    <option value="">Tümü</option>
                 </select>
             </div>
             <div style="display: flex; align-items: flex-end;">
-                <button class="dark-btn" style="width: 100%; height: 32px; background: #002208; border: 1px solid #004411; color: #00ff66; cursor: pointer;">Listele</button>
+                <button onclick="loadEmployees()" class="dark-btn" style="width: 100%; height: 32px; background: #002208; border: 1px solid #004411; color: #00ff66; cursor: pointer;">Listele</button>
             </div>
         </div>
     </div>
@@ -35,21 +37,158 @@
                 <tr style="border-bottom: 2px solid #004411; color: #00ff66; font-size: 12px;">
                     <th style="padding: 10px;">TCKN</th>
                     <th style="padding: 10px;">Ad Soyad</th>
-                    <th style="padding: 10px;">Departman</th>
+                    <th style="padding: 10px;">Departman / Pozisyon</th>
                     <th style="padding: 10px;">Giriş Tarihi</th>
                     <th style="padding: 10px; text-align: right;">Net Maaş</th>
+                    <th style="padding: 10px;">Durum</th>
+                    <th style="padding: 10px; text-align:center;">İşlem</th>
                 </tr>
             </thead>
-            <tbody>
-                <tr style="border-bottom: 1px solid #002206; font-size: 13px; color: #1a202c; font-weight: 500;">
-                    <td style="padding: 12px 10px; font-family: monospace;">12345678901</td>
-                    <td style="padding: 12px 10px;">Ahmet Yılmaz</td>
-                    <td style="padding: 12px 10px;">Muhasebe / Finans</td>
-                    <td style="padding: 12px 10px;">01.02.2024</td>
-                    <td style="padding: 12px 10px; text-align: right; font-weight: bold;">32.500,00</td>
-                </tr>
+            <tbody id="employeeTableBody">
+                <tr><td colspan="7" style="padding:16px; text-align:center; color:#1a202c;">Yükleniyor...</td></tr>
             </tbody>
         </table>
     </div>
 </div>
+
+<!-- Personel Ekle / Düzenle Modalı -->
+<div id="employeeModal" class="modal-overlay">
+    <div class="modal-window">
+        <div class="modal-preview-header">
+            <span id="employeeModalTitle">➕ Yeni Personel</span>
+            <span class="close-x" onclick="closeEmployeeModal()">×</span>
+        </div>
+        <div class="modal-preview-body">
+            <input type="hidden" id="emp_id">
+            <div class="input-unit"><label>Ad Soyad</label><input type="text" id="emp_full_name"></div>
+            <div class="input-unit"><label>TC Kimlik No</label><input type="text" id="emp_identity_number" maxlength="11"></div>
+            <div class="input-unit"><label>Telefon</label><input type="text" id="emp_phone"></div>
+            <div class="input-unit"><label>E-posta</label><input type="email" id="emp_email"></div>
+            <div class="input-unit"><label>Pozisyon</label><input type="text" id="emp_position"></div>
+            <div class="input-unit"><label>Departman</label><input type="text" id="emp_department"></div>
+            <div class="input-unit"><label>İşe Giriş Tarihi</label><input type="date" id="emp_hire_date"></div>
+            <div class="input-unit"><label>Net Maaş</label><input type="number" step="0.01" id="emp_salary"></div>
+            <div class="input-unit" style="grid-column: 1 / -1;"><label>Adres</label><input type="text" id="emp_address"></div>
+        </div>
+        <div class="modal-preview-footer">
+            <button class="m-btn m-cancel" onclick="closeEmployeeModal()">Vazgeç</button>
+            <button class="m-btn m-ok" onclick="saveEmployee()">Kaydet</button>
+        </div>
+    </div>
+</div>
+
+<link rel="stylesheet" href="{% static 'css/invoice-actions.css' %}?v=2">
+<script src="{% static 'js/api-utils.js' %}"></script>
+<script>
+let editingEmployeeId = null;
+
+function openEmployeeModal(employee = null) {
+    editingEmployeeId = employee ? employee.id : null;
+    document.getElementById("employeeModalTitle").textContent = employee ? "✏️ Personel Düzenle" : "➕ Yeni Personel";
+    document.getElementById("emp_id").value = employee ? employee.id : "";
+    document.getElementById("emp_full_name").value = employee ? employee.full_name : "";
+    document.getElementById("emp_identity_number").value = employee ? employee.identity_number : "";
+    document.getElementById("emp_phone").value = employee ? employee.phone : "";
+    document.getElementById("emp_email").value = employee ? employee.email : "";
+    document.getElementById("emp_position").value = employee ? employee.position : "";
+    document.getElementById("emp_department").value = employee ? employee.department : "";
+    document.getElementById("emp_hire_date").value = employee ? employee.hire_date : "";
+    document.getElementById("emp_salary").value = employee ? employee.salary : "";
+    document.getElementById("emp_address").value = employee ? employee.address : "";
+    document.getElementById("employeeModal").style.display = "flex";
+}
+function closeEmployeeModal() {
+    document.getElementById("employeeModal").style.display = "none";
+}
+
+async function saveEmployee() {
+    const payload = {
+        full_name: document.getElementById("emp_full_name").value,
+        identity_number: document.getElementById("emp_identity_number").value,
+        phone: document.getElementById("emp_phone").value,
+        email: document.getElementById("emp_email").value,
+        position: document.getElementById("emp_position").value,
+        department: document.getElementById("emp_department").value,
+        hire_date: document.getElementById("emp_hire_date").value,
+        salary: document.getElementById("emp_salary").value || 0,
+        address: document.getElementById("emp_address").value,
+    };
+    try {
+        if (editingEmployeeId) {
+            await apiFetch(`/personnel/api/employees/${editingEmployeeId}/`, { method: "PATCH", body: JSON.stringify(payload) });
+        } else {
+            await apiFetch(`/personnel/api/employees/`, { method: "POST", body: JSON.stringify(payload) });
+        }
+        closeEmployeeModal();
+        loadEmployees();
+    } catch (err) {
+        alert("Kaydedilemedi: " + err.message);
+    }
+}
+
+async function toggleEmployeeActive(id) {
+    try {
+        await apiFetch(`/personnel/api/employees/${id}/toggle_active/`, { method: "POST" });
+        loadEmployees();
+    } catch (err) {
+        alert("İşlem başarısız: " + err.message);
+    }
+}
+
+async function deleteEmployee(id) {
+    if (!confirm("Bu personeli kalıcı olarak silmek istediğinize emin misiniz?")) return;
+    try {
+        await apiFetch(`/personnel/api/employees/${id}/`, { method: "DELETE" });
+        loadEmployees();
+    } catch (err) {
+        alert("Silinemedi: " + err.message);
+    }
+}
+
+async function loadEmployees() {
+    const tbody = document.getElementById("employeeTableBody");
+    tbody.innerHTML = `<tr><td colspan="7" style="padding:16px; text-align:center; color:#1a202c;">Yükleniyor...</td></tr>`;
+
+    const search = document.getElementById("empSearchInput").value;
+    const isActive = document.getElementById("empStatusFilter").value;
+
+    const params = new URLSearchParams();
+    if (search) params.set("search", search);
+    if (isActive !== "") params.set("is_active", isActive);
+
+    try {
+        const data = await apiFetch(`/personnel/api/employees/?${params.toString()}`);
+        const employees = data.results || data;
+
+        if (!employees.length) {
+            tbody.innerHTML = `<tr><td colspan="7" style="padding:16px; text-align:center; color:#1a202c;">Kayıtlı personel bulunamadı.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = employees.map(emp => `
+            <tr style="border-bottom: 1px solid #002206; font-size: 13px; color: #1a202c; font-weight: 500;">
+                <td style="padding: 12px 10px; font-family: monospace;">${emp.identity_number}</td>
+                <td style="padding: 12px 10px;">${emp.full_name}</td>
+                <td style="padding: 12px 10px;">${emp.department || "—"} / ${emp.position || "—"}</td>
+                <td style="padding: 12px 10px;">${emp.hire_date}</td>
+                <td style="padding: 12px 10px; text-align: right; font-weight: bold;">${parseFloat(emp.salary).toLocaleString('tr-TR', {minimumFractionDigits: 2})}</td>
+                <td style="padding: 12px 10px;">
+                    <span class="status ${emp.is_active ? 'approved' : 'cancelled'}">${emp.is_active ? 'Aktif' : 'Pasif'}</span>
+                </td>
+                <td style="padding: 12px 10px; text-align:center;">
+                    <div class="invoice-actions">
+                        <button class="action-btn btn-edit" onclick='openEmployeeModal(${JSON.stringify(emp)})'>✏️</button>
+                        <button class="action-btn ${emp.is_active ? 'btn-cancel' : 'btn-copy'}" onclick="toggleEmployeeActive(${emp.id})">${emp.is_active ? '🚫' : '✔️'}</button>
+                        <button class="action-btn btn-delete" onclick="deleteEmployee(${emp.id})">🗑️</button>
+                    </div>
+                </td>
+            </tr>
+        `).join("");
+    } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="7" style="padding:16px; text-align:center; color:#f87171;">Yüklenemedi: ${err.message}</td></tr>`;
+    }
+}
+
+document.addEventListener("DOMContentLoaded", loadEmployees);
+</script>
 {% endblock %}

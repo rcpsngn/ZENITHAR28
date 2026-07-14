@@ -5,36 +5,149 @@
 <div class="forms-container" style="padding: 10px 24px 40px 24px;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(0, 255, 150, 0.15); padding-bottom: 12px;">
         <div style="display: flex; align-items: center; gap: 10px;">
-            <i class="bi bi-file-earmark-check" style="color: #00ff66; font-size: 24px;"></i>
-            <h2 style="color: #00ff66; margin: 0; font-size: 20px; font-weight: 600;">Çek & Senet Portföy Takibi</h2>
+            <i class="bi bi-journal-check" style="color: #00ff66; font-size: 24px;"></i>
+            <h2 style="color: #00ff66; margin: 0; font-size: 20px; font-weight: 600;">Çek / Senet Takip</h2>
+        </div>
+        <div style="display:flex; gap:8px;">
+            <button onclick="document.getElementById('checkModal').style.display='flex'" style="background:#00ff66; color:#002208; border:none; padding:9px 16px; border-radius:6px; font-weight:700; cursor:pointer;">➕ Çek Ekle</button>
+            <button onclick="document.getElementById('promissoryModal').style.display='flex'" style="background:#00ff66; color:#002208; border:none; padding:9px 16px; border-radius:6px; font-weight:700; cursor:pointer;">➕ Senet Ekle</button>
         </div>
     </div>
 
+    <div class="card" style="background: rgba(15, 31, 23, 0.5); border: 1px solid rgba(0, 255, 150, 0.2); border-radius: 6px; padding: 16px; margin-bottom:20px; max-width:280px;">
+        <div style="color:#1a202c; font-size:12px;">Portföydeki Toplam Tutar</div>
+        <div style="color:#00ff66; font-size:22px; font-weight:700;">{{ portfolio_total|floatformat:2 }} ₺</div>
+    </div>
+
+    <h3 style="color:#00ff66; font-size:15px;">📄 Çekler</h3>
+    <div class="card" style="background: rgba(15, 31, 23, 0.5); border: 1px solid rgba(0, 255, 150, 0.2); border-radius: 6px; padding: 20px; overflow-x: auto; margin-bottom:24px;">
+        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+            <thead>
+                <tr style="border-bottom: 2px solid #004411; color: #00ff66; font-size: 12px;">
+                    <th style="padding: 10px;">Çek No</th><th style="padding: 10px;">Tip</th><th style="padding: 10px;">Banka</th>
+                    <th style="padding: 10px;">Muhatap</th><th style="padding: 10px;">Vade</th>
+                    <th style="padding: 10px; text-align:right;">Tutar</th><th style="padding: 10px;">Durum</th><th style="padding: 10px; text-align:center;">İşlem</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in checks %}
+                <tr style="border-bottom: 1px solid #002206; font-size: 13px; color: #1a202c; font-weight: 500;">
+                    <td style="padding: 12px 10px;">{{ c.check_number }}</td>
+                    <td style="padding: 12px 10px;">{{ c.get_type_display }}</td>
+                    <td style="padding: 12px 10px;">{{ c.bank_name }}</td>
+                    <td style="padding: 12px 10px;">{{ c.payer_name }}</td>
+                    <td style="padding: 12px 10px;">{{ c.due_date }}</td>
+                    <td style="padding: 12px 10px; text-align:right; font-weight:bold;">{{ c.amount|floatformat:2 }} ₺</td>
+                    <td style="padding: 12px 10px;">
+                        <span class="status {% if c.status == 'cashed' %}approved{% elif c.status == 'returned' or c.status == 'cancelled' %}cancelled{% else %}pending{% endif %}">{{ c.get_status_display }}</span>
+                    </td>
+                    <td style="padding: 12px 10px; text-align:center;">
+                        <div class="invoice-actions">
+                            {% if c.status == 'portfolio' %}
+                                <a href="{% url 'check_update_status' c.id 'banked' %}" class="action-btn btn-issue" title="Bankaya Ver">🏦</a>
+                                <a href="{% url 'check_update_status' c.id 'cashed' %}" class="action-btn btn-copy" title="Tahsil Et">✔️</a>
+                                <a href="{% url 'check_update_status' c.id 'returned' %}" class="action-btn btn-cancel" title="İade" onclick="return confirm('Bu çek iade olarak işaretlensin mi?');">↩️</a>
+                            {% endif %}
+                            <a href="{% url 'check_delete' c.id %}" class="action-btn btn-delete" onclick="return confirm('Silinsin mi?');">🗑️</a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="8" style="padding:16px; text-align:center; color:#1a202c;">Henüz çek eklenmedi.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <h3 style="color:#00ff66; font-size:15px;">📝 Senetler</h3>
     <div class="card" style="background: rgba(15, 31, 23, 0.5); border: 1px solid rgba(0, 255, 150, 0.2); border-radius: 6px; padding: 20px; overflow-x: auto;">
         <table style="width: 100%; border-collapse: collapse; text-align: left;">
             <thead>
                 <tr style="border-bottom: 2px solid #004411; color: #00ff66; font-size: 12px;">
-                    <th style="padding: 10px;">Vade Tarihi</th>
-                    <th style="padding: 10px;">Evrak Türü</th>
-                    <th style="padding: 10px;">Borçlu / Keşideci</th>
-                    <th style="padding: 10px;">Banka / Şube</th>
-                    <th style="padding: 10px; text-align: right;">Tutar</th>
-                    <th style="padding: 10px; text-align: center;">Durum</th>
+                    <th style="padding: 10px;">Senet No</th><th style="padding: 10px;">Tip</th><th style="padding: 10px;">Borçlu</th>
+                    <th style="padding: 10px;">Vade</th><th style="padding: 10px; text-align:right;">Tutar</th>
+                    <th style="padding: 10px;">Durum</th><th style="padding: 10px; text-align:center;">İşlem</th>
                 </tr>
             </thead>
             <tbody>
+                {% for p in promissories %}
                 <tr style="border-bottom: 1px solid #002206; font-size: 13px; color: #1a202c; font-weight: 500;">
-                    <td style="padding: 12px 10px;">15.08.2026</td>
-                    <td style="padding: 12px 10px;">Müşteri Çeki</td>
-                    <td style="padding: 12px 10px;">X Firması</td>
-                    <td style="padding: 12px 10px;">Z Bankası - Kadıköy</td>
-                    <td style="padding: 12px 10px; text-align: right; font-weight: bold;">75.000,00</td>
-                    <td style="padding: 12px 10px; text-align: center;">
-                        <span style="background: rgba(0, 255, 102, 0.1); border: 1px solid #00ff66; color: #00ff66; font-size: 11px; padding: 3px 8px; border-radius: 4px;">Portföyde</span>
+                    <td style="padding: 12px 10px;">{{ p.promissory_number }}</td>
+                    <td style="padding: 12px 10px;">{{ p.get_type_display }}</td>
+                    <td style="padding: 12px 10px;">{{ p.drawer_name }}</td>
+                    <td style="padding: 12px 10px;">{{ p.due_date }}</td>
+                    <td style="padding: 12px 10px; text-align:right; font-weight:bold;">{{ p.amount|floatformat:2 }} ₺</td>
+                    <td style="padding: 12px 10px;">
+                        <span class="status {% if p.status == 'cashed' %}approved{% elif p.status == 'returned' or p.status == 'cancelled' %}cancelled{% else %}pending{% endif %}">{{ p.get_status_display }}</span>
+                    </td>
+                    <td style="padding: 12px 10px; text-align:center;">
+                        <div class="invoice-actions">
+                            {% if p.status == 'portfolio' %}
+                                <a href="{% url 'promissory_update_status' p.id 'banked' %}" class="action-btn btn-issue" title="Bankaya Ver">🏦</a>
+                                <a href="{% url 'promissory_update_status' p.id 'cashed' %}" class="action-btn btn-copy" title="Tahsil Et">✔️</a>
+                                <a href="{% url 'promissory_update_status' p.id 'returned' %}" class="action-btn btn-cancel" title="İade" onclick="return confirm('Bu senet iade olarak işaretlensin mi?');">↩️</a>
+                            {% endif %}
+                            <a href="{% url 'promissory_delete' p.id %}" class="action-btn btn-delete" onclick="return confirm('Silinsin mi?');">🗑️</a>
+                        </div>
                     </td>
                 </tr>
+                {% empty %}
+                <tr><td colspan="7" style="padding:16px; text-align:center; color:#1a202c;">Henüz senet eklenmedi.</td></tr>
+                {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
+
+<div id="checkModal" class="modal-overlay">
+    <div class="modal-window">
+        <div class="modal-preview-header"><span>➕ Çek Ekle</span><span class="close-x" onclick="document.getElementById('checkModal').style.display='none'">×</span></div>
+        <form method="POST" action="{% url 'check_save' %}">
+            {% csrf_token %}
+            <div class="modal-preview-body">
+                <div class="input-unit"><label>Tip</label>
+                    <select name="type"><option value="received">Alınan Çek</option><option value="issued">Verilen Çek</option></select>
+                </div>
+                <div class="input-unit"><label>Çek No</label><input type="text" name="check_number" required></div>
+                <div class="input-unit"><label>Banka</label><input type="text" name="bank_name" required></div>
+                <div class="input-unit"><label>Şube</label><input type="text" name="branch"></div>
+                <div class="input-unit"><label>Hesap No</label><input type="text" name="account_number"></div>
+                <div class="input-unit"><label>Muhatap (Ödeyen/Alan)</label><input type="text" name="payer_name" required></div>
+                <div class="input-unit"><label>Tutar</label><input type="number" step="0.01" name="amount" required></div>
+                <div class="input-unit"><label>Düzenleme Tarihi</label><input type="date" name="issue_date" required></div>
+                <div class="input-unit"><label>Vade Tarihi</label><input type="date" name="due_date" required></div>
+            </div>
+            <div class="modal-preview-footer">
+                <button type="button" class="m-btn m-cancel" onclick="document.getElementById('checkModal').style.display='none'">Vazgeç</button>
+                <button type="submit" class="m-btn m-ok">Kaydet</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="promissoryModal" class="modal-overlay">
+    <div class="modal-window">
+        <div class="modal-preview-header"><span>➕ Senet Ekle</span><span class="close-x" onclick="document.getElementById('promissoryModal').style.display='none'">×</span></div>
+        <form method="POST" action="{% url 'promissory_save' %}">
+            {% csrf_token %}
+            <div class="modal-preview-body">
+                <div class="input-unit"><label>Tip</label>
+                    <select name="type"><option value="received">Alınan Senet</option><option value="issued">Verilen Senet</option></select>
+                </div>
+                <div class="input-unit"><label>Senet No</label><input type="text" name="promissory_number" required></div>
+                <div class="input-unit"><label>Borçlu (Düzenleyen)</label><input type="text" name="drawer_name" required></div>
+                <div class="input-unit"><label>Ciranta</label><input type="text" name="endorser_name"></div>
+                <div class="input-unit"><label>Tutar</label><input type="number" step="0.01" name="amount" required></div>
+                <div class="input-unit"><label>Düzenleme Yeri</label><input type="text" name="place_of_issue"></div>
+                <div class="input-unit"><label>Düzenleme Tarihi</label><input type="date" name="issue_date" required></div>
+                <div class="input-unit"><label>Vade Tarihi</label><input type="date" name="due_date" required></div>
+            </div>
+            <div class="modal-preview-footer">
+                <button type="button" class="m-btn m-cancel" onclick="document.getElementById('promissoryModal').style.display='none'">Vazgeç</button>
+                <button type="submit" class="m-btn m-ok">Kaydet</button>
+            </div>
+        </form>
+    </div>
+</div>
+<link rel="stylesheet" href="{% static 'css/invoice-actions.css' %}?v=2">
 {% endblock %}

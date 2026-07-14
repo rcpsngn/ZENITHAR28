@@ -69,3 +69,73 @@ class Promissory(models.Model):
         verbose_name = 'Senet'
         verbose_name_plural = 'Senetler'
         ordering = ['-due_date']
+
+class BankTransaction(models.Model):
+    TYPE_CHOICES = [
+        ('deposit', 'Para Girişi'),
+        ('withdrawal', 'Para Çıkışı'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='bank_transactions')
+    bank_name = models.CharField(max_length=200)
+    account_number = models.CharField(max_length=50, blank=True)
+    type = models.CharField(max_length=20, choices=TYPE_CHOICES)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    date = models.DateField()
+    description = models.CharField(max_length=500, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'bank_transactions'
+        verbose_name = 'Banka Hareketi'
+        verbose_name_plural = 'Banka Hareketleri'
+        ordering = ['-date']
+
+
+class CashTransaction(models.Model):
+    TYPE_CHOICES = [
+        ('in', 'Kasa Girişi'),
+        ('out', 'Kasa Çıkışı'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='cash_transactions')
+    type = models.CharField(max_length=10, choices=TYPE_CHOICES)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    date = models.DateField()
+    description = models.CharField(max_length=500, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'cash_transactions'
+        verbose_name = 'Kasa İşlemi'
+        verbose_name_plural = 'Kasa İşlemleri'
+        ordering = ['-date']
+
+
+class POSTransaction(models.Model):
+    CARD_TYPE_CHOICES = [
+        ('credit', 'Kredi Kartı'),
+        ('debit', 'Banka Kartı'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='pos_transactions')
+    card_type = models.CharField(max_length=20, choices=CARD_TYPE_CHOICES, default='credit')
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    commission_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    date = models.DateField()
+    description = models.CharField(max_length=500, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'pos_transactions'
+        verbose_name = 'POS İşlemi'
+        verbose_name_plural = 'POS İşlemleri'
+        ordering = ['-date']
+
+    @property
+    def commission_amount(self):
+        return self.amount * self.commission_rate / 100
+
+    @property
+    def net_amount(self):
+        return self.amount - self.commission_amount

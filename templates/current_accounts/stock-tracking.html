@@ -6,25 +6,23 @@
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(0, 255, 150, 0.15); padding-bottom: 12px;">
         <div style="display: flex; align-items: center; gap: 10px;">
             <i class="bi bi-box-seam" style="color: #00ff66; font-size: 24px;"></i>
-            <h2 style="color: #00ff66; margin: 0; font-size: 20px; font-weight: 600;">Stok Takip Listesi</h2>
+            <h2 style="color: #00ff66; margin: 0; font-size: 20px; font-weight: 600;">Stok Takip</h2>
         </div>
+        <button onclick="openProductModal()" style="background:#00ff66; color:#002208; border:none; padding:9px 18px; border-radius:6px; font-weight:700; cursor:pointer;">➕ Yeni Ürün</button>
     </div>
 
-    <div class="card" style="background: rgba(15, 31, 23, 0.5); border: 1px solid rgba(0, 255, 150, 0.2); border-radius: 6px; padding: 16px; margin-bottom: 20px;">
-        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 16px;">
-            <div>
-                <label style="display: block; color: #1a202c; font-size: 12px; margin-bottom: 6px; font-weight: 600;">Ürün Adı / Barkod / Stok Kodu</label>
-                <input type="text" class="search-input" style="width: 100%; box-sizing: border-box;" placeholder="Ara...">
-            </div>
-            <div>
-                <label style="display: block; color: #1a202c; font-size: 12px; margin-bottom: 6px; font-weight: 600;">Depo Seçimi</label>
-                <select class="search-input" style="width: 100%; height: 32px; box-sizing: border-box; padding: 0 5px;">
-                    <option>Merkez Depo</option>
-                </select>
-            </div>
-            <div style="display: flex; align-items: flex-end;">
-                <button class="dark-btn" style="width: 100%; height: 32px; background: #002208; border: 1px solid #004411; color: #00ff66; cursor: pointer;">Sorgula</button>
-            </div>
+    <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:16px; margin-bottom:20px;">
+        <div class="card" style="background: rgba(15, 31, 23, 0.5); border: 1px solid rgba(0, 255, 150, 0.2); border-radius: 6px; padding: 16px;">
+            <div style="color:#1a202c; font-size:12px;">Toplam Ürün Çeşidi</div>
+            <div style="color:#00ff66; font-size:24px; font-weight:700;">{{ products|length }}</div>
+        </div>
+        <div class="card" style="background: rgba(15, 31, 23, 0.5); border: 1px solid rgba(0, 255, 150, 0.2); border-radius: 6px; padding: 16px;">
+            <div style="color:#1a202c; font-size:12px;">Toplam Stok Değeri</div>
+            <div style="color:#00ff66; font-size:24px; font-weight:700;">{{ total_stock_value|floatformat:2 }} ₺</div>
+        </div>
+        <div class="card" style="background: rgba(15, 31, 23, 0.5); border: 1px solid rgba(255, 68, 68, 0.3); border-radius: 6px; padding: 16px;">
+            <div style="color:#1a202c; font-size:12px;">Kritik Stok Seviyesinde</div>
+            <div style="color:#ff4444; font-size:24px; font-weight:700;">{{ low_stock_count }}</div>
         </div>
     </div>
 
@@ -32,27 +30,92 @@
         <table style="width: 100%; border-collapse: collapse; text-align: left;">
             <thead>
                 <tr style="border-bottom: 2px solid #004411; color: #00ff66; font-size: 12px;">
-                    <th style="padding: 10px;">Stok Kodu</th>
+                    <th style="padding: 10px;">Kod</th>
                     <th style="padding: 10px;">Ürün Adı</th>
-                    <th style="padding: 10px;">Barkod</th>
-                    <th style="padding: 10px;">Birim</th>
-                    <th style="padding: 10px; text-align: right;">Giren</th>
-                    <th style="padding: 10px; text-align: right;">Çıkan</th>
-                    <th style="padding: 10px; text-align: right;">Kalan Stok</th>
+                    <th style="padding: 10px;">Kategori</th>
+                    <th style="padding: 10px; text-align:right;">Miktar</th>
+                    <th style="padding: 10px; text-align:right;">Birim Fiyat</th>
+                    <th style="padding: 10px; text-align:right;">Stok Değeri</th>
+                    <th style="padding: 10px;">Durum</th>
+                    <th style="padding: 10px; text-align:center;">İşlem</th>
                 </tr>
             </thead>
             <tbody>
+                {% for p in products %}
                 <tr style="border-bottom: 1px solid #002206; font-size: 13px; color: #1a202c; font-weight: 500;">
-                    <td style="padding: 12px 10px;">STK-001</td>
-                    <td style="padding: 12px 10px;">Örnek Kumaş Grubu A</td>
-                    <td style="padding: 12px 10px;">86800000011</td>
-                    <td style="padding: 12px 10px;">Metre</td>
-                    <td style="padding: 12px 10px; text-align: right;">1.500</td>
-                    <td style="padding: 12px 10px; text-align: right;">500</td>
-                    <td style="padding: 12px 10px; text-align: right; color: #00ff66; font-weight: bold;">1.000</td>
+                    <td style="padding: 12px 10px; font-family: monospace;">{{ p.code|default:"—" }}</td>
+                    <td style="padding: 12px 10px;">{{ p.name }}</td>
+                    <td style="padding: 12px 10px;">{{ p.category|default:"—" }}</td>
+                    <td style="padding: 12px 10px; text-align:right;">{{ p.quantity }} {{ p.unit }}</td>
+                    <td style="padding: 12px 10px; text-align:right;">{{ p.unit_price }} ₺</td>
+                    <td style="padding: 12px 10px; text-align:right; font-weight:bold;">{{ p.stock_value|floatformat:2 }} ₺</td>
+                    <td style="padding: 12px 10px;">
+                        {% if p.is_low_stock %}<span class="status cancelled">Kritik</span>
+                        {% else %}<span class="status approved">Yeterli</span>{% endif %}
+                    </td>
+                    <td style="padding: 12px 10px; text-align:center;">
+                        <div class="invoice-actions">
+                            <button class="action-btn btn-edit" onclick='openProductModal({{ p.id }}, "{{ p.code|escapejs }}", "{{ p.name|escapejs }}", "{{ p.category|escapejs }}", "{{ p.unit }}", "{{ p.quantity }}", "{{ p.unit_price }}", "{{ p.vat_rate }}", "{{ p.min_stock_level }}")'>✏️</button>
+                            <a href="{% url 'product_delete' p.id %}" class="action-btn btn-delete" onclick="return confirm('Bu ürünü silmek istediğinize emin misiniz?');">🗑️</a>
+                        </div>
+                    </td>
                 </tr>
+                {% empty %}
+                <tr><td colspan="8" style="padding:16px; text-align:center; color:#1a202c;">Henüz ürün eklenmedi.</td></tr>
+                {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
+
+<div id="productModal" class="modal-overlay">
+    <div class="modal-window">
+        <div class="modal-preview-header">
+            <span id="productModalTitle">➕ Yeni Ürün</span>
+            <span class="close-x" onclick="closeProductModal()">×</span>
+        </div>
+        <form id="productForm" method="POST" action="{% url 'product_save' %}">
+            {% csrf_token %}
+            <div class="modal-preview-body">
+                <div class="input-unit"><label>Ürün Kodu</label><input type="text" name="code" id="p_code"></div>
+                <div class="input-unit"><label>Ürün Adı</label><input type="text" name="name" id="p_name" required></div>
+                <div class="input-unit"><label>Kategori</label><input type="text" name="category" id="p_category"></div>
+                <div class="input-unit"><label>Birim</label>
+                    <select name="unit" id="p_unit">
+                        <option value="Adet">Adet</option><option value="Kg">Kg</option>
+                        <option value="Metre">Metre</option><option value="Litre">Litre</option>
+                        <option value="Kutu">Kutu</option><option value="Paket">Paket</option>
+                    </select>
+                </div>
+                <div class="input-unit"><label>Miktar</label><input type="number" step="0.01" name="quantity" id="p_quantity" value="0"></div>
+                <div class="input-unit"><label>Birim Fiyat</label><input type="number" step="0.01" name="unit_price" id="p_unit_price" value="0"></div>
+                <div class="input-unit"><label>KDV Oranı (%)</label><input type="number" step="0.01" name="vat_rate" id="p_vat_rate" value="20"></div>
+                <div class="input-unit"><label>Kritik Stok Seviyesi</label><input type="number" step="0.01" name="min_stock_level" id="p_min_stock" value="0"></div>
+            </div>
+            <div class="modal-preview-footer">
+                <button type="button" class="m-btn m-cancel" onclick="closeProductModal()">Vazgeç</button>
+                <button type="submit" class="m-btn m-ok">Kaydet</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<link rel="stylesheet" href="{% static 'css/invoice-actions.css' %}?v=2">
+<script>
+function openProductModal(id, code, name, category, unit, quantity, unit_price, vat_rate, min_stock) {
+    const form = document.getElementById("productForm");
+    document.getElementById("productModalTitle").textContent = id ? "✏️ Ürün Düzenle" : "➕ Yeni Ürün";
+    form.action = id ? `/current-accounts/stok-takip/kaydet/${id}/` : "{% url 'product_save' %}";
+    document.getElementById("p_code").value = code || "";
+    document.getElementById("p_name").value = name || "";
+    document.getElementById("p_category").value = category || "";
+    document.getElementById("p_unit").value = unit || "Adet";
+    document.getElementById("p_quantity").value = quantity || 0;
+    document.getElementById("p_unit_price").value = unit_price || 0;
+    document.getElementById("p_vat_rate").value = vat_rate || 20;
+    document.getElementById("p_min_stock").value = min_stock || 0;
+    document.getElementById("productModal").style.display = "flex";
+}
+function closeProductModal() { document.getElementById("productModal").style.display = "none"; }
+</script>
 {% endblock %}

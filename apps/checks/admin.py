@@ -1,5 +1,20 @@
 from django.contrib import admin
-from .models import Check, Promissory
+from .models import Check, Promissory, BankTransaction, CashTransaction, POSTransaction
+
+@admin.register(BankTransaction)
+class BankTransactionAdmin(admin.ModelAdmin):
+    list_display = ['bank_name', 'type', 'amount', 'date']
+    list_filter = ['type', 'bank_name']
+
+@admin.register(CashTransaction)
+class CashTransactionAdmin(admin.ModelAdmin):
+    list_display = ['type', 'amount', 'date', 'description']
+    list_filter = ['type']
+
+@admin.register(POSTransaction)
+class POSTransactionAdmin(admin.ModelAdmin):
+    list_display = ['card_type', 'amount', 'commission_rate', 'date']
+    list_filter = ['card_type']
 
 @admin.register(Check)
 class CheckAdmin(admin.ModelAdmin):

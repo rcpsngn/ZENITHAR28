@@ -1,25 +1,12 @@
 from django.urls import path
-from . import views
-from django.contrib.auth import logout
-from django.shortcuts import redirect
 from django.contrib.auth import views as auth_views
-
-
-def logout_view(request):
-    logout(request)
-    return redirect("login")
-
+from . import views  # Artık logout_view da views içinden gelecek
 
 urlpatterns = [
-
     path("login/", views.login_view, name="login"),
-
     path("register/", views.register_view, name="register"),
-
     path("dashboard/", views.dashboard, name="dashboard"),
-
-    path("logout/", logout_view, name="logout"),
-
+    path("logout/", views.logout_view, name="logout"),  # views.logout_view olarak güncellendi
     path(
         "password-reset/",
         auth_views.PasswordResetView.as_view(
@@ -27,5 +14,4 @@ urlpatterns = [
         ),
         name="password_reset",
     ),
-
 ]

@@ -81,3 +81,40 @@ class VATOperation(models.Model):
         verbose_name = 'KDV İşlemi'
         verbose_name_plural = 'KDV İşlemleri'
         ordering = ['-application_date']
+
+class Product(models.Model):
+    UNIT_CHOICES = [
+        ('Adet', 'Adet'),
+        ('Kg', 'Kilogram'),
+        ('Metre', 'Metre'),
+        ('Litre', 'Litre'),
+        ('Kutu', 'Kutu'),
+        ('Paket', 'Paket'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='products')
+    code = models.CharField(max_length=50, blank=True)
+    name = models.CharField(max_length=200)
+    category = models.CharField(max_length=100, blank=True)
+    unit = models.CharField(max_length=20, choices=UNIT_CHOICES, default='Adet')
+    quantity = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    unit_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    vat_rate = models.DecimalField(max_digits=5, decimal_places=2, default=20)
+    min_stock_level = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'products'
+        verbose_name = 'Ürün / Stok'
+        verbose_name_plural = 'Ürünler / Stoklar'
+        ordering = ['name']
+
+    @property
+    def stock_value(self):
+        return self.quantity * self.unit_price
+
+    @property
+    def is_low_stock(self):
+        return self.quantity <= self.min_stock_level

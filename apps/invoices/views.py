@@ -5,8 +5,10 @@ from .models import Invoice, InvoiceItem
 from . import integrations
 import uuid
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal, InvalidOperation
+import urllib.request
+import xml.etree.ElementTree as ET
 
 
 def to_decimal(value, default="0"):
@@ -28,17 +30,87 @@ def invoices_home(request):
     return redirect("invoices_draft")
 
 
-# API: TCMB CANLI DÖVİZ KURU ÇEKİCİ
-# Gerçek çağrı apps/invoices/integrations.py içinde toplanıyor.
+# API: TCMB CANLI DÖVİZ KURU ÇEKİCİ (GELİŞMİŞ SÜRÜM)
+@login_required
 def get_tcmb_rate(request):
-    currency_code = request.GET.get("code", "TL")
-    rate = integrations.get_exchange_rate(currency_code)
-    return JsonResponse({"rate": rate})
+    """
+    TCMB'den canlı döviz kurlarını çeker.
+    Eğer bugün resmi tatil veya hafta sonu ise, geriye doğru son yayınlanan iş gününü bulur.
+    Seçenekler: forex_buying (Döviz Alış), forex_selling (Döviz Satış),
+              eff_buying (Efektif Alış), eff_selling (Efektif Satış)
+    """
+    currency_code = request.GET.get("code", "USD").upper()
+    rate_type = request.GET.get("type", "forex_buying") # Varsayılan olarak Döviz Alış
+
+    # Eğer Türk Lirası seçildiyse doğrudan 1.0000 döndür
+    if currency_code in ["TL", "TRY"]:
+        return JsonResponse({"rate": "1.0000", "success": True})
+
+    target_date = datetime.now()
+    xml_data = None
+
+    # Hafta sonu ve resmi tatilleri atlamak için geriye doğru 10 günlük güvenli tarama
+    for _ in range(10):
+        # TCMB URL yapısı: Bugün için doğrudan kurlar.xml, geçmiş günler için YYYYMM/DDMMYYYY.xml
+        if target_date.date() == datetime.now().date():
+            url = "https://www.tcmb.gov.tr/kurlar/kurlar.xml"
+        else:
+            date_str = target_date.strftime("%d%m%Y")
+            folder_str = target_date.strftime("%Y%m")
+            url = f"https://www.tcmb.gov.tr/kurlar/{folder_str}/{date_str}.xml"
+
+        try:
+            req = urllib.request.Request(
+                url,
+                headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+            )
+            with urllib.request.urlopen(req, timeout=5) as response:
+                if response.status == 200:
+                    xml_data = response.read()
+                    break
+        except Exception:
+            # Hata alındıysa (Örn: 404 Not Found yani tatil günü), bir önceki güne geçip taramaya devam et
+            target_date -= timedelta(days=1)
+            continue
+
+    if not xml_data:
+        return JsonResponse({"error": "TCMB kurlarına şu an ulaşılamıyor.", "success": False}, status=400)
+
+    try:
+        root = ET.fromstring(xml_data)
+        for currency in root.findall('Currency'):
+            if currency.get('CurrencyCode') == currency_code:
+                # Tüm kur varyasyonlarını XML içerisinden güvenli bir şekilde ayıklıyoruz
+                forex_buying = currency.find('ForexBuying').text or "1.0000"
+                forex_selling = currency.find('ForexSelling').text or "1.0000"
+                banknote_buying = currency.find('BanknoteBuying').text or forex_buying
+                banknote_selling = currency.find('BanknoteSelling').text or forex_selling
+
+                # Eşleştirme haritası
+                rates_map = {
+                    "forex_buying": forex_buying.strip(),   # Döviz Alış
+                    "forex_selling": forex_selling.strip(), # Döviz Satış
+                    "eff_buying": banknote_buying.strip(),  # Efektif Alış
+                    "eff_selling": banknote_selling.strip() # Efektif Satış
+                }
+
+                # İstenen kur tipini seç, eğer listede yoksa varsayılana (Döviz Alış) dön
+                selected_rate = rates_map.get(rate_type, forex_buying)
+
+                return JsonResponse({
+                    "success": True,
+                    "rate": selected_rate,
+                    "currency": currency_code,
+                    "date": target_date.strftime("%Y-%m-%d")
+                })
+
+        return JsonResponse({"error": f"{currency_code} kodu bültende bulunamadı.", "success": False}, status=404)
+
+    except Exception as e:
+        return JsonResponse({"error": f"Kur işlenirken hata oluştu: {str(e)}", "success": False}, status=500)
 
 
 # API: GİB VERGİ DAİRESİ OTOMATİK SORGULAMA
-# Şu an simülasyon modunda çalışıyor. Gerçek entegrasyon için
-# apps/invoices/integrations.py -> lookup_vkn() fonksiyonuna bak.
 def vkn_sorgula(request):
     vkn = request.GET.get("vkn", "")
     result = integrations.lookup_vkn(vkn)
@@ -70,9 +142,11 @@ def invoices_page(request):
 
         invoice = Invoice.objects.create(
             user=request.user, ettn=auto_ettn, custom_no="TR1.2",
-            invoice_number=auto_invoice_number,
+            invoice_number=request.POST.get("invoice_number") or auto_invoice_number,
             type=request.POST.get("type", "e-fatura"),
-            invoice_type=request.POST.get("invoice_type", "satis"),
+            invoice_type=request.POST.get("invoice_type", "temel"),
+            invoice_category=request.POST.get("invoice_category", "satis"),
+            invoice_template=request.POST.get("invoice_template", "varsayilan"),
             issue_date=request.POST.get("date") or datetime.now().date(),
             currency=request.POST.get("currency", "TL"),
             exchange_rate=to_decimal(request.POST.get("exchange_rate"), "1.0000"),
@@ -86,6 +160,13 @@ def invoices_page(request):
             customer_district=request.POST.get("customer_district", ""),
             customer_street=request.POST.get("customer_street", ""),
             customer_postal_code=request.POST.get("customer_postal_code", ""),
+            customer_phone=request.POST.get("customer_phone", ""),
+            customer_email=request.POST.get("customer_email", ""),
+            customer_website=request.POST.get("customer_website", ""),
+            delivery_country=request.POST.get("delivery_country", "Türkiye"),
+            delivery_district=request.POST.get("delivery_district", ""),
+            delivery_postal_code=request.POST.get("delivery_postal_code", ""),
+            delivery_street=request.POST.get("delivery_street", ""),
             notes=request.POST.get("notes", ""), status="draft"
         )
 
@@ -109,13 +190,15 @@ def invoices_page(request):
     return render(request, "invoices/invoices-create.html")
 
 
-# FATURA DÜZENLEME (sadece taslak durumundaki faturalar düzenlenebilir)
+# FATURA DÜZENLEME
 @login_required
 def invoice_edit(request, id):
     invoice = get_object_or_404(Invoice, id=id, user=request.user, status="draft")
 
     if request.method == "POST":
         invoice.invoice_type = request.POST.get("invoice_type", invoice.invoice_type)
+        invoice.invoice_category = request.POST.get("invoice_category", invoice.invoice_category)
+        invoice.invoice_template = request.POST.get("invoice_template", invoice.invoice_template)
         invoice.issue_date = request.POST.get("date") or invoice.issue_date
         invoice.currency = request.POST.get("currency", invoice.currency)
         invoice.exchange_rate = to_decimal(request.POST.get("exchange_rate"), "1.0000")
@@ -129,10 +212,16 @@ def invoice_edit(request, id):
         invoice.customer_district = request.POST.get("customer_district", "")
         invoice.customer_street = request.POST.get("customer_street", "")
         invoice.customer_postal_code = request.POST.get("customer_postal_code", "")
+        invoice.customer_phone = request.POST.get("customer_phone", "")
+        invoice.customer_email = request.POST.get("customer_email", "")
+        invoice.customer_website = request.POST.get("customer_website", "")
+        invoice.delivery_country = request.POST.get("delivery_country", "Türkiye")
+        invoice.delivery_district = request.POST.get("delivery_district", "")
+        invoice.delivery_postal_code = request.POST.get("delivery_postal_code", "")
+        invoice.delivery_street = request.POST.get("delivery_street", "")
         invoice.notes = request.POST.get("notes", "")
         invoice.save()
 
-        # Mevcut kalemleri silip, formdan gelen güncel kalem listesini yeniden oluştur.
         invoice.items.all().delete()
         items_json = request.POST.get("items_json_data", "[]")
         try:
@@ -190,7 +279,10 @@ def invoice_view(request, id):
             "status": invoice.status,
             "type": invoice.type,
             "ettn": invoice.ettn,
+            "custom_no": invoice.custom_no,
             "invoice_number": invoice.invoice_number,
+            "invoice_category": invoice.get_invoice_category_display(),
+            "invoice_type": invoice.get_invoice_type_display(),
             "issue_date": str(invoice.issue_date),
             "currency": invoice.currency,
             "exchange_rate": str(invoice.exchange_rate),
@@ -200,6 +292,16 @@ def invoice_view(request, id):
             "customer_street": invoice.customer_street,
             "customer_district": invoice.customer_district,
             "customer_city": invoice.customer_city,
+            "customer_country": invoice.customer_country,
+            "customer_postal_code": invoice.customer_postal_code,
+            "customer_phone": invoice.customer_phone,
+            "customer_email": invoice.customer_email,
+            "customer_website": invoice.customer_website,
+            "delivery_country": invoice.delivery_country,
+            "delivery_district": invoice.delivery_district,
+            "delivery_postal_code": invoice.delivery_postal_code,
+            "delivery_street": invoice.delivery_street,
+            "notes": invoice.notes,
             "amount": float(invoice.amount),
             "vat_amount": float(invoice.vat_amount),
             "total_amount": float(invoice.total_amount),
@@ -224,8 +326,6 @@ def invoices_sent(request):
 @login_required
 def invoice_send(request, id):
     invoice = get_object_or_404(Invoice, id=id, user=request.user)
-    # Gerçek e-Fatura entegrasyonu eklendiğinde bu satır gerçek gönderimi
-    # tetikleyecek. Şu an simülasyon: apps/invoices/integrations.py -> send_efatura()
     integrations.send_efatura(invoice)
     invoice.status = "sent"
     invoice.save()
@@ -234,14 +334,12 @@ def invoice_send(request, id):
 
 @login_required
 def invoice_delete(request, id):
-    """Sadece TASLAK faturalar silinebilir. Gönderilmiş/resmi fatura asla silinmez, sadece iptal edilir (bkz. invoice_cancel)."""
     invoice = get_object_or_404(Invoice, id=id, user=request.user, status="draft")
     invoice.delete()
     return redirect("invoices_draft")
 
 
 def generate_invoice_number(prefix_code="ZNT"):
-    """create/duplicate akışlarında kullanılan otomatik belge no üretici. prefix_code: 'ZNT' (fatura) veya 'IRS' (irsaliye)."""
     current_year = datetime.now().year
     prefix = f"{prefix_code}{current_year}"
     last_invoice = Invoice.objects.filter(invoice_number__startswith=prefix).order_by('-invoice_number').first()
@@ -257,11 +355,6 @@ def generate_invoice_number(prefix_code="ZNT"):
 
 @login_required
 def invoice_cancel(request, id):
-    """
-    Resmi olarak kesilmiş (gönderilmiş) bir faturayı GERÇEK e-Fatura mantığına
-    uygun şekilde İPTAL EDER. Silme değildir — kayıt yasal/denetim amacıyla
-    veritabanında durumu 'cancelled' olarak kalır, listeden çıkar.
-    """
     invoice = get_object_or_404(Invoice, id=id, user=request.user, status="sent")
     invoice.status = "cancelled"
     invoice.save()
@@ -270,7 +363,6 @@ def invoice_cancel(request, id):
 
 @login_required
 def invoice_duplicate(request, id):
-    """Var olan bir faturanın (kalemleriyle birlikte) kopyasını yeni bir taslak olarak oluşturur."""
     original = get_object_or_404(Invoice, id=id, user=request.user)
 
     new_invoice = Invoice.objects.create(
@@ -313,7 +405,6 @@ def invoice_duplicate(request, id):
 
 @login_required
 def invoices_bulk_delete(request):
-    """Taslaklar listesinde işaretlenen faturaları topluca siler. Güvenlik için sadece 'draft' durumundakiler silinir."""
     if request.method == "POST":
         ids = request.POST.getlist("selected_ids")
         Invoice.objects.filter(id__in=ids, user=request.user, status="draft").delete()
@@ -346,10 +437,7 @@ def earchive_sent(request):
     })
 
 
-# ---- Gelen kutusu / arşiv yönetimi aksiyonları (Uyumsoft tarzı ekran için) ----
-
 def _safe_redirect(request, fallback):
-    """Kullanıcıyı işlem yaptığı sayfaya geri döndürür (Gelen E-Fatura / E-Arşiv fark etmeksizin)."""
     referer = request.META.get("HTTP_REFERER")
     return redirect(referer) if referer else redirect(fallback)
 

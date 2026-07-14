@@ -29,6 +29,20 @@ function notReadyYet(featureName) {
     );
 }
 
+// ÖNEMLİ: Kullanıcının yazdığı serbest metinler (açıklama, not, ünvan vb.)
+// doğrudan şablon string'ine gömülüyordu. İçinde tırnak/HTML özel karakteri
+// olan bir açıklama girilince önizleme hiç render olmuyordu (JS hata veriyordu).
+// Bu fonksiyon her metni önce güvenli hale getiriyor.
+function escapeHtml(value) {
+    if (value === null || value === undefined) return "";
+    return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+}
+
 function openInvoicePreview(invoiceId) {
     fetch(`/invoices/view/${invoiceId}/?format=json`)
         .then(res => res.json())
@@ -51,8 +65,8 @@ function openInvoicePreview(invoiceId) {
                 itemsRows += `
                     <tr>
                         <td>${index + 1}</td>
-                        <td>${item.desc}</td>
-                        <td>${item.qty} ${item.unit}</td>
+                        <td>${escapeHtml(item.desc)}</td>
+                        <td>${item.qty} ${escapeHtml(item.unit)}</td>
                         <td>${item.price.toFixed(2)} ${data.currency}</td>
                         <td>%${item.vat_rate}</td>
                         <td>${item.vat_amount.toFixed(2)} ${data.currency}</td>
@@ -60,6 +74,36 @@ function openInvoicePreview(invoiceId) {
                     </tr>
                 `;
             });
+
+            // Alıcı iletişim satırları (sadece doluysa gösterilir)
+            let contactLines = "";
+            if (data.customer_phone) contactLines += `<strong>Tel:</strong> ${escapeHtml(data.customer_phone)}<br>`;
+            if (data.customer_email) contactLines += `<strong>E-Posta:</strong> ${escapeHtml(data.customer_email)}<br>`;
+            if (data.customer_website) contactLines += `<strong>Web:</strong> ${escapeHtml(data.customer_website)}<br>`;
+
+            // Sevk adresi, alıcı adresinden farklıysa ayrıca gösterilir
+            let deliveryBoxHTML = "";
+            const hasDeliveryAddress = data.delivery_street || data.delivery_district;
+            if (hasDeliveryAddress) {
+                deliveryBoxHTML = `
+                    <div class="gib-box-border" style="margin-top:10px;">
+                        <div class="gib-title-sub">SEVK ADRESİ</div>
+                        ${escapeHtml(data.delivery_street)} ${escapeHtml(data.delivery_district)}<br>
+                        ${escapeHtml(data.delivery_country || "")} ${escapeHtml(data.delivery_postal_code || "")}
+                    </div>
+                `;
+            }
+
+            // Notlar / açıklamalar (varsa)
+            let notesHTML = "";
+            if (data.notes) {
+                notesHTML = `
+                    <div class="gib-box-border" style="margin-top:14px;">
+                        <div class="gib-title-sub">AÇIKLAMALAR / NOTLAR</div>
+                        ${escapeHtml(data.notes).replaceAll("\n", "<br>")}
+                    </div>
+                `;
+            }
 
             target.innerHTML = `
                 <div class="gib-invoice-template">
@@ -73,18 +117,25 @@ function openInvoicePreview(invoiceId) {
                         <div style="text-align: right; font-size: 16px; font-weight: bold; color: #ef4444;">${docLabel}</div>
                     </div>
                     <div class="gib-grid-info">
-                        <div class="gib-box-border">
-                            <div class="gib-title-sub">SAYIN / ALICI</div>
-                            <strong>${data.customer_name}</strong><br>
-                            ${data.customer_street} ${data.customer_district} / ${data.customer_city}<br>
-                            <strong>VKN/TCKN:</strong> ${data.customer_tax_id}<br>
-                            <strong>Vergi Dairesi:</strong> ${data.customer_tax_office}
+                        <div>
+                            <div class="gib-box-border">
+                                <div class="gib-title-sub">SAYIN / ALICI</div>
+                                <strong>${escapeHtml(data.customer_name)}</strong><br>
+                                ${escapeHtml(data.customer_street)} ${escapeHtml(data.customer_district)} / ${escapeHtml(data.customer_city)}<br>
+                                <strong>VKN/TCKN:</strong> ${escapeHtml(data.customer_tax_id)}<br>
+                                <strong>Vergi Dairesi:</strong> ${escapeHtml(data.customer_tax_office)}<br>
+                                ${contactLines}
+                            </div>
+                            ${deliveryBoxHTML}
                         </div>
                         <div class="gib-box-border">
                             <div class="gib-title-sub">Belge Künyesi</div>
-                            <strong>ETTN:</strong> ${data.ettn}<br>
-                            <strong>${numberLabel}:</strong> ${data.invoice_number}<br>
+                            <strong>ETTN:</strong> ${escapeHtml(data.ettn)}<br>
+                            <strong>Özelleştirme No:</strong> ${escapeHtml(data.custom_no)}<br>
+                            <strong>${numberLabel}:</strong> ${escapeHtml(data.invoice_number)}<br>
                             <strong>${dateLabel}:</strong> ${data.issue_date}<br>
+                            <strong>Senaryo:</strong> ${escapeHtml(data.invoice_type)}<br>
+                            <strong>Fatura Tipi:</strong> ${escapeHtml(data.invoice_category)}<br>
                             <strong>Para Birimi / Kur:</strong> ${data.currency} (${data.exchange_rate})
                         </div>
                     </div>
@@ -107,9 +158,13 @@ function openInvoicePreview(invoiceId) {
                         <div class="gib-total-row"><span>Hesaplanan KDV:</span><span>${data.vat_amount.toFixed(2)} ${data.currency}</span></div>
                         <div class="gib-total-row gib-grand-total"><span>Ödenecek Toplam Tutar:</span><span>${data.total_amount.toFixed(2)} ${data.currency}</span></div>
                     </div>
+                    ${notesHTML}
                 </div>
             `;
             document.getElementById("invoicePreviewModal").style.display = "flex";
+        })
+        .catch(err => {
+            alert("Önizleme yüklenirken bir hata oluştu: " + err.message);
         });
 }
 

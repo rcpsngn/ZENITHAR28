@@ -11,8 +11,39 @@ class Invoice(models.Model):
     ]
 
     INVOICE_TYPE_CHOICES = [
-        ('satis', 'Satış'),
+        ('temel', 'Temel'),
+        ('ticari', 'Ticari'),
+        ('yolcu_beraber', 'Yolcu Beraber'),
         ('ihracat', 'İhracat'),
+        ('hal', 'Hal'),
+        ('kamu', 'Kamu'),
+        ('enerji', 'Enerji'),
+        ('ilac_tibbi_cihaz', 'İlaç ve Tıbbi Cihaz'),
+        ('yatirim_tesvik', 'Yatırım Teşvik'),
+        ('insaat_demiri_izleme_sistemi', 'İnşaat Demiri İzleme Sistemi'),
+    ]
+
+    INVOICE_CATEGORY_CHOICES = [
+        ('satis', 'Satış'),
+        ('iade', 'İade'),
+        ('tevkifat', 'Tevkifat'),
+        ('istisna', 'İstisna'),
+        ('ozel_matrah', 'Özel Matrah'),
+        ('ihrac_kayitli', 'İhraç Kayıtlı'),
+        ('sgk', 'SGK'),
+        ('komisyoncu', 'Komisyoncu'),
+        ('hks_satis', 'HKS Satış'),
+        ('hks_komisyoncu', 'HKS Komisyoncu'),
+        ('tevkifat_iade', 'Tevkifat İade'),
+        ('konaklama_vergisi', 'Konaklama Vergisi'),
+        ('sarj', 'Şarj'),
+        ('sarj_anlik', 'Şarj Anlık'),
+        ('teknoloji_destek', 'Teknoloji Destek'),
+        ('ytb_satis', 'YTB Satış'),
+        ('ytb_istisna', 'YTB İstisna'),
+        ('ytb_iade', 'YTB İade'),
+        ('ytb_tevkifat', 'YTB Tevkifat'),
+        ('ytb_tevkifat_iade', 'YTB Tevkifat İade'),
     ]
 
     STATUS_CHOICES = [
@@ -34,7 +65,9 @@ class Invoice(models.Model):
     # Otomatik & Genel Bilgiler
     ettn = models.CharField(max_length=100, unique=True, blank=True, null=True)
     type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='e-fatura')
-    invoice_type = models.CharField(max_length=20, choices=INVOICE_TYPE_CHOICES, default='satis')
+    invoice_type = models.CharField(max_length=30, choices=INVOICE_TYPE_CHOICES, default='temel')
+    invoice_category = models.CharField(max_length=30, choices=INVOICE_CATEGORY_CHOICES, default='satis')
+    invoice_template = models.CharField(max_length=30, default='varsayilan')
     invoice_number = models.CharField(max_length=50, unique=True)
     custom_no = models.CharField(max_length=50, blank=True)
 
@@ -55,6 +88,15 @@ class Invoice(models.Model):
     customer_district = models.CharField(max_length=100, blank=True)
     customer_street = models.CharField(max_length=255, blank=True)
     customer_postal_code = models.CharField(max_length=20, blank=True)
+    customer_phone = models.CharField(max_length=20, blank=True)
+    customer_email = models.EmailField(blank=True)
+    customer_website = models.URLField(blank=True)
+
+    # Sevk Adresi (Alıcı adresinden farklı olabilir)
+    delivery_country = models.CharField(max_length=100, blank=True, default='Türkiye')
+    delivery_district = models.CharField(max_length=100, blank=True)
+    delivery_postal_code = models.CharField(max_length=20, blank=True)
+    delivery_street = models.CharField(max_length=500, blank=True)
     customer_address = models.TextField(blank=True)
 
     # Finansal Toplamlar

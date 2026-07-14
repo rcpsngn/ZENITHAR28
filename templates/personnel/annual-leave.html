@@ -8,27 +8,194 @@
             <i class="bi bi-calendar-check" style="color: #00ff66; font-size: 24px;"></i>
             <h2 style="color: #00ff66; margin: 0; font-size: 20px; font-weight: 600;">Personel Yıllık İzin Takibi</h2>
         </div>
+        <button onclick="openLeaveModal()" style="background:#00ff66; color:#002208; border:none; padding:9px 18px; border-radius:6px; font-weight:700; cursor:pointer;">➕ İzin Talebi Oluştur</button>
     </div>
 
-    <div class="card" style="background: rgba(15, 31, 23, 0.5); border: 1px solid rgba(0, 255, 150, 0.2); border-radius: 6px; padding: 20px; overflow-x: auto;">
+    <div class="card" style="background: rgba(15, 31, 23, 0.5); border: 1px solid rgba(0, 255, 150, 0.2); border-radius: 6px; padding: 20px; overflow-x: auto; margin-bottom:24px;">
+        <h3 style="color:#00ff66; font-size:14px; margin-top:0;">İzin Bakiyesi Özeti</h3>
+        <p style="font-size:11px; color:#1a202c; margin-top:-8px;">Hak edilen izin, İş Kanunu md. 53'e göre kıdem yılına göre hesaplanır (1-5 yıl: 14, 5-15 yıl: 20, 15+ yıl: 26 gün).</p>
         <table style="width: 100%; border-collapse: collapse; text-align: left;">
             <thead>
                 <tr style="border-bottom: 2px solid #004411; color: #00ff66; font-size: 12px;">
                     <th style="padding: 10px;">Personel Ad Soyad</th>
                     <th style="padding: 10px; text-align: center;">Hak Edilen İzin</th>
-                    <th style="padding: 10px; text-align: center;">Kullanılan İzin</th>
+                    <th style="padding: 10px; text-align: center;">Kullanılan İzin (Onaylı)</th>
                     <th style="padding: 10px; text-align: center; color: #00ff66;">Kalan İzin (Gün)</th>
                 </tr>
             </thead>
-            <tbody>
-                <tr style="border-bottom: 1px solid #002206; font-size: 13px; color: #1a202c; font-weight: 500;">
-                    <td style="padding: 12px 10px;">Ahmet Yılmaz</td>
-                    <td style="padding: 12px 10px; text-align: center;">14</td>
-                    <td style="padding: 12px 10px; text-align: center;">5</td>
-                    <td style="padding: 12px 10px; text-align: center; font-weight: bold; color: #00ff66;">9</td>
+            <tbody id="leaveSummaryBody">
+                <tr><td colspan="4" style="padding:16px; text-align:center; color:#1a202c;">Yükleniyor...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card" style="background: rgba(15, 31, 23, 0.5); border: 1px solid rgba(0, 255, 150, 0.2); border-radius: 6px; padding: 20px; overflow-x: auto;">
+        <h3 style="color:#00ff66; font-size:14px; margin-top:0;">İzin Talepleri</h3>
+        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+            <thead>
+                <tr style="border-bottom: 2px solid #004411; color: #00ff66; font-size: 12px;">
+                    <th style="padding: 10px;">Personel</th>
+                    <th style="padding: 10px;">Tip</th>
+                    <th style="padding: 10px;">Başlangıç</th>
+                    <th style="padding: 10px;">Bitiş</th>
+                    <th style="padding: 10px; text-align:center;">Gün</th>
+                    <th style="padding: 10px;">Durum</th>
+                    <th style="padding: 10px; text-align:center;">İşlem</th>
                 </tr>
+            </thead>
+            <tbody id="leaveRequestsBody">
+                <tr><td colspan="7" style="padding:16px; text-align:center; color:#1a202c;">Yükleniyor...</td></tr>
             </tbody>
         </table>
     </div>
 </div>
+
+<div id="leaveModal" class="modal-overlay">
+    <div class="modal-window">
+        <div class="modal-preview-header">
+            <span>➕ İzin Talebi Oluştur</span>
+            <span class="close-x" onclick="closeLeaveModal()">×</span>
+        </div>
+        <div class="modal-preview-body">
+            <div class="input-unit"><label>Personel</label><select id="lv_employee"></select></div>
+            <div class="input-unit"><label>İzin Tipi</label>
+                <select id="lv_type">
+                    <option value="annual">Yıllık İzin</option>
+                    <option value="sick">Hastalık İzni</option>
+                    <option value="unpaid">Ücretsiz İzin</option>
+                    <option value="maternity">Doğum İzni</option>
+                    <option value="other">Diğer</option>
+                </select>
+            </div>
+            <div class="input-unit"><label>Başlangıç Tarihi</label><input type="date" id="lv_start" onchange="calcLeaveDays()"></div>
+            <div class="input-unit"><label>Bitiş Tarihi</label><input type="date" id="lv_end" onchange="calcLeaveDays()"></div>
+            <div class="input-unit"><label>Gün Sayısı</label><input type="number" id="lv_days" readonly></div>
+            <div class="input-unit" style="grid-column: 1 / -1;"><label>Açıklama</label><input type="text" id="lv_reason"></div>
+        </div>
+        <div class="modal-preview-footer">
+            <button class="m-btn m-cancel" onclick="closeLeaveModal()">Vazgeç</button>
+            <button class="m-btn m-ok" onclick="saveLeave()">Talep Oluştur</button>
+        </div>
+    </div>
+</div>
+
+<link rel="stylesheet" href="{% static 'css/invoice-actions.css' %}?v=2">
+<script src="{% static 'js/api-utils.js' %}"></script>
+<script>
+let allEmployees = [];
+
+function tenureYears(hireDate) {
+    const diffMs = Date.now() - new Date(hireDate).getTime();
+    return diffMs / (1000 * 60 * 60 * 24 * 365.25);
+}
+function entitledDays(hireDate) {
+    const years = tenureYears(hireDate);
+    if (years >= 15) return 26;
+    if (years >= 5) return 20;
+    return 14;
+}
+
+async function openLeaveModal() {
+    document.getElementById("leaveModal").style.display = "flex";
+    const select = document.getElementById("lv_employee");
+    select.innerHTML = allEmployees.map(e => `<option value="${e.id}">${e.full_name}</option>`).join("");
+}
+function closeLeaveModal() { document.getElementById("leaveModal").style.display = "none"; }
+
+function calcLeaveDays() {
+    const start = document.getElementById("lv_start").value;
+    const end = document.getElementById("lv_end").value;
+    if (start && end) {
+        const days = Math.round((new Date(end) - new Date(start)) / 86400000) + 1;
+        document.getElementById("lv_days").value = days > 0 ? days : 0;
+    }
+}
+
+async function saveLeave() {
+    const payload = {
+        employee: document.getElementById("lv_employee").value,
+        type: document.getElementById("lv_type").value,
+        start_date: document.getElementById("lv_start").value,
+        end_date: document.getElementById("lv_end").value,
+        days: document.getElementById("lv_days").value || 1,
+        reason: document.getElementById("lv_reason").value,
+    };
+    try {
+        await apiFetch(`/personnel/api/leaves/`, { method: "POST", body: JSON.stringify(payload) });
+        closeLeaveModal();
+        loadAll();
+    } catch (err) {
+        alert("Talep oluşturulamadı: " + err.message);
+    }
+}
+
+async function approveLeave(id) {
+    try { await apiFetch(`/personnel/api/leaves/${id}/approve/`, { method: "POST" }); loadAll(); }
+    catch (err) { alert("Onaylanamadı: " + err.message); }
+}
+async function rejectLeave(id) {
+    if (!confirm("Bu izin talebini reddetmek istediğinize emin misiniz?")) return;
+    try { await apiFetch(`/personnel/api/leaves/${id}/reject/`, { method: "POST" }); loadAll(); }
+    catch (err) { alert("Reddedilemedi: " + err.message); }
+}
+
+const leaveTypeLabels = { annual: "Yıllık İzin", sick: "Hastalık İzni", unpaid: "Ücretsiz İzin", maternity: "Doğum İzni", other: "Diğer" };
+const statusLabels = { pending: ["Bekliyor", "pending"], approved: ["Onaylandı", "approved"], rejected: ["Reddedildi", "rejected"] };
+
+async function loadAll() {
+    const summaryBody = document.getElementById("leaveSummaryBody");
+    const requestsBody = document.getElementById("leaveRequestsBody");
+
+    try {
+        const empData = await apiFetch(`/personnel/api/employees/?is_active=true`);
+        allEmployees = empData.results || empData;
+
+        const leaveData = await apiFetch(`/personnel/api/leaves/`);
+        const leaves = leaveData.results || leaveData;
+        const currentYear = new Date().getFullYear();
+
+        // ozet tablo
+        summaryBody.innerHTML = allEmployees.map(emp => {
+            const used = leaves
+                .filter(l => l.employee === emp.id && l.type === "annual" && l.status === "approved" && l.start_date.startsWith(String(currentYear)))
+                .reduce((sum, l) => sum + l.days, 0);
+            const entitled = entitledDays(emp.hire_date);
+            const remaining = entitled - used;
+            return `
+                <tr style="border-bottom: 1px solid #002206; font-size: 13px; color: #1a202c; font-weight: 500;">
+                    <td style="padding: 12px 10px;">${emp.full_name}</td>
+                    <td style="padding: 12px 10px; text-align: center;">${entitled}</td>
+                    <td style="padding: 12px 10px; text-align: center;">${used}</td>
+                    <td style="padding: 12px 10px; text-align: center; font-weight: bold; color: ${remaining < 0 ? '#ff4444' : '#00ff66'};">${remaining}</td>
+                </tr>`;
+        }).join("") || `<tr><td colspan="4" style="padding:16px; text-align:center; color:#1a202c;">Aktif personel yok.</td></tr>`;
+
+        // talepler tablosu
+        requestsBody.innerHTML = leaves.length ? leaves.map(l => {
+            const [label, cls] = statusLabels[l.status] || [l.status, "pending"];
+            return `
+                <tr style="border-bottom: 1px solid #002206; font-size: 13px; color: #1a202c; font-weight: 500;">
+                    <td style="padding: 12px 10px;">${l.employee_name}</td>
+                    <td style="padding: 12px 10px;">${leaveTypeLabels[l.type] || l.type}</td>
+                    <td style="padding: 12px 10px;">${l.start_date}</td>
+                    <td style="padding: 12px 10px;">${l.end_date}</td>
+                    <td style="padding: 12px 10px; text-align:center;">${l.days}</td>
+                    <td style="padding: 12px 10px;"><span class="status ${cls}">${label}</span></td>
+                    <td style="padding: 12px 10px; text-align:center;">
+                        ${l.status === "pending" ? `
+                            <div class="invoice-actions">
+                                <button class="action-btn btn-copy" onclick="approveLeave(${l.id})">✔️</button>
+                                <button class="action-btn btn-delete" onclick="rejectLeave(${l.id})">✖️</button>
+                            </div>` : "—"}
+                    </td>
+                </tr>`;
+        }).join("") : `<tr><td colspan="7" style="padding:16px; text-align:center; color:#1a202c;">Henüz izin talebi yok.</td></tr>`;
+
+    } catch (err) {
+        summaryBody.innerHTML = `<tr><td colspan="4" style="padding:16px; text-align:center; color:#f87171;">Yüklenemedi: ${err.message}</td></tr>`;
+    }
+}
+
+document.addEventListener("DOMContentLoaded", loadAll);
+</script>
 {% endblock %}

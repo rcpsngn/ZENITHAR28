@@ -21,6 +21,8 @@ urlpatterns = [
     path("reject/<int:id>/", views.invoice_reject, name="invoice_reject"),
     path("bulk-mark-read/", views.invoices_bulk_mark_read, name="invoices_bulk_mark_read"),
     path("bulk-mark-unread/", views.invoices_bulk_mark_unread, name="invoices_bulk_mark_unread"),
+    # apps/invoices/urls.py içinde bul ve şu şekilde değiştir:
+    path('api/tcmb-rate/', views.get_tcmb_rate, name='api_tcmb_rate'),
 
     # Yeni Eklenen API ve Detay Görüntüleme Rotaları
     path("view/<int:id>/", views.invoice_view, name="invoice_view"),
