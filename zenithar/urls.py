@@ -5,6 +5,8 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Sum
 from datetime import date, timedelta
 import json
+from django.conf import settings
+from django.conf.urls.static import static
 
 # Accounts'tan login_view'u buraya dahil ediyoruz
 from apps.accounts.views import login_view
@@ -140,6 +142,8 @@ urlpatterns = [
     path('help/', include('apps.help.urls')),
     path('settings/', include('apps.settings_app.urls')),
 ]
+
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 admin.site.site_header = "ZENITHAR Yönetim Paneli"
 admin.site.site_title = "ZENITHAR Admin"
