@@ -105,14 +105,26 @@ function openInvoicePreview(invoiceId) {
                 `;
             }
 
+            // Firma bilgileri (Ayarlar > Firma Bilgileri'nden gelir)
+            const company = data.company || {};
+            const logoHTML = company.logo_url
+                ? `<img src="${company.logo_url}" alt="Logo" style="height:48px; object-fit:contain; margin-bottom:6px;"><br>`
+                : "";
+            let companyContactLine = "";
+            if (company.phone) companyContactLine += `Tel: ${escapeHtml(company.phone)} `;
+            if (company.email) companyContactLine += `| E-Posta: ${escapeHtml(company.email)} `;
+            if (company.website) companyContactLine += `| ${escapeHtml(company.website)}`;
+
             target.innerHTML = `
                 <div class="gib-invoice-template">
                     ${watermarkHTML}
                     <div class="gib-header">
                         <div>
-                            <strong>ZENITHAR TEKNOLOJİ ERP SİSTEMİ</strong><br>
-                            Merkez Mah. İstiklal Cad. No:44 Beyoğlu / İstanbul<br>
-                            VKN: 9999999999 | Telefon: 0212 555 00 00
+                            ${logoHTML}
+                            <strong>${escapeHtml(company.name)}</strong><br>
+                            ${escapeHtml(company.address)}<br>
+                            ${company.tax_id ? `VKN: ${escapeHtml(company.tax_id)}` : ""}${company.tax_office ? ` | ${escapeHtml(company.tax_office)}` : ""}
+                            ${companyContactLine ? `<br>${companyContactLine}` : ""}
                         </div>
                         <div style="text-align: right; font-size: 16px; font-weight: bold; color: #ef4444;">${docLabel}</div>
                     </div>

@@ -258,11 +258,31 @@ def invoice_edit(request, id):
 
 
 # DETAY GÖRÜNTÜLEME VE POPUP JSON ÖNİZLEME KÖPRÜSÜ
+# DETAY GÖRÜNTÜLEME VE POPUP JSON ÖNİZLEME KÖPRÜSÜ
 @login_required
 def invoice_view(request, id):
     invoice = get_object_or_404(Invoice, id=id, user=request.user)
 
     if request.GET.get("format") == "json":
+        from apps.settings_app.models import CompanyProfile
+        try:
+            company = invoice.user.company_profile
+            company_data = {
+                "name": company.company_name,
+                "address": company.address,
+                "tax_id": company.tax_id,
+                "tax_office": company.tax_office,
+                "phone": company.phone,
+                "email": company.email,
+                "website": company.website,
+                "logo_url": company.logo.url if company.logo else "",
+            }
+        except CompanyProfile.DoesNotExist:
+            company_data = {
+                "name": "Firmanızın Adı (Ayarlar > Firma Bilgileri'nden düzenleyin)",
+                "address": "", "tax_id": "", "tax_office": "", "phone": "", "email": "", "website": "", "logo_url": "",
+            }
+
         items_data = []
         for item in invoice.items.all():
             items_data.append({
@@ -278,6 +298,7 @@ def invoice_view(request, id):
         return JsonResponse({
             "status": invoice.status,
             "type": invoice.type,
+            "company": company_data,
             "ettn": invoice.ettn,
             "custom_no": invoice.custom_no,
             "invoice_number": invoice.invoice_number,
@@ -309,7 +330,6 @@ def invoice_view(request, id):
         })
 
     return render(request, "invoices/invoice-view.html", {"invoice": invoice})
-
 
 @login_required
 def invoices_draft(request):
