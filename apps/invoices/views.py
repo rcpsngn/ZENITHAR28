@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 from django.http import JsonResponse
 from .models import Invoice, InvoiceItem
 from . import integrations
@@ -346,9 +347,22 @@ def invoices_sent(request):
 @login_required
 def invoice_send(request, id):
     invoice = get_object_or_404(Invoice, id=id, user=request.user)
-    integrations.send_efatura(invoice)
-    invoice.status = "sent"
-    invoice.save()
+    result = integrations.send_invoice_to_gib(invoice, user=request.user)
+
+    if result["success"]:
+        invoice.status = "sent"
+        if result.get("ettn"):
+            invoice.ettn = result["ettn"]
+        invoice.save()
+        if result.get("simulated"):
+            messages.info(request, f"{invoice.invoice_number}: {result['message']}")
+        else:
+            messages.success(request, f"{invoice.invoice_number}: {result['message']}")
+    else:
+        # Gönderim başarısız olduysa fatura DURUMU DEĞİŞTİRİLMEZ; taslak/mevcut
+        # durumunda kalır, kullanıcı tekrar deneyebilir.
+        messages.error(request, f"{invoice.invoice_number} GİB'e gönderilemedi: {result['message']}")
+
     return redirect("invoices_sent")
 
 
@@ -376,8 +390,18 @@ def generate_invoice_number(prefix_code="ZNT"):
 @login_required
 def invoice_cancel(request, id):
     invoice = get_object_or_404(Invoice, id=id, user=request.user, status="sent")
-    invoice.status = "cancelled"
-    invoice.save()
+    result = integrations.cancel_invoice_at_gib(invoice, user=request.user)
+
+    if result["success"]:
+        invoice.status = "cancelled"
+        invoice.save()
+        if result.get("simulated"):
+            messages.info(request, f"{invoice.invoice_number}: {result['message']}")
+        else:
+            messages.success(request, f"{invoice.invoice_number}: {result['message']}")
+    else:
+        messages.error(request, f"{invoice.invoice_number} iptal edilemedi: {result['message']}")
+
     return redirect("invoices_sent")
 
 

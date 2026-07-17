@@ -1,6 +1,9 @@
 from django.shortcuts import render, redirect
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from .models import CompanyProfile
+from django.utils import timezone
+from .models import CompanyProfile, PortalSettings
+from .forms import PortalSettingsForm
 
 @login_required
 def company_info(request):
@@ -35,7 +38,29 @@ def document_design(request):
 
 @login_required
 def portal_settings(request):
-    return render(request, 'settings_app/portal.html')
+    portal, created = PortalSettings.objects.get_or_create(user=request.user)
+
+    if request.method == "POST":
+        form = PortalSettingsForm(request.POST, instance=portal)
+        if form.is_valid():
+            portal = form.save(commit=False)
+            new_password = form.cleaned_data.get("api_password")
+            if new_password:
+                # Şifre yalnızca kullanıcı YENİ bir değer girdiyse güncellenir;
+                # boş bırakılırsa mevcut şifrelenmiş şifre olduğu gibi korunur.
+                portal.set_password(new_password)
+            portal.is_verified = False  # bilgiler değiştiyse yeniden test edilmesi gerekir
+            portal.save()
+            messages.success(request, "Portal ayarları kaydedildi. Devam etmeden önce 'Bağlantıyı Test Et' butonunu kullanın.")
+            return redirect("portal_settings")
+    else:
+        form = PortalSettingsForm(instance=portal)
+
+    return render(request, 'settings_app/portal.html', {
+        "form": form,
+        "portal": portal,
+        "masked_password": portal.get_masked_password() if portal.encrypted_password else None,
+    })
 
 @login_required
 def notification_settings(request):

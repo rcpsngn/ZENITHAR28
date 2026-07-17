@@ -26,6 +26,8 @@ INSTALLED_APPS = [
     # third party
     "rest_framework",
     "corsheaders",
+    "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
 
     # ERP MODÜLLERİ
     'apps.accounts',
@@ -169,7 +171,43 @@ CORS_ALLOW_ALL_ORIGINS = True
 REST_FRAMEWORK = {
     "DEFAULT_FILTER_BACKENDS": [
         "django_filters.rest_framework.DjangoFilterBackend"
-    ]
+    ],
+    # Web arayüzü (Django template'leri) session tabanlı girişi kullanmaya devam eder;
+    # /api/ altındaki uçlar (personel API'si dahil) artık JWT ile de çağrılabilir.
+    # Sıra önemli: SessionAuthentication önce denenir (mevcut şablonlar bozulmasın diye),
+    # JWTAuthentication ikinci sırada devreye girer.
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.SessionAuthentication",
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ],
+}
+
+# ======================
+# SIMPLE JWT
+# ======================
+# NOT: Bu blok "Kimlik Doğrulama > Oturum" (JWT Login, Token Refresh, Logout)
+# görevini gerçek koda bağlar. Önceki durum raporunda bu görev "Tamamlandı"
+# olarak işaretlenmişti ama settings.py'de hiçbir JWT ayarı yoktu; bu artık
+# düzeltildi. Uçlar için bkz. apps/accounts/urls.py (api/token/, api/token/refresh/,
+# api/token/verify/, api/logout/).
+
+from datetime import timedelta
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    # Refresh token her kullanıldığında yenisiyle değiştirilir ve eskisi
+    # kara listeye (blacklist) alınır -> çalınmış bir refresh token'ın
+    # tekrar tekrar kullanılmasının önüne geçer.
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+    "UPDATE_LAST_LOGIN": True,
+    "ALGORITHM": "HS256",
+    "SIGNING_KEY": SECRET_KEY,
+    "AUTH_HEADER_TYPES": ("Bearer",),
+    "USER_ID_FIELD": "id",
+    "USER_ID_CLAIM": "user_id",
+    "AUTH_TOKEN_CLASSES": ("rest_framework_simplejwt.tokens.AccessToken",),
 }
 
 # ======================
@@ -196,6 +234,15 @@ AUTH_USER_MODEL = "accounts.User"
 GIB_INTEGRATION_PROVIDER = None
 GIB_API_URL = None
 GIB_API_KEY = None
+
+# ======================
+# PORTAL ŞİFRELEME ANAHTARI (Genel Ayarlar > Portal için)
+# ======================
+# GİB / entegratör API şifresi DB'de bu anahtarla şifrelenip saklanır
+# (bkz. apps/settings_app/crypto.py). Anahtarı ÜRETİMDE .env dosyasına yaz,
+# koda GÖMME. Anahtar üretmek için:
+#   python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+PORTAL_ENCRYPTION_KEY = os.environ.get("PORTAL_ENCRYPTION_KEY")
 
 # ======================
 # LOGIN / LOGOUT & SESSION CONFIG
