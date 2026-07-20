@@ -67,3 +67,31 @@ class PortalSettings(models.Model):
     def get_masked_password(self) -> str:
         """Şablonda göstermek için maskelenmiş hâl, örn. 'ze******er'."""
         return mask_value(self.get_password())
+
+
+class DocumentDesignSettings(models.Model):
+    """
+    Belge & Fatura Tasarım Ayarları (Aşama 36). Excel notundaki tam sürükle-bırak
+    şablon tasarım motoru (görsel düzenleyici) bu pakete dahil edilmedi — bu,
+    ayrı bir frontend editör bileşeni gerektiren büyük bir özellik; burada
+    gerçekten kullanılan ve fatura numarası üretimini etkileyen temel ayarlar
+    (seri no öneki, alt not metni) gerçek bir modele bağlandı.
+    """
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='document_design_settings')
+    invoice_number_prefix = models.CharField(
+        max_length=10, default="ZNT",
+        help_text="Fatura numaralarının başına eklenecek harf kodu (ör. ZNT -> ZNT2026000000001)."
+    )
+    footer_note = models.TextField(
+        blank=True,
+        default="Mal bedeli banka hesaplarımıza ödenmelidir. Gecikme faizi %2 olarak uygulanır.",
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'document_design_settings'
+        verbose_name = 'Belge Tasarım Ayarı'
+        verbose_name_plural = 'Belge Tasarım Ayarları'
+
+    def __str__(self):
+        return f"{self.user} - {self.invoice_number_prefix}"

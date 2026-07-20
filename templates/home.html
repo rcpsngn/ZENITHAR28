@@ -4,6 +4,9 @@
 
 <h1>Hoş Geldiniz</h1>
 
+<!-- ============================================================ -->
+<!-- 1) ÖZET KARTLARI (en üstte) -->
+<!-- ============================================================ -->
 <div class="stats">
 
 <div class="card">
@@ -28,20 +31,152 @@
 
 </div>
 
-<div class="charts">
-
-<div class="chart-box">
-<h3>Aylık Gelir (Son 6 Ay)</h3>
-<canvas id="revenueChart"></canvas>
+<!-- ============================================================ -->
+<!-- 2) BELGE HACMİ TREND GRAFİĞİ (son 30 gün) — Uyumsoft portal referanslı -->
+<!-- ============================================================ -->
+<div class="card" style="background: rgba(15, 31, 23, 0.5); border: 1px solid rgba(0, 255, 150, 0.2); border-radius: 8px; padding: 20px; margin: 20px 0;">
+    <canvas id="trendChart" height="90"></canvas>
+    <div id="trendToggle" onclick="toggleReportsPanel()" style="text-align:center; margin-top:14px; padding:10px; cursor:pointer; color:#00ff66; font-size:14px; font-weight:600; border-top:1px solid rgba(0,255,150,0.1);">
+        📊 Raporları ve Duyuruları Görüntülemek için Tıklayınız <span id="trendToggleArrow">▾</span>
+    </div>
 </div>
 
-<div class="chart-box">
-<h3>Gider Analizi</h3>
-<canvas id="expenseChart"></canvas>
+<!-- ============================================================ -->
+<!-- GENİŞLETİLEBİLİR PANEL: durum özetleri + son işlemler + duyurular -->
+<!-- ============================================================ -->
+<div id="reportsPanel" style="display:none; margin-bottom: 20px;">
+
+    <div class="stats" style="margin-bottom:20px;">
+        <div class="card">
+            <div class="card-title">Onay Bekleyen</div>
+            <div class="value">{{ status_counts.sent }}</div>
+        </div>
+        <div class="card">
+            <div class="card-title">Onaylanan</div>
+            <div class="value">{{ status_counts.approved }}</div>
+        </div>
+        <div class="card">
+            <div class="card-title">Reddedilen</div>
+            <div class="value">{{ status_counts.rejected }}</div>
+        </div>
+        <div class="card">
+            <div class="card-title">Kısmi Kabul</div>
+            <div class="value">{{ status_counts.partially_accepted }}</div>
+        </div>
+        <div class="card">
+            <div class="card-title">İade</div>
+            <div class="value">{{ status_counts.returned }}</div>
+        </div>
+        <div class="card">
+            <div class="card-title">İptal Edilen</div>
+            <div class="value">{{ status_counts.cancelled }}</div>
+        </div>
+    </div>
+
+    <div style="display:flex; gap:20px; flex-wrap:wrap; margin-bottom:20px;">
+        <div class="card" style="flex:1; min-width:320px; background: rgba(15, 31, 23, 0.5); border: 1px solid rgba(0, 255, 150, 0.2); border-radius: 8px; padding: 18px;">
+            <h3 style="color:#00ff66; font-size:14px; margin-top:0;">Son Gelen Faturalar</h3>
+            <table style="width:100%; border-collapse:collapse; text-align:left; font-size:13px;">
+                <thead>
+                    <tr style="border-bottom:1px solid rgba(0,255,150,0.2); color:#7a8a99; font-size:11px;">
+                        <th style="padding:6px;">Fatura No</th>
+                        <th style="padding:6px;">Gönderen Ünvan</th>
+                        <th style="padding:6px; text-align:right;">Durum</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inv in recent_incoming %}
+                    <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                        <td style="padding:6px;">{{ inv.invoice_number }}</td>
+                        <td style="padding:6px;">{{ inv.customer_name }}</td>
+                        <td style="padding:6px; text-align:right;">{{ inv.get_status_display }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="3" style="padding:16px; text-align:center; color:#7a8a99;">Kayıt yok.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card" style="flex:1; min-width:320px; background: rgba(15, 31, 23, 0.5); border: 1px solid rgba(0, 255, 150, 0.2); border-radius: 8px; padding: 18px;">
+            <h3 style="color:#00ff66; font-size:14px; margin-top:0;">Son Gelen Fatura Yanıtları</h3>
+            <table style="width:100%; border-collapse:collapse; text-align:left; font-size:13px;">
+                <thead>
+                    <tr style="border-bottom:1px solid rgba(0,255,150,0.2); color:#7a8a99; font-size:11px;">
+                        <th style="padding:6px;">Fatura No</th>
+                        <th style="padding:6px;">Alıcı Ünvan</th>
+                        <th style="padding:6px; text-align:right;">Durum</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inv in recent_responses %}
+                    <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                        <td style="padding:6px;">{{ inv.invoice_number }}</td>
+                        <td style="padding:6px;">{{ inv.customer_name }}</td>
+                        <td style="padding:6px; text-align:right;">{{ inv.get_status_display }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="3" style="padding:16px; text-align:center; color:#7a8a99;">Kayıt yok.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div style="display:flex; gap:20px; flex-wrap:wrap;">
+        <div class="card" style="flex:1; min-width:320px; background: rgba(15, 31, 23, 0.5); border: 1px solid rgba(0, 255, 150, 0.2); border-radius: 8px; padding: 18px;">
+            <h3 style="color:#00ff66; font-size:14px; margin-top:0;">GİB Duyuruları</h3>
+            <table style="width:100%; border-collapse:collapse; text-align:left; font-size:13px;">
+                <thead>
+                    <tr style="border-bottom:1px solid rgba(0,255,150,0.2); color:#7a8a99; font-size:11px;">
+                        <th style="padding:6px;">Başlık</th>
+                        <th style="padding:6px;">Konu</th>
+                        <th style="padding:6px; text-align:right;">Tarih</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in gib_announcements %}
+                    <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                        <td style="padding:6px;">{{ a.title }}</td>
+                        <td style="padding:6px; color:#7a8a99;">{{ a.summary|default:"—" }}</td>
+                        <td style="padding:6px; text-align:right;">{{ a.published_date|date:"d.m.Y" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="3" style="padding:16px; text-align:center; color:#7a8a99;">Kayıt yok.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card" style="flex:1; min-width:320px; background: rgba(15, 31, 23, 0.5); border: 1px solid rgba(0, 255, 150, 0.2); border-radius: 8px; padding: 18px;">
+            <h3 style="color:#00ff66; font-size:14px; margin-top:0;">Genel Duyurular</h3>
+            <table style="width:100%; border-collapse:collapse; text-align:left; font-size:13px;">
+                <thead>
+                    <tr style="border-bottom:1px solid rgba(0,255,150,0.2); color:#7a8a99; font-size:11px;">
+                        <th style="padding:6px;">Başlık</th>
+                        <th style="padding:6px;">Konu</th>
+                        <th style="padding:6px; text-align:right;">Tarih</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in general_announcements %}
+                    <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                        <td style="padding:6px;">{{ a.title }}</td>
+                        <td style="padding:6px; color:#7a8a99;">{{ a.summary|default:"—" }}</td>
+                        <td style="padding:6px; text-align:right;">{{ a.published_date|date:"d.m.Y" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="3" style="padding:16px; text-align:center; color:#7a8a99;">Kayıt yok.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 
-</div>
-
+<!-- ============================================================ -->
+<!-- 3) BAŞLAMAK İÇİN İPUÇLARI (en altta) -->
+<!-- ============================================================ -->
 <div class="info-box">
 
 <h3>Başlamak için ipuçları</h3>
@@ -65,46 +200,42 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-    const monthLabels = {{ month_labels_json|safe }};
-    const monthValues = {{ month_values_json|safe }};
-    const expenseLabels = {{ expense_labels_json|safe }};
-    const expenseValues = {{ expense_values_json|safe }};
+    const trendLabels = {{ trend_labels_json|safe }};
+    const trendEfatura = {{ trend_efatura_json|safe }};
+    const trendEarsiv = {{ trend_earsiv_json|safe }};
+    const trendEirsaliye = {{ trend_eirsaliye_json|safe }};
+    const trendPending = {{ trend_pending_json|safe }};
 
-    new Chart(document.getElementById("revenueChart"), {
+    new Chart(document.getElementById("trendChart"), {
         type: "line",
         data: {
-            labels: monthLabels,
-            datasets: [{
-                label: "Gelir (₺)",
-                data: monthValues,
-                borderColor: "#00ff66",
-                backgroundColor: "rgba(0, 255, 102, 0.15)",
-                tension: 0.3,
-                fill: true,
-            }]
+            labels: trendLabels,
+            datasets: [
+                { label: "E-Fatura", data: trendEfatura, borderColor: "#ff5c9d", backgroundColor: "transparent", tension: 0.4, pointRadius: 0, borderWidth: 2 },
+                { label: "E-Arşiv", data: trendEarsiv, borderColor: "#8fd14f", backgroundColor: "transparent", tension: 0.4, pointRadius: 0, borderWidth: 2 },
+                { label: "E-İrsaliye", data: trendEirsaliye, borderColor: "#4fc3f7", backgroundColor: "transparent", tension: 0.4, pointRadius: 0, borderWidth: 2 },
+                { label: "Onay Bekleyen", data: trendPending, borderColor: "#f4c542", backgroundColor: "transparent", tension: 0.4, pointRadius: 0, borderWidth: 2 },
+            ]
         },
         options: {
             responsive: true,
-            plugins: { legend: { display: false } },
-            scales: { y: { beginAtZero: true } }
-        }
-    });
-
-    new Chart(document.getElementById("expenseChart"), {
-        type: "doughnut",
-        data: {
-            labels: expenseLabels,
-            datasets: [{
-                data: expenseValues,
-                backgroundColor: ["#ff4444", "#f97316", "#00ff66"],
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: { legend: { position: "bottom" } }
+            interaction: { mode: "index", intersect: false },
+            plugins: { legend: { position: "bottom", labels: { color: "#7a8a99" } } },
+            scales: {
+                y: { beginAtZero: true, ticks: { color: "#7a8a99" }, grid: { color: "rgba(255,255,255,0.05)" } },
+                x: { ticks: { color: "#7a8a99", maxTicksLimit: 10 }, grid: { display: false } },
+            }
         }
     });
 });
+
+function toggleReportsPanel() {
+    const panel = document.getElementById("reportsPanel");
+    const arrow = document.getElementById("trendToggleArrow");
+    const isHidden = panel.style.display === "none";
+    panel.style.display = isHidden ? "block" : "none";
+    arrow.textContent = isHidden ? "▴" : "▾";
+}
 </script>
 
 {% endblock %}

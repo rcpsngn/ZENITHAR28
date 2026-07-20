@@ -42,47 +42,76 @@ def home(request):
     bank_out = BankTransaction.objects.filter(user=user, type="withdrawal", date__gte=year_start).aggregate(s=Sum("amount"))["s"] or 0
     total_expense = cash_out + bank_out
 
-    # ---- Aylık gelir grafiği (son 6 ay) ----
-    month_labels = []
-    month_values = []
-    for i in range(5, -1, -1):
-        m = today.month - i
-        y = today.year
-        while m <= 0:
-            m += 12
-            y -= 1
-        month_start = date(y, m, 1)
-        month_end = date(y + 1, 1, 1) if m == 12 else date(y, m + 1, 1)
-        total = Invoice.objects.filter(
-            user=user, type="e-fatura", status__in=["sent", "approved", "paid"],
-            issue_date__gte=month_start, issue_date__lt=month_end
-        ).aggregate(s=Sum("total_amount"))["s"] or 0
-        month_labels.append(month_start.strftime("%b %Y"))
-        month_values.append(float(total))
+    # ---- Belge hacmi trend grafiği (son 30 gün) — Uyumsoft portal referanslı ana sayfa ----
+    from apps.help.models import Announcement
 
-    # ---- Gider dağılımı (Kasa / Banka / POS Komisyonu) ----
-    from apps.checks.models import POSTransaction
-    pos_qs = POSTransaction.objects.filter(user=user, date__gte=year_start)
-    pos_commission = sum((t.commission_amount for t in pos_qs), 0)
+    trend_days = 30
+    trend_start = today - timedelta(days=trend_days - 1)
+    trend_labels = []
+    efatura_series, earsiv_series, eirsaliye_series, pending_series = [], [], [], []
 
-    expense_labels = ["Kasa Çıkışı", "Banka Çıkışı", "POS Komisyonu"]
-    expense_values = [float(cash_out), float(bank_out), float(pos_commission)]
+    # Tek seferde tüm aralığı çekip Python tarafında günlere dağıtmak, 30 gün
+    # için 30*4 ayrı sorgu atmaktan çok daha verimli.
+    docs_in_range = list(
+        Invoice.objects.filter(user=user, issue_date__gte=trend_start, issue_date__lte=today)
+        .exclude(status="draft")
+        .values("issue_date", "type", "status")
+    )
+
+    for i in range(trend_days):
+        day = trend_start + timedelta(days=i)
+        trend_labels.append(day.strftime("%d %b"))
+        day_docs = [d for d in docs_in_range if d["issue_date"] == day]
+        efatura_series.append(sum(1 for d in day_docs if d["type"] == "e-fatura"))
+        earsiv_series.append(sum(1 for d in day_docs if d["type"] == "e-arsiv"))
+        eirsaliye_series.append(sum(1 for d in day_docs if d["type"] == "e-irsaliye"))
+        pending_series.append(sum(1 for d in day_docs if d["status"] == "sent"))
+
+    # ---- Genişletilmiş panel: durum bazlı özet kartlar (gerçek sayılar) ----
+    all_docs_this_year = Invoice.objects.filter(user=user, issue_date__gte=year_start)
+    status_counts = {
+        "sent": all_docs_this_year.filter(status="sent").count(),
+        "approved": all_docs_this_year.filter(status="approved").count(),
+        "rejected": all_docs_this_year.filter(status="rejected").count(),
+        "cancelled": all_docs_this_year.filter(status="cancelled").count(),
+        "partially_accepted": all_docs_this_year.filter(status="partially_accepted").count(),
+        "returned": all_docs_this_year.filter(status="returned").count(),
+    }
+
+    recent_incoming = Invoice.objects.filter(
+        user=user, type="e-fatura", is_archived=False
+    ).exclude(status="draft").order_by("-issue_date")[:5]
+
+    recent_responses = Invoice.objects.filter(
+        user=user, type="e-fatura", status__in=["approved", "rejected"],
+    ).order_by("-issue_date")[:5]
+
+    gib_announcements = Announcement.objects.filter(category="gib", is_active=True)[:5]
+    general_announcements = Announcement.objects.filter(category="general", is_active=True)[:5]
 
     return render(request, "home.html", {
         "active_employee_count": active_employee_count,
         "active_invoice_count": active_invoice_count,
         "total_income": total_income,
         "total_expense": total_expense,
-        "month_labels_json": json.dumps(month_labels),
-        "month_values_json": json.dumps(month_values),
-        "expense_labels_json": json.dumps(expense_labels),
-        "expense_values_json": json.dumps(expense_values),
+
+        "trend_labels_json": json.dumps(trend_labels),
+        "trend_efatura_json": json.dumps(efatura_series),
+        "trend_earsiv_json": json.dumps(earsiv_series),
+        "trend_eirsaliye_json": json.dumps(eirsaliye_series),
+        "trend_pending_json": json.dumps(pending_series),
+
+        "status_counts": status_counts,
+        "recent_incoming": recent_incoming,
+        "recent_responses": recent_responses,
+        "gib_announcements": gib_announcements,
+        "general_announcements": general_announcements,
     })
 
 
 @login_required
 def reports_view(request):
-    from apps.invoices.models import Invoice
+    from apps.invoices.models import Invoice, InvoiceItem
     from apps.current_accounts.models import CurrentAccount, Product
     from django.db.models import Count
 
@@ -105,6 +134,22 @@ def reports_view(request):
         .order_by("-total")[:5]
     )
 
+    # Aşama 30 notu: "en çok satan ürün kırılımı eklenirse tamamlanabilir."
+    # InvoiceItem'da Product'a bağlı bir foreign key olmadığı için (kalemler
+    # serbest metin "description" ile tutuluyor), kırılım açıklama metnine
+    # göre gruplanarak yapılıyor. Bu, gerçek bir Product FK'sinden daha az
+    # kesin olsa da (ör. aynı ürün farklı yazılmışsa ayrı satır sayılır),
+    # şema değişikliği gerektirmeden anlamlı bir yaklaşık sonuç verir.
+    top_selling_products = (
+        InvoiceItem.objects.filter(
+            invoice__user=user, invoice__type="e-fatura", invoice__issue_date__gte=year_start,
+        )
+        .exclude(invoice__status__in=["draft", "cancelled"])
+        .values("description")
+        .annotate(total_quantity=Sum("quantity"), total_amount=Sum("total"))
+        .order_by("-total_amount")[:5]
+    )
+
     accounts = CurrentAccount.objects.filter(user=user)
     total_receivable = sum((a.balance for a in accounts if a.balance > 0), 0)
     total_payable = sum((-a.balance for a in accounts if a.balance < 0), 0)
@@ -113,13 +158,21 @@ def reports_view(request):
     total_stock_value = sum((p.stock_value for p in products), 0)
     low_stock_products = [p for p in products if p.is_low_stock]
 
+    # Aşama 30 notu: "maliyet analizi ... eklenirse tamamlanabilir."
+    # Product.cost_price (bu pakette eklendi) üzerinden potansiyel kâr hesabı.
+    total_potential_profit = sum((p.potential_profit for p in products), 0)
+    most_profitable_products = sorted(products, key=lambda p: p.potential_profit, reverse=True)[:5]
+
     return render(request, "reports/general-reports.html", {
         "status_summary": status_summary,
         "top_customers": top_customers,
+        "top_selling_products": top_selling_products,
         "total_receivable": total_receivable,
         "total_payable": total_payable,
         "total_stock_value": total_stock_value,
         "low_stock_products": low_stock_products,
+        "total_potential_profit": total_potential_profit,
+        "most_profitable_products": most_profitable_products,
         "year": today.year,
     })
 

@@ -44,6 +44,7 @@ def product_save(request, id=None):
         product.unit = request.POST.get("unit", "Adet")
         product.quantity = to_decimal(request.POST.get("quantity"), "0")
         product.unit_price = to_decimal(request.POST.get("unit_price"), "0")
+        product.cost_price = to_decimal(request.POST.get("cost_price"), "0")
         product.vat_rate = to_decimal(request.POST.get("vat_rate"), "20")
         product.min_stock_level = to_decimal(request.POST.get("min_stock_level"), "0")
         product.save()

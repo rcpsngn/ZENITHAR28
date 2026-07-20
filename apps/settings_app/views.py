@@ -2,8 +2,8 @@ from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
-from .models import CompanyProfile, PortalSettings
-from .forms import PortalSettingsForm
+from .models import CompanyProfile, PortalSettings, DocumentDesignSettings
+from .forms import PortalSettingsForm, DocumentDesignSettingsForm
 
 @login_required
 def company_info(request):
@@ -34,7 +34,16 @@ def accountant(request):
 
 @login_required
 def document_design(request):
-    return render(request, 'settings_app/document-design.html')
+    design, created = DocumentDesignSettings.objects.get_or_create(user=request.user)
+    if request.method == "POST":
+        form = DocumentDesignSettingsForm(request.POST, instance=design)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Belge tasarım ayarları kaydedildi. Yeni faturalar bu ayarlarla numaralandırılacak.")
+            return redirect("document_design")
+    else:
+        form = DocumentDesignSettingsForm(instance=design)
+    return render(request, 'settings_app/document-design.html', {"form": form})
 
 @login_required
 def portal_settings(request):

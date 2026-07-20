@@ -55,7 +55,7 @@
                     </td>
                     <td style="padding: 12px 10px; text-align:center;">
                         <div class="invoice-actions">
-                            <button class="action-btn btn-edit" onclick='openProductModal({{ p.id }}, "{{ p.code|escapejs }}", "{{ p.name|escapejs }}", "{{ p.category|escapejs }}", "{{ p.unit }}", "{{ p.quantity }}", "{{ p.unit_price }}", "{{ p.vat_rate }}", "{{ p.min_stock_level }}")'>✏️</button>
+                            <button class="action-btn btn-edit" onclick='openProductModal({{ p.id }}, "{{ p.code|escapejs }}", "{{ p.name|escapejs }}", "{{ p.category|escapejs }}", "{{ p.unit }}", "{{ p.quantity }}", "{{ p.unit_price }}", "{{ p.vat_rate }}", "{{ p.min_stock_level }}", "{{ p.cost_price }}")'>✏️</button>
                             <a href="{% url 'product_delete' p.id %}" class="action-btn btn-delete" onclick="return confirm('Bu ürünü silmek istediğinize emin misiniz?');">🗑️</a>
                         </div>
                     </td>
@@ -88,7 +88,8 @@
                     </select>
                 </div>
                 <div class="input-unit"><label>Miktar</label><input type="number" step="0.01" name="quantity" id="p_quantity" value="0"></div>
-                <div class="input-unit"><label>Birim Fiyat</label><input type="number" step="0.01" name="unit_price" id="p_unit_price" value="0"></div>
+                <div class="input-unit"><label>Birim Fiyat (Satış)</label><input type="number" step="0.01" name="unit_price" id="p_unit_price" value="0"></div>
+                <div class="input-unit"><label>Maliyet Fiyatı (Alış)</label><input type="number" step="0.01" name="cost_price" id="p_cost_price" value="0"></div>
                 <div class="input-unit"><label>KDV Oranı (%)</label><input type="number" step="0.01" name="vat_rate" id="p_vat_rate" value="20"></div>
                 <div class="input-unit"><label>Kritik Stok Seviyesi</label><input type="number" step="0.01" name="min_stock_level" id="p_min_stock" value="0"></div>
             </div>
@@ -102,7 +103,7 @@
 
 <link rel="stylesheet" href="{% static 'css/invoice-actions.css' %}?v=2">
 <script>
-function openProductModal(id, code, name, category, unit, quantity, unit_price, vat_rate, min_stock) {
+function openProductModal(id, code, name, category, unit, quantity, unit_price, vat_rate, min_stock, cost_price) {
     const form = document.getElementById("productForm");
     document.getElementById("productModalTitle").textContent = id ? "✏️ Ürün Düzenle" : "➕ Yeni Ürün";
     form.action = id ? `/current-accounts/stok-takip/kaydet/${id}/` : "{% url 'product_save' %}";
@@ -112,6 +113,7 @@ function openProductModal(id, code, name, category, unit, quantity, unit_price, 
     document.getElementById("p_unit").value = unit || "Adet";
     document.getElementById("p_quantity").value = quantity || 0;
     document.getElementById("p_unit_price").value = unit_price || 0;
+    document.getElementById("p_cost_price").value = cost_price || 0;
     document.getElementById("p_vat_rate").value = vat_rate || 20;
     document.getElementById("p_min_stock").value = min_stock || 0;
     document.getElementById("productModal").style.display = "flex";

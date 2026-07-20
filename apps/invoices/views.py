@@ -125,7 +125,17 @@ def invoices_page(request):
     if request.method == "POST":
         auto_ettn = str(uuid.uuid4())
         current_year = datetime.now().year
-        prefix = f"ZNT{current_year}"
+
+        # Aşama 36: seri no öneki artık sabit "ZNT" değil, kullanıcının
+        # Genel Ayarlar > Belge Tasarımı sayfasında kaydettiği değerden okunuyor.
+        try:
+            from apps.settings_app.models import DocumentDesignSettings
+            design = DocumentDesignSettings.objects.filter(user=request.user).first()
+            prefix_code = design.invoice_number_prefix if design else "ZNT"
+        except Exception:
+            prefix_code = "ZNT"
+
+        prefix = f"{prefix_code}{current_year}"
 
         last_invoice = Invoice.objects.filter(
             invoice_number__startswith=prefix
@@ -133,7 +143,7 @@ def invoices_page(request):
 
         if last_invoice:
             try:
-                last_sequence = int(last_invoice.invoice_number[7:])
+                last_sequence = int(last_invoice.invoice_number[len(prefix):])
                 new_sequence = last_sequence + 1
             except ValueError:
                 new_sequence = 1

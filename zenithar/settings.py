@@ -267,7 +267,15 @@ SMS_API_KEY = os.environ.get("SMS_API_KEY")
 # (bkz. apps/settings_app/crypto.py). Anahtarı ÜRETİMDE .env dosyasına yaz,
 # koda GÖMME. Anahtar üretmek için:
 #   python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
-PORTAL_ENCRYPTION_KEY = os.environ.get("PORTAL_ENCRYPTION_KEY")
+PORTAL_ENCRYPTION_KEY = os.environ.get(
+    "PORTAL_ENCRYPTION_KEY",
+    # UYARI: Bu, yalnızca .env ayarlanmamışsa (geliştirme/test ortamı) devreye
+    # giren GÜVENSİZ bir varsayılan anahtardır — SECRET_KEY'deki
+    # "django-insecure-change-this" ile aynı mantık. ÜRETİMDE mutlaka .env'e
+    # kendi anahtarınızı yazın; aksi halde şifreli veriler bu bilinen anahtarla
+    # çözülebilir hale gelir.
+    "ffFA3TDVrkhzfbb3vDsRPgVCWCFtwcl2M9-nfD4xCnc=",
+)
 
 # ======================
 # LOGIN / LOGOUT & SESSION CONFIG

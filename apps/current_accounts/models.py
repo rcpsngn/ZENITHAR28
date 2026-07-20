@@ -99,6 +99,10 @@ class Product(models.Model):
     unit = models.CharField(max_length=20, choices=UNIT_CHOICES, default='Adet')
     quantity = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     unit_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    cost_price = models.DecimalField(
+        max_digits=12, decimal_places=2, default=0,
+        help_text="Ürünün alış/maliyet fiyatı (kâr marjı raporları için)."
+    )
     vat_rate = models.DecimalField(max_digits=5, decimal_places=2, default=20)
     min_stock_level = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     is_active = models.BooleanField(default=True)
@@ -118,6 +122,16 @@ class Product(models.Model):
     @property
     def is_low_stock(self):
         return self.quantity <= self.min_stock_level
+
+    @property
+    def profit_margin_per_unit(self):
+        """Birim başına kâr (satış fiyatı - maliyet fiyatı). Maliyet girilmemişse 0."""
+        return self.unit_price - self.cost_price
+
+    @property
+    def potential_profit(self):
+        """Mevcut stoğun tamamı satılırsa elde edilecek toplam kâr (Raporlar > Stok, Aşama 30)."""
+        return self.profit_margin_per_unit * self.quantity
 
 
 class StockMovement(models.Model):

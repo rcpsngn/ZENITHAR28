@@ -9,19 +9,32 @@
     </div>
 
     <div class="card" style="background: rgba(15, 31, 23, 0.5); border: 1px solid rgba(0, 255, 150, 0.2); border-radius: 6px; padding: 20px; max-width: 600px;">
-        <form style="display: flex; flex-direction: column; gap: 16px;">
+        <form method="post" style="display: flex; flex-direction: column; gap: 16px;">
+            {% csrf_token %}
             <div>
                 <label style="display: block; color: #1a202c; font-size: 13px; margin-bottom: 6px; font-weight: 600;">E-Fatura Seri No Başlangıcı (Prefix)</label>
-                <input type="text" class="search-input" style="width: 100%; box-sizing: border-box;" value="ZEN2026">
+                {{ form.invoice_number_prefix }}
+                {% if form.invoice_number_prefix.errors %}
+                    <small style="color:#ff6666;">{{ form.invoice_number_prefix.errors.0 }}</small>
+                {% else %}
+                    <small style="color:#7a8a99;">Örnek: "ZNT" girerseniz yeni faturalar ZNT2026000000001 şeklinde numaralanır.</small>
+                {% endif %}
             </div>
             <div>
                 <label style="display: block; color: #1a202c; font-size: 13px; margin-bottom: 6px; font-weight: 600;">Fatura Alt Not Şablonu</label>
-                <textarea class="search-input" style="width: 100%; box-sizing: border-box; height: 70px; padding: 6px;">Mal bedeli banka hesaplarımıza ödenmelidir. Gecikme faizi %2 olarak uygulanır.</textarea>
+                {{ form.footer_note }}
             </div>
             <div>
-                <button type="button" class="dark-btn" style="background: #002208; border: 1px solid #004411; color: #00ff66; padding: 8px 16px; cursor: pointer;">Tasarım Şablonunu Kaydet</button>
+                <button type="submit" class="dark-btn" style="background: #002208; border: 1px solid #004411; color: #00ff66; padding: 8px 16px; cursor: pointer;">Tasarım Şablonunu Kaydet</button>
             </div>
         </form>
     </div>
+    <p style="color:#7a8a99; font-size:12px; max-width:600px; margin-top:14px;">
+        Not: Burada girilen seri no öneki, yeni oluşturduğunuz e-Faturaların numaralandırmasını
+        gerçekten etkiler (bkz. <code>apps/invoices/views.py &gt; invoices_page</code>). Tam
+        sürükle-bırak görsel şablon tasarımcısı (logo yerleşimi, renk/font seçimi vb.) bu
+        sürümde henüz yok — ayrı bir görsel düzenleyici bileşeni gerektiren, kapsamı daha
+        büyük bir özellik olarak planlanmalı.
+    </p>
 </div>
 {% endblock %}

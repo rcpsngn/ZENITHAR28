@@ -1,5 +1,5 @@
 from django import forms
-from .models import PortalSettings
+from .models import PortalSettings, DocumentDesignSettings
 
 
 class PortalSettingsForm(forms.ModelForm):
@@ -19,3 +19,19 @@ class PortalSettingsForm(forms.ModelForm):
             "api_url": forms.URLInput(attrs={"class": "search-input", "placeholder": "https://api.saglayici.com"}),
             "api_username": forms.TextInput(attrs={"class": "search-input"}),
         }
+
+
+class DocumentDesignSettingsForm(forms.ModelForm):
+    class Meta:
+        model = DocumentDesignSettings
+        fields = ["invoice_number_prefix", "footer_note"]
+        widgets = {
+            "invoice_number_prefix": forms.TextInput(attrs={"class": "search-input", "maxlength": "10"}),
+            "footer_note": forms.Textarea(attrs={"class": "search-input", "style": "height:70px; padding:6px;"}),
+        }
+
+    def clean_invoice_number_prefix(self):
+        value = self.cleaned_data["invoice_number_prefix"].strip().upper()
+        if not value.isalnum():
+            raise forms.ValidationError("Seri no öneki yalnızca harf ve rakam içerebilir.")
+        return value
