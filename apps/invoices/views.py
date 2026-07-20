@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.http import JsonResponse
 from .models import Invoice, InvoiceItem
 from . import integrations
+from . import notifications
 import uuid
 import json
 from datetime import datetime, timedelta
@@ -504,18 +505,35 @@ def invoice_toggle_archive(request, id):
 
 @login_required
 def invoice_approve(request, id):
-    invoice = get_object_or_404(Invoice, id=id, user=request.user)
+    # Yalnızca gerçekten "gönderilmiş/alınmış" (sent) durumundaki gelen faturalar
+    # onaylanabilir; bir taslağı ya da zaten iptal/red edilmiş bir faturayı
+    # yanlışlıkla "onaylandı" yapmanın önüne geçer.
+    invoice = get_object_or_404(Invoice, id=id, user=request.user, status="sent")
     invoice.status = "approved"
     invoice.save(update_fields=["status"])
+    messages.success(request, f"{invoice.invoice_number} onaylandı.")
     return _safe_redirect(request, "invoices_incoming")
 
 
 @login_required
 def invoice_reject(request, id):
-    invoice = get_object_or_404(Invoice, id=id, user=request.user)
+    invoice = get_object_or_404(Invoice, id=id, user=request.user, status="sent")
     invoice.status = "rejected"
     invoice.save(update_fields=["status"])
+    messages.warning(request, f"{invoice.invoice_number} reddedildi.")
     return _safe_redirect(request, "invoices_incoming")
+
+
+@login_required
+def invoice_notify_customer(request, id):
+    """E-Arşiv faturasının linkini müşteriye e-posta/SMS ile gönderir (Aşama 11)."""
+    invoice = get_object_or_404(Invoice, id=id, user=request.user, type="e-arsiv")
+    result = notifications.notify_customer(invoice, request=request)
+    if result["success"]:
+        messages.success(request, result["message"])
+    else:
+        messages.error(request, result["message"])
+    return _safe_redirect(request, "earchive_sent")
 
 
 @login_required

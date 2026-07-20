@@ -55,15 +55,20 @@
                     </td>
                     <td>
                         {% if invoice.status == "approved" %}<span class="status approved">Onaylandı</span>
+                        {% elif invoice.status == "partially_accepted" %}<span class="status pending">Kısmi Kabul</span>
                         {% elif invoice.status == "rejected" %}<span class="status rejected">Reddedildi</span>
                         {% elif invoice.status == "cancelled" %}<span class="status cancelled">İptal Edildi</span>
-                        {% else %}<span class="status pending">Onay Bekliyor</span>
+                        {% elif invoice.status == "sent" %}<span class="status pending">Onay Bekliyor</span>
+                        {% else %}<span class="status pending">{{ invoice.get_status_display }}</span>
                         {% endif %}
                     </td>
                     <td style="text-align:center;">
                         <div class="invoice-actions">
-                            <a href="{% url 'waybill_approve' invoice.id %}" class="action-btn btn-copy" title="Onayla">✔️</a>
-                            <a href="{% url 'waybill_reject' invoice.id %}" class="action-btn btn-delete" title="Reddet" onclick="return confirm('Bu irsaliyeyi reddetmek istediğinize emin misiniz?');">✖️</a>
+                            {% if invoice.status == "sent" %}
+                                <a href="{% url 'waybill_approve' invoice.id %}" class="action-btn btn-copy" title="Tam Kabul">✔️</a>
+                                <a href="{% url 'waybill_partial_accept' invoice.id %}" class="action-btn btn-edit" title="Kısmi Kabul" onclick="return confirm('Bu irsaliye kısmi kabul olarak işaretlensin mi? (Not eklemek isterseniz irsaliye detayından ekleyebilirsiniz.)');">◐</a>
+                                <a href="{% url 'waybill_reject' invoice.id %}" class="action-btn btn-delete" title="Reddet" onclick="return confirm('Bu irsaliyeyi reddetmek istediğinize emin misiniz?');">✖️</a>
+                            {% endif %}
                         </div>
                     </td>
                     <td style="text-align:center;">

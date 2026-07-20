@@ -1,7 +1,37 @@
 from django.db import models
+from django.core.exceptions import ValidationError
 from apps.accounts.models import User
 
-class Check(models.Model):
+
+class StatusTransitionMixin:
+    """
+    Çek/Senet için basit bir durum makinesi (state machine).
+
+    Excel notu: "ayrı bir 'state machine' sınıfı yok" — artık var. Amaç:
+    bir çeki, örn. 'cashed' (tahsil edilmiş) durumundan doğrudan 'portfolio'ya
+    geri almak gibi anlamsız/riskli geçişleri engellemek.
+
+    ALLOWED_TRANSITIONS alt sınıflarda (Check, Promissory) tanımlanmalı.
+    """
+    ALLOWED_TRANSITIONS = {}
+
+    def can_transition_to(self, new_status: str) -> bool:
+        if new_status == self.status:
+            return False  # aynı duruma "geçiş" anlamsız
+        return new_status in self.ALLOWED_TRANSITIONS.get(self.status, set())
+
+    def transition_to(self, new_status: str):
+        """Geçiş geçerliyse durumu değiştirip kaydeder; değilse ValidationError fırlatır."""
+        if not self.can_transition_to(new_status):
+            raise ValidationError(
+                f"'{self.get_status_display()}' durumundan '{dict(self.STATUS_CHOICES).get(new_status, new_status)}' "
+                f"durumuna geçiş yapılamaz."
+            )
+        self.status = new_status
+        self.save(update_fields=["status"])
+
+
+class Check(StatusTransitionMixin, models.Model):
     TYPE_CHOICES = [
         ('received', 'Alınan Çek'),
         ('issued', 'Verilen Çek'),
@@ -14,6 +44,20 @@ class Check(models.Model):
         ('returned', 'İade'),
         ('cancelled', 'İptal'),
     ]
+
+    # Durum makinesi: hangi durumdan hangi durumlara geçilebilir.
+    #   portfolio -> bankaya verilebilir ya da doğrudan iptal edilebilir
+    #   banked    -> tahsil edilebilir, karşılıksız çıkıp iade edilebilir, ya da portföye geri alınabilir
+    #   cashed    -> SON durum (tahsil edilmiş bir çek geri alınamaz)
+    #   returned  -> tekrar portföye alınıp yeniden denenebilir
+    #   cancelled -> SON durum
+    ALLOWED_TRANSITIONS = {
+        'portfolio': {'banked', 'cancelled'},
+        'banked': {'cashed', 'returned', 'portfolio'},
+        'cashed': set(),
+        'returned': {'portfolio', 'cancelled'},
+        'cancelled': set(),
+    }
     
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='checks')
     type = models.CharField(max_length=20, choices=TYPE_CHOICES)
@@ -36,7 +80,7 @@ class Check(models.Model):
         verbose_name_plural = 'Çekler'
         ordering = ['-due_date']
 
-class Promissory(models.Model):
+class Promissory(StatusTransitionMixin, models.Model):
     TYPE_CHOICES = [
         ('received', 'Alınan Senet'),
         ('issued', 'Verilen Senet'),
@@ -49,6 +93,15 @@ class Promissory(models.Model):
         ('returned', 'İade'),
         ('cancelled', 'İptal'),
     ]
+
+    # Check ile aynı durum makinesi mantığı (bkz. Check.ALLOWED_TRANSITIONS açıklaması).
+    ALLOWED_TRANSITIONS = {
+        'portfolio': {'banked', 'cancelled'},
+        'banked': {'cashed', 'returned', 'portfolio'},
+        'cashed': set(),
+        'returned': {'portfolio', 'cancelled'},
+        'cancelled': set(),
+    }
     
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='promissories')
     type = models.CharField(max_length=20, choices=TYPE_CHOICES)

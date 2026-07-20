@@ -23,7 +23,11 @@
     {% if selected_account %}
     <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom:12px;">
         <h3 style="color:#00ff66; font-size:15px;">{{ selected_account.name }} — Hesap Hareketleri</h3>
-        <button onclick="openTransactionModal()" style="background:#00ff66; color:#002208; border:none; padding:8px 16px; border-radius:6px; font-weight:700; cursor:pointer;">➕ İşlem Ekle</button>
+        <div style="display:flex; gap:8px;">
+            <a href="{% url 'account_statement_export' selected_account.id 'xlsx' %}" style="background:#052033; color:#33aaff; border:1px solid #33aaff; padding:8px 16px; border-radius:6px; font-weight:700; cursor:pointer; text-decoration:none;">📊 Excel İndir</a>
+            <a href="{% url 'account_statement_export' selected_account.id 'csv' %}" style="background:#052033; color:#33aaff; border:1px solid #33aaff; padding:8px 16px; border-radius:6px; font-weight:700; cursor:pointer; text-decoration:none;">📄 CSV İndir</a>
+            <button onclick="openTransactionModal()" style="background:#00ff66; color:#002208; border:none; padding:8px 16px; border-radius:6px; font-weight:700; cursor:pointer;">➕ İşlem Ekle</button>
+        </div>
     </div>
 
     <div class="card" style="background: rgba(15, 31, 23, 0.5); border: 1px solid rgba(0, 255, 150, 0.2); border-radius: 6px; padding: 20px; overflow-x: auto;">

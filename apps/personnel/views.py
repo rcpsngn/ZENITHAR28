@@ -3,6 +3,7 @@ from rest_framework import viewsets, status, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from apps.accounts.permissions import IsOwner, IsAdminOrAccountant, ReadOnlyOrHasRole
 from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.auth.decorators import login_required  # Şablon güvenliği için eklendi
 from .models import Employee, Attendance, Salary, Leave
@@ -12,7 +13,7 @@ from datetime import datetime, date
 
 class EmployeeViewSet(viewsets.ModelViewSet):
     serializer_class = EmployeeSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsOwner]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['is_active', 'department', 'position']
     search_fields = ['full_name', 'identity_number', 'phone', 'email']
@@ -35,7 +36,7 @@ class EmployeeViewSet(viewsets.ModelViewSet):
 
 class AttendanceViewSet(viewsets.ModelViewSet):
     serializer_class = AttendanceSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsOwner]
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_fields = ['employee', 'type', 'date']
     ordering_fields = ['date', 'time']
@@ -64,8 +65,13 @@ class AttendanceViewSet(viewsets.ModelViewSet):
 
 
 class SalaryViewSet(viewsets.ModelViewSet):
+    """
+    Maaş bilgisi hassas finansal veridir: görüntüleme herkese (giriş yapmış ve
+    sahip olan kullanıcıya) açık, ama oluşturma/güncelleme/silme ve 'ödendi'
+    işaretleme yalnızca admin/accountant rolündeki kullanıcılara izinli.
+    """
     serializer_class = SalarySerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsOwner, ReadOnlyOrHasRole.for_roles("accountant")]
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_fields = ['employee', 'status', 'year', 'month']
     ordering_fields = ['year', 'month', 'payment_date']
@@ -85,11 +91,17 @@ class SalaryViewSet(viewsets.ModelViewSet):
 
 class LeaveViewSet(viewsets.ModelViewSet):
     serializer_class = LeaveSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsOwner]
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_fields = ['employee', 'type', 'status']
     ordering_fields = ['start_date', 'created_at']
     ordering = ['-start_date']
+
+    def get_permissions(self):
+        # İzin onaylama/reddetme yönetimsel bir işlemdir; yalnızca admin/accountant yapabilmeli.
+        if self.action in ("approve", "reject"):
+            return [IsAuthenticated(), IsOwner(), IsAdminOrAccountant()]
+        return super().get_permissions()
 
     def get_queryset(self):
         return Leave.objects.filter(employee__user=self.request.user)

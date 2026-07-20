@@ -19,6 +19,7 @@ urlpatterns = [
     path("toggle-archive/<int:id>/", views.invoice_toggle_archive, name="invoice_toggle_archive"),
     path("approve/<int:id>/", views.invoice_approve, name="invoice_approve"),
     path("reject/<int:id>/", views.invoice_reject, name="invoice_reject"),
+    path("notify/<int:id>/", views.invoice_notify_customer, name="invoice_notify_customer"),
     path("bulk-mark-read/", views.invoices_bulk_mark_read, name="invoices_bulk_mark_read"),
     path("bulk-mark-unread/", views.invoices_bulk_mark_unread, name="invoices_bulk_mark_unread"),
     # apps/invoices/urls.py içinde bul ve şu şekilde değiştir:

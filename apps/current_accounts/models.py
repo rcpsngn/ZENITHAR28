@@ -118,3 +118,47 @@ class Product(models.Model):
     @property
     def is_low_stock(self):
         return self.quantity <= self.min_stock_level
+
+
+class StockMovement(models.Model):
+    """
+    Stok giriş/çıkış fişi (Aşama 20). Kaydedildiğinde apps/current_accounts/signals.py
+    içindeki post_save sinyali Product.quantity alanını OTOMATİK günceller —
+    Excel notundaki "Stok hareket fişi kesildiğinde ürün adedini güncelleyen
+    Django Sinyalleri (Signals) yazılmalı" isteği tam olarak budur.
+
+    Miktarın yetersiz olup olmadığı (çıkışta negatif stoğa düşmemesi) VIEW
+    katmanında (kayıttan ÖNCE) kontrol edilir; sinyal yalnızca zaten doğrulanmış
+    bir hareketi Product.quantity'e yansıtır.
+    """
+    TYPE_CHOICES = [
+        ('in', 'Giriş'),
+        ('out', 'Çıkış'),
+    ]
+
+    REASON_CHOICES = [
+        ('purchase', 'Satın Alma'),
+        ('sale', 'Satış'),
+        ('return', 'İade'),
+        ('count_adjustment', 'Sayım Düzeltmesi'),
+        ('damaged', 'Fire / Hasar'),
+        ('other', 'Diğer'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='stock_movements')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='movements')
+    type = models.CharField(max_length=10, choices=TYPE_CHOICES)
+    reason = models.CharField(max_length=20, choices=REASON_CHOICES, default='other')
+    quantity = models.DecimalField(max_digits=12, decimal_places=2)
+    date = models.DateField()
+    reference_note = models.CharField(max_length=255, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'stock_movements'
+        verbose_name = 'Stok Hareketi'
+        verbose_name_plural = 'Stok Hareketleri'
+        ordering = ['-date', '-created_at']
+
+    def __str__(self):
+        return f"{self.product.name} - {self.get_type_display()} - {self.quantity}"

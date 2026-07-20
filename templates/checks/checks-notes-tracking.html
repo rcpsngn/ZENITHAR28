@@ -45,8 +45,14 @@
                         <div class="invoice-actions">
                             {% if c.status == 'portfolio' %}
                                 <a href="{% url 'check_update_status' c.id 'banked' %}" class="action-btn btn-issue" title="Bankaya Ver">🏦</a>
+                                <a href="{% url 'check_update_status' c.id 'cancelled' %}" class="action-btn btn-cancel" title="İptal Et" onclick="return confirm('Bu çek iptal edilsin mi?');">✖️</a>
+                            {% elif c.status == 'banked' %}
                                 <a href="{% url 'check_update_status' c.id 'cashed' %}" class="action-btn btn-copy" title="Tahsil Et">✔️</a>
-                                <a href="{% url 'check_update_status' c.id 'returned' %}" class="action-btn btn-cancel" title="İade" onclick="return confirm('Bu çek iade olarak işaretlensin mi?');">↩️</a>
+                                <a href="{% url 'check_update_status' c.id 'returned' %}" class="action-btn btn-cancel" title="Karşılıksız / İade" onclick="return confirm('Bu çek iade olarak işaretlensin mi?');">↩️</a>
+                                <a href="{% url 'check_update_status' c.id 'portfolio' %}" class="action-btn btn-issue" title="Portföye Geri Al">↺</a>
+                            {% elif c.status == 'returned' %}
+                                <a href="{% url 'check_update_status' c.id 'portfolio' %}" class="action-btn btn-issue" title="Tekrar Portföye Al">↺</a>
+                                <a href="{% url 'check_update_status' c.id 'cancelled' %}" class="action-btn btn-cancel" title="İptal Et" onclick="return confirm('Bu çek iptal edilsin mi?');">✖️</a>
                             {% endif %}
                             <a href="{% url 'check_delete' c.id %}" class="action-btn btn-delete" onclick="return confirm('Silinsin mi?');">🗑️</a>
                         </div>
@@ -84,8 +90,14 @@
                         <div class="invoice-actions">
                             {% if p.status == 'portfolio' %}
                                 <a href="{% url 'promissory_update_status' p.id 'banked' %}" class="action-btn btn-issue" title="Bankaya Ver">🏦</a>
+                                <a href="{% url 'promissory_update_status' p.id 'cancelled' %}" class="action-btn btn-cancel" title="İptal Et" onclick="return confirm('Bu senet iptal edilsin mi?');">✖️</a>
+                            {% elif p.status == 'banked' %}
                                 <a href="{% url 'promissory_update_status' p.id 'cashed' %}" class="action-btn btn-copy" title="Tahsil Et">✔️</a>
-                                <a href="{% url 'promissory_update_status' p.id 'returned' %}" class="action-btn btn-cancel" title="İade" onclick="return confirm('Bu senet iade olarak işaretlensin mi?');">↩️</a>
+                                <a href="{% url 'promissory_update_status' p.id 'returned' %}" class="action-btn btn-cancel" title="Karşılıksız / İade" onclick="return confirm('Bu senet iade olarak işaretlensin mi?');">↩️</a>
+                                <a href="{% url 'promissory_update_status' p.id 'portfolio' %}" class="action-btn btn-issue" title="Portföye Geri Al">↺</a>
+                            {% elif p.status == 'returned' %}
+                                <a href="{% url 'promissory_update_status' p.id 'portfolio' %}" class="action-btn btn-issue" title="Tekrar Portföye Al">↺</a>
+                                <a href="{% url 'promissory_update_status' p.id 'cancelled' %}" class="action-btn btn-cancel" title="İptal Et" onclick="return confirm('Bu senet iptal edilsin mi?');">✖️</a>
                             {% endif %}
                             <a href="{% url 'promissory_delete' p.id %}" class="action-btn btn-delete" onclick="return confirm('Silinsin mi?');">🗑️</a>
                         </div>

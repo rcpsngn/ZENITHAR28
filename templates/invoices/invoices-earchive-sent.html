@@ -40,6 +40,7 @@
                 <td style="text-align:center;">
                     <div class="invoice-actions">
                         <button type="button" class="action-btn btn-view" onclick="openInvoicePreview('{{ invoice.id }}')">🔍</button>
+                        <a href="{% url 'invoice_notify_customer' invoice.id %}" class="action-btn btn-issue" title="Müşteriye Mail/SMS ile Gönder" onclick="return confirm('{{ invoice.invoice_number }} numaralı fatura linki müşteriye e-posta/SMS ile gönderilsin mi?');">✉️</a>
                         <a href="{% url 'invoice_duplicate' invoice.id %}" class="action-btn btn-copy" title="Taslağa Kopyala">📋</a>
                         <div class="detail-menu-wrapper">
                             <button type="button" class="detail-menu-btn" onclick="toggleDetailMenu(this)">▦</button>

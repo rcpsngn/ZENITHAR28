@@ -1,9 +1,13 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 from django.db.models import Sum
+from django.http import HttpResponse
 from decimal import Decimal, InvalidOperation
+from datetime import datetime
+import csv
 
-from .models import CurrentAccount, Transaction, Product
+from .models import CurrentAccount, Transaction, Product, StockMovement
 
 
 def to_decimal(value, default="0"):
@@ -52,6 +56,57 @@ def product_delete(request, id):
     return redirect("stock_tracking")
 
 
+# ---- STOK HAREKETİ (Aşama 20) ----
+
+@login_required
+def stock_movement_list(request):
+    movements = StockMovement.objects.filter(user=request.user).select_related("product")
+    products = Product.objects.filter(user=request.user, is_active=True)
+    return render(request, 'current_accounts/stock-movement.html', {
+        'movements': movements,
+        'products': products,
+    })
+
+
+@login_required
+def stock_movement_save(request):
+    if request.method != "POST":
+        return redirect("stock_movement_list")
+
+    product = get_object_or_404(Product, id=request.POST.get("product"), user=request.user)
+    movement_type = request.POST.get("type")
+    quantity = to_decimal(request.POST.get("quantity"), "0")
+    date_str = request.POST.get("date") or datetime.now().date().isoformat()
+
+    if movement_type not in dict(StockMovement.TYPE_CHOICES):
+        messages.error(request, "Geçersiz hareket türü.")
+        return redirect("stock_movement_list")
+
+    if quantity <= 0:
+        messages.error(request, "Miktar sıfırdan büyük olmalıdır.")
+        return redirect("stock_movement_list")
+
+    # ÖNEMLİ: Çıkış hareketi, kaydedilmeden ÖNCE mevcut stoğu aşıp aşmadığı
+    # kontrol edilir (negatif stoğa düşmeyi engeller). Sinyal yalnızca
+    # buradan geçmiş, doğrulanmış hareketleri Product.quantity'e yansıtır.
+    if movement_type == "out" and quantity > product.quantity:
+        messages.error(
+            request,
+            f"Yetersiz stok: '{product.name}' için mevcut {product.quantity} {product.unit}, "
+            f"talep edilen {quantity} {product.unit}."
+        )
+        return redirect("stock_movement_list")
+
+    StockMovement.objects.create(
+        user=request.user, product=product, type=movement_type,
+        reason=request.POST.get("reason", "other"),
+        quantity=quantity, date=date_str,
+        reference_note=request.POST.get("reference_note", ""),
+    )
+    messages.success(request, f"{product.name} için {dict(StockMovement.TYPE_CHOICES)[movement_type].lower()} hareketi kaydedildi.")
+    return redirect("stock_movement_list")
+
+
 # ---- CARİ BAKİYE ----
 
 @login_required
@@ -94,30 +149,111 @@ def account_delete(request, id):
 
 # ---- CARİ EKSTRE ----
 
+def _build_statement_rows(account):
+    """Bir carinin işlemlerini, kronolojik sırayla ve koşan (running) bakiyeyle döner."""
+    transactions = account.transactions.order_by("date", "id")
+    balance = Decimal("0")
+    rows = []
+    for t in transactions:
+        if t.type == "debit":
+            balance += t.amount
+        else:
+            balance -= t.amount
+        rows.append({"t": t, "running_balance": balance})
+    return rows
+
+
 @login_required
 def account_statement(request, id=None):
     accounts = CurrentAccount.objects.filter(user=request.user)
     selected_account = None
-    transactions = []
     running_rows = []
 
     account_id = id or request.GET.get("account_id")
     if account_id:
         selected_account = get_object_or_404(CurrentAccount, id=account_id, user=request.user)
-        transactions = selected_account.transactions.order_by("date", "id")
-        balance = Decimal("0")
-        for t in transactions:
-            if t.type == "debit":
-                balance += t.amount
-            else:
-                balance -= t.amount
-            running_rows.append({"t": t, "running_balance": balance})
+        running_rows = _build_statement_rows(selected_account)
 
     return render(request, 'current_accounts/account-statement.html', {
         'accounts': accounts,
         'selected_account': selected_account,
         'running_rows': running_rows,
     })
+
+
+@login_required
+def account_statement_export(request, id, file_format):
+    """
+    Cari ekstreyi CSV ya da Excel (.xlsx) olarak indirir (Aşama 16).
+
+    Not: PDF çıktısı bu pakete dahil edilmedi — reportlab/weasyprint gibi ek bir
+    bağımlılık gerektiriyor ve mevcut requirements.txt'de yok; CSV/XLSX ile aynı
+    prensipte (aynı _build_statement_rows verisi) kolayca eklenebilir.
+    """
+    account = get_object_or_404(CurrentAccount, id=id, user=request.user)
+    rows = _build_statement_rows(account)
+    safe_name = "".join(ch for ch in account.name if ch.isalnum() or ch in (" ", "-", "_")).strip() or "cari"
+
+    if file_format == "csv":
+        response = HttpResponse(content_type="text/csv; charset=utf-8-sig")
+        response["Content-Disposition"] = f'attachment; filename="ekstre_{safe_name}.csv"'
+        writer = csv.writer(response)
+        writer.writerow(["Tarih", "Açıklama", "Belge No", "Borç", "Alacak", "Bakiye"])
+        for row in rows:
+            t = row["t"]
+            writer.writerow([
+                t.date.strftime("%d.%m.%Y"),
+                t.description,
+                t.document_number,
+                t.amount if t.type == "debit" else "",
+                t.amount if t.type == "credit" else "",
+                row["running_balance"],
+            ])
+        return response
+
+    if file_format == "xlsx":
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, PatternFill, Alignment
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Cari Ekstre"
+
+        ws.merge_cells("A1:F1")
+        ws["A1"] = f"{account.name} - Cari Hesap Ekstresi"
+        ws["A1"].font = Font(bold=True, size=13)
+
+        headers = ["Tarih", "Açıklama", "Belge No", "Borç", "Alacak", "Bakiye"]
+        header_fill = PatternFill("solid", fgColor="1F3864")
+        for col, header in enumerate(headers, start=1):
+            cell = ws.cell(row=3, column=col, value=header)
+            cell.font = Font(bold=True, color="FFFFFF")
+            cell.fill = header_fill
+            cell.alignment = Alignment(horizontal="center")
+
+        r = 3
+        for row in rows:
+            r += 1
+            t = row["t"]
+            ws.cell(row=r, column=1, value=t.date.strftime("%d.%m.%Y"))
+            ws.cell(row=r, column=2, value=t.description)
+            ws.cell(row=r, column=3, value=t.document_number)
+            ws.cell(row=r, column=4, value=float(t.amount) if t.type == "debit" else None)
+            ws.cell(row=r, column=5, value=float(t.amount) if t.type == "credit" else None)
+            ws.cell(row=r, column=6, value=float(row["running_balance"]))
+
+        widths = [14, 40, 16, 14, 14, 14]
+        for i, w in enumerate(widths, start=1):
+            ws.column_dimensions[chr(64 + i)].width = w
+
+        response = HttpResponse(
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        response["Content-Disposition"] = f'attachment; filename="ekstre_{safe_name}.xlsx"'
+        wb.save(response)
+        return response
+
+    return HttpResponse("Desteklenmeyen format. 'csv' ya da 'xlsx' kullanın.", status=400)
 
 
 @login_required

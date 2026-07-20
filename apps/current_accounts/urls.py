@@ -7,6 +7,9 @@ urlpatterns = [
     path('stok-takip/kaydet/<int:id>/', views.product_save, name='product_edit'),
     path('stok-takip/sil/<int:id>/', views.product_delete, name='product_delete'),
 
+    path('stok-hareket/', views.stock_movement_list, name='stock_movement_list'),
+    path('stok-hareket/kaydet/', views.stock_movement_save, name='stock_movement_save'),
+
     path('cari-bakiye/', views.current_balance, name='current_balance'),
     path('cari-bakiye/kaydet/', views.account_save, name='account_save'),
     path('cari-bakiye/kaydet/<int:id>/', views.account_save, name='account_edit'),
@@ -14,6 +17,7 @@ urlpatterns = [
 
     path('cari-ekstre/', views.account_statement, name='account_statement'),
     path('cari-ekstre/<int:id>/', views.account_statement, name='account_statement_detail'),
+    path('cari-ekstre/<int:id>/export/<str:file_format>/', views.account_statement_export, name='account_statement_export'),
     path('cari-ekstre/<int:account_id>/islem-ekle/', views.transaction_save, name='transaction_save'),
     path('cari-ekstre/islem-sil/<int:id>/', views.transaction_delete, name='transaction_delete'),
 

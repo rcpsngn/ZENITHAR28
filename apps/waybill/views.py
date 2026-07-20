@@ -1,12 +1,41 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 from django.http import JsonResponse
 import json
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from apps.invoices.models import Invoice, InvoiceItem
 from apps.invoices.views import to_decimal, generate_invoice_number, _safe_redirect
+
+# Aşama 14 notu: "Fiili sevk tarihi ve saati doğrulama kontrolleri (Geçmişe
+# dönük irsaliye kısıtı) backend'e eklenmeli." Bir irsaliye ne gelecekte bir
+# tarihte düzenlenebilir (henüz sevk edilmemiş bir malın irsaliyesi olmaz) ne
+# de makul bir süreden daha eskiye tarihlenebilir (usulsüz geçmişe dönük
+# belge düzenlemeyi/kayıt dışını önlemek için).
+MAX_BACKDATE_DAYS = 7
+
+
+def _validate_waybill_date(issue_date):
+    """
+    issue_date: str ("YYYY-MM-DD") ya da date nesnesi olabilir.
+    Geçerliyse None, geçersizse kullanıcıya gösterilecek hata mesajını döner.
+    """
+    if not issue_date:
+        return None
+    if isinstance(issue_date, str):
+        try:
+            issue_date = datetime.strptime(issue_date, "%Y-%m-%d").date()
+        except ValueError:
+            return "Sevk tarihi formatı geçersiz."
+
+    today = datetime.now().date()
+    if issue_date > today:
+        return "Sevk tarihi gelecekte bir tarih olamaz."
+    if issue_date < today - timedelta(days=MAX_BACKDATE_DAYS):
+        return f"Sevk tarihi bugünden en fazla {MAX_BACKDATE_DAYS} gün geriye tarihlenebilir."
+    return None
 
 
 # ---- OLUŞTUR / DÜZENLE ----
@@ -14,6 +43,12 @@ from apps.invoices.views import to_decimal, generate_invoice_number, _safe_redir
 @login_required
 def waybill_create(request):
     if request.method == "POST":
+        issue_date = request.POST.get("date") or datetime.now().date()
+        date_error = _validate_waybill_date(issue_date)
+        if date_error:
+            messages.error(request, date_error)
+            return render(request, "waybill/waybill-create.html", {"active_tab": "create"})
+
         waybill = Invoice.objects.create(
             user=request.user,
             ettn=str(uuid.uuid4()),
@@ -21,7 +56,7 @@ def waybill_create(request):
             invoice_number=generate_invoice_number("IRS"),
             type="e-irsaliye",
             invoice_type=request.POST.get("invoice_type", "satis"),
-            issue_date=request.POST.get("date") or datetime.now().date(),
+            issue_date=issue_date,
             currency=request.POST.get("currency", "TL"),
             exchange_rate=to_decimal(request.POST.get("exchange_rate"), "1.0000"),
             customer_name=request.POST.get("customer_name"),
@@ -62,8 +97,23 @@ def waybill_edit(request, id):
     waybill = get_object_or_404(Invoice, id=id, user=request.user, type="e-irsaliye", status="draft")
 
     if request.method == "POST":
+        issue_date = request.POST.get("date") or waybill.issue_date
+        date_error = _validate_waybill_date(issue_date)
+        if date_error:
+            messages.error(request, date_error)
+            items_json = json.dumps([
+                {
+                    "desc": item.description, "qty": float(item.quantity), "unit": item.unit,
+                    "price": float(item.unit_price), "vat": float(item.vat_rate),
+                }
+                for item in waybill.items.all()
+            ])
+            return render(request, "waybill/waybill-create.html", {
+                "invoice": waybill, "items_json": items_json, "active_tab": "draft",
+            })
+
         waybill.invoice_type = request.POST.get("invoice_type", waybill.invoice_type)
-        waybill.issue_date = request.POST.get("date") or waybill.issue_date
+        waybill.issue_date = issue_date
         waybill.currency = request.POST.get("currency", waybill.currency)
         waybill.exchange_rate = to_decimal(request.POST.get("exchange_rate"), "1.0000")
         waybill.customer_name = request.POST.get("customer_name")
@@ -203,17 +253,39 @@ def waybill_duplicate(request, id):
 
 @login_required
 def waybill_approve(request, id):
-    waybill = get_object_or_404(Invoice, id=id, user=request.user, type="e-irsaliye")
+    """Tam kabul: yalnızca 'sent' durumundaki (henüz karar verilmemiş) irsaliyeler kabul edilebilir."""
+    waybill = get_object_or_404(Invoice, id=id, user=request.user, type="e-irsaliye", status="sent")
     waybill.status = "approved"
     waybill.save(update_fields=["status"])
+    messages.success(request, f"{waybill.invoice_number} kabul edildi.")
+    return _safe_redirect(request, "waybill_incoming")
+
+
+@login_required
+def waybill_partial_accept(request, id):
+    """
+    Kısmi kabul: sevk edilen malın bir kısmı kabul edilmemiş demektir (ör. eksik/hasarlı ürün).
+    Muhasebe tarafında normal 'approved' irsaliyeden ayrı işlenmesi gerektiği için
+    ayrı bir durum (partially_accepted) kullanılıyor.
+    """
+    waybill = get_object_or_404(Invoice, id=id, user=request.user, type="e-irsaliye", status="sent")
+    note = request.POST.get("partial_note", "").strip()
+    waybill.status = "partially_accepted"
+    if note:
+        waybill.notes = (waybill.notes + "\n" if waybill.notes else "") + f"[Kısmi Kabul Notu] {note}"
+        waybill.save(update_fields=["status", "notes"])
+    else:
+        waybill.save(update_fields=["status"])
+    messages.warning(request, f"{waybill.invoice_number} kısmi kabul olarak işaretlendi.")
     return _safe_redirect(request, "waybill_incoming")
 
 
 @login_required
 def waybill_reject(request, id):
-    waybill = get_object_or_404(Invoice, id=id, user=request.user, type="e-irsaliye")
+    waybill = get_object_or_404(Invoice, id=id, user=request.user, type="e-irsaliye", status="sent")
     waybill.status = "rejected"
     waybill.save(update_fields=["status"])
+    messages.error(request, f"{waybill.invoice_number} reddedildi.")
     return _safe_redirect(request, "waybill_incoming")
 
 

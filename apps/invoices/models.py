@@ -50,6 +50,7 @@ class Invoice(models.Model):
         ('draft', 'Taslak'),
         ('sent', 'Gönderildi'),
         ('approved', 'Onaylandı'),
+        ('partially_accepted', 'Kısmi Kabul'),
         ('paid', 'Ödendi'),
         ('cancelled', 'İptal'),
         ('rejected', 'Reddedildi'),

@@ -14,6 +14,7 @@ urlpatterns = [
     path("delete/<int:id>/", views.waybill_delete, name="waybill_delete"),
     path("duplicate/<int:id>/", views.waybill_duplicate, name="waybill_duplicate"),
     path("approve/<int:id>/", views.waybill_approve, name="waybill_approve"),
+    path("partial-accept/<int:id>/", views.waybill_partial_accept, name="waybill_partial_accept"),
     path("reject/<int:id>/", views.waybill_reject, name="waybill_reject"),
 
     path("toggle-read/<int:id>/", views.waybill_toggle_read, name="waybill_toggle_read"),

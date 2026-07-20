@@ -236,6 +236,31 @@ GIB_API_URL = None
 GIB_API_KEY = None
 
 # ======================
+# E-POSTA (E-Arşiv bildirimleri için)
+# ======================
+# Geliştirmede varsayılan olarak e-postalar gerçekten gönderilmez, konsola
+# yazdırılır (EMAIL_BACKEND=console). Üretimde .env'e gerçek SMTP bilgilerini
+# girip EMAIL_BACKEND'i "django.core.mail.backends.smtp.EmailBackend" yapın.
+EMAIL_BACKEND = os.environ.get(
+    "EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend"
+)
+EMAIL_HOST = os.environ.get("EMAIL_HOST", "")
+EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
+EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "True") == "True"
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@zenithar.local")
+
+# ======================
+# SMS (E-Arşiv bildirimleri için) — sağlayıcı seçilene kadar simülasyon
+# ======================
+# Netgsm/İletimerkezi/Twilio gibi bir sağlayıcı seçilince SMS_API_KEY/SMS_API_URL
+# doldurulmalı; doldurulana kadar apps/invoices/notifications.py otomatik olarak
+# simülasyon moduna düşer (bkz. o dosyadaki açıklama).
+SMS_API_URL = os.environ.get("SMS_API_URL")
+SMS_API_KEY = os.environ.get("SMS_API_KEY")
+
+# ======================
 # PORTAL ŞİFRELEME ANAHTARI (Genel Ayarlar > Portal için)
 # ======================
 # GİB / entegratör API şifresi DB'de bu anahtarla şifrelenip saklanır

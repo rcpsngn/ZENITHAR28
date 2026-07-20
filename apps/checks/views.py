@@ -1,5 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.core.exceptions import ValidationError
 from decimal import Decimal, InvalidOperation
 
 from .models import BankTransaction, CashTransaction, POSTransaction, Check, Promissory
@@ -147,8 +149,14 @@ def check_save(request):
 @login_required
 def check_update_status(request, id, new_status):
     check = get_object_or_404(Check, id=id, user=request.user)
-    check.status = new_status
-    check.save(update_fields=["status"])
+    if new_status not in dict(Check.STATUS_CHOICES):
+        messages.error(request, "Geçersiz durum değeri.")
+        return redirect("checks_notes_tracking")
+    try:
+        check.transition_to(new_status)
+        messages.success(request, f"{check.check_number} nolu çekin durumu '{check.get_status_display()}' olarak güncellendi.")
+    except ValidationError as exc:
+        messages.error(request, str(exc.message if hasattr(exc, 'message') else exc))
     return redirect("checks_notes_tracking")
 
 
@@ -178,8 +186,14 @@ def promissory_save(request):
 @login_required
 def promissory_update_status(request, id, new_status):
     promissory = get_object_or_404(Promissory, id=id, user=request.user)
-    promissory.status = new_status
-    promissory.save(update_fields=["status"])
+    if new_status not in dict(Promissory.STATUS_CHOICES):
+        messages.error(request, "Geçersiz durum değeri.")
+        return redirect("checks_notes_tracking")
+    try:
+        promissory.transition_to(new_status)
+        messages.success(request, f"{promissory.promissory_number} nolu senedin durumu '{promissory.get_status_display()}' olarak güncellendi.")
+    except ValidationError as exc:
+        messages.error(request, str(exc.message if hasattr(exc, 'message') else exc))
     return redirect("checks_notes_tracking")
 
 
