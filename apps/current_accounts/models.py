@@ -29,6 +29,9 @@ class CurrentAccount(models.Model):
         verbose_name = 'Cari Hesap'
         verbose_name_plural = 'Cari Hesaplar'
         ordering = ['name']
+        indexes = [
+            models.Index(fields=['user', 'type'], name='idx_curracc_user_type'),
+        ]
 
 class Transaction(models.Model):
     TYPE_CHOICES = [
@@ -50,6 +53,11 @@ class Transaction(models.Model):
         verbose_name = 'İşlem'
         verbose_name_plural = 'İşlemler'
         ordering = ['-date']
+        indexes = [
+            # Cari ekstre (Aşama 16) günlük koşan bakiye hesabı bu sıralamayı
+            # yoğun kullanıyor: current_account'a göre filtrele, date'e göre sırala.
+            models.Index(fields=['current_account', 'date'], name='idx_transaction_account_date'),
+        ]
 
 class VATOperation(models.Model):
     TYPE_CHOICES = [
@@ -114,6 +122,10 @@ class Product(models.Model):
         verbose_name = 'Ürün / Stok'
         verbose_name_plural = 'Ürünler / Stoklar'
         ordering = ['name']
+        indexes = [
+            # stok-takip listesi ve reports_view (kritik stok / kâr analizi) için.
+            models.Index(fields=['user', 'is_active'], name='idx_product_user_active'),
+        ]
 
     @property
     def stock_value(self):
@@ -173,6 +185,46 @@ class StockMovement(models.Model):
         verbose_name = 'Stok Hareketi'
         verbose_name_plural = 'Stok Hareketleri'
         ordering = ['-date', '-created_at']
+        indexes = [
+            models.Index(fields=['product', 'date'], name='idx_stockmov_product_date'),
+        ]
 
     def __str__(self):
         return f"{self.product.name} - {self.get_type_display()} - {self.quantity}"
+
+
+class Warehouse(models.Model):
+    """Aşama 19 (Cari & Stok - Depo): depo tanımları ve lokasyon yönetimi."""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='warehouses')
+    name = models.CharField(max_length=150)
+    location = models.CharField(max_length=255, blank=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = 'warehouses'
+        verbose_name = 'Depo'
+        verbose_name_plural = 'Depolar'
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
+class ProductWarehouseStock(models.Model):
+    """
+    Aşama 19 notu: "Stokların depolara dağıtımı için ProductWarehouse adında
+    çoktan çoğa (ManyToMany) ilişki tablosu eklenmeli." — through model olarak
+    uygulandı ki her depo-ürün ikilisi kendi miktarını taşıyabilsin.
+    """
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='warehouse_stocks')
+    warehouse = models.ForeignKey(Warehouse, on_delete=models.CASCADE, related_name='product_stocks')
+    quantity = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+
+    class Meta:
+        db_table = 'product_warehouse_stock'
+        verbose_name = 'Depo Stok Dağılımı'
+        verbose_name_plural = 'Depo Stok Dağılımları'
+        unique_together = [('product', 'warehouse')]
+
+    def __str__(self):
+        return f"{self.product.name} @ {self.warehouse.name}: {self.quantity}"

@@ -119,6 +119,16 @@ class Invoice(models.Model):
         verbose_name = 'Fatura'
         verbose_name_plural = 'Faturalar'
         ordering = ['-issue_date']
+        indexes = [
+            # Aşama 42 (Final - Performans). Bu 3 indeks, en sık çalışan
+            # sorguları hedefler:
+            #   - dashboard/reports_view: user + type + issue_date (tarih aralığı taraması)
+            #   - gelen kutusu/onay ekranları: user + status (durum filtresi)
+            #   - fatura numarası üretimi: invoice_number üzerinden startswith araması
+            models.Index(fields=['user', 'type', 'issue_date'], name='idx_invoice_user_type_date'),
+            models.Index(fields=['user', 'status'], name='idx_invoice_user_status'),
+            models.Index(fields=['invoice_number'], name='idx_invoice_number'),
+        ]
 
     def __str__(self):
         return f"{self.invoice_number} - {self.customer_name}"

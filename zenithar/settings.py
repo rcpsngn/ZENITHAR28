@@ -3,11 +3,11 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = "django-insecure-change-this"
+SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-change-this")
 
-DEBUG = True
+DEBUG = os.environ.get("DEBUG", "True") == "True"
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [h.strip() for h in os.environ.get("ALLOWED_HOSTS", "").split(",") if h.strip()]
 
 # ======================
 # APPLICATIONS
@@ -54,6 +54,20 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+
+# Aşama 43: whitenoise KURULUYSA statik dosya middleware'i devreye girer.
+# Kurulu değilse (ör. requirements.txt henüz güncellenmemişse) sunucu
+# ImproperlyConfigured hatasıyla çökmek yerine sessizce atlar — geliştirme
+# ortamında Django'nun kendi statik dosya sunumu zaten yeterlidir.
+# Üretimde (Docker) whitenoise requirements.txt'te olduğu için sorun olmaz;
+# sadece yerel ortamda `pip install -r requirements.txt` çalıştırmayı unutursanız
+# bu koruma devreye girer.
+try:
+    import whitenoise  # noqa: F401
+    MIDDLEWARE.insert(2, "whitenoise.middleware.WhiteNoiseMiddleware")
+    WHITENOISE_INSTALLED = True
+except ImportError:
+    WHITENOISE_INSTALLED = False
 
 # ======================
 # URLS
@@ -144,6 +158,22 @@ STATICFILES_DIRS = [
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
+# Aşama 43: Docker'da `collectstatic` sonrası dosyaları sıkıştırıp
+# hash'leyerek sunar (nginx/CDN olmadan da production-ready statik sunum).
+# whitenoise kurulu değilse Django'nun varsayılan statik dosya storage'ına düşer.
+if WHITENOISE_INSTALLED:
+    STORAGES = {
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
+else:
+    STORAGES = {
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
+
 # ======================
 # MEDIA FILES
 # ======================
@@ -219,21 +249,15 @@ AUTH_USER_MODEL = "accounts.User"
 # ======================
 # DIŞ ENTEGRASYONLAR (VKN/GİB sorgulama, e-Fatura gönderimi vb.)
 # ======================
-# Şu an bilerek BOŞ/pasif bırakıldı -> apps/invoices/integrations.py
-# simülasyon modunda çalışıyor.
-#
-# Gerçek bir GİB entegratörüyle (Foriba, Uyumsoft, Logo, Mikro vb.)
-# anlaştığında, bu bilgileri BURAYA DEĞİL, .env dosyasına yaz ve
-# os.environ.get(...) ile buraya çek. Aşağıdaki satırları o zaman
-# yorumdan çıkar:
-#
-# GIB_INTEGRATION_PROVIDER = os.environ.get("GIB_INTEGRATION_PROVIDER")
-# GIB_API_URL = os.environ.get("GIB_API_URL")
-# GIB_API_KEY = os.environ.get("GIB_API_KEY")
-
-GIB_INTEGRATION_PROVIDER = None
-GIB_API_URL = None
-GIB_API_KEY = None
+# GİB / E-Fatura Entegratör Ayarları (fallback — asıl kaynak PortalSettings)
+# ======================
+# Bu üçü artık .env'den okunuyor. Öncelik sırası apps/invoices/integrations.py
+# > _get_gib_credentials() içinde belirleniyor: önce kullanıcının Genel Ayarlar
+# > Portal sayfasında kaydettiği (şifreli) bilgi denenir, o boşsa buradaki
+# ortam değişkenlerine düşülür, o da boşsa sistem simülasyon moduna geçer.
+GIB_INTEGRATION_PROVIDER = os.environ.get("GIB_INTEGRATION_PROVIDER")
+GIB_API_URL = os.environ.get("GIB_API_URL")
+GIB_API_KEY = os.environ.get("GIB_API_KEY")
 
 # ======================
 # E-POSTA (E-Arşiv bildirimleri için)
@@ -259,6 +283,29 @@ DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@zenithar.loca
 # simülasyon moduna düşer (bkz. o dosyadaki açıklama).
 SMS_API_URL = os.environ.get("SMS_API_URL")
 SMS_API_KEY = os.environ.get("SMS_API_KEY")
+
+# ======================
+# CACHE (Aşama 42 - Final: Performans)
+# ======================
+# Varsayılan: LocMemCache (ek bağımlılık/servis gerektirmez, tek-process
+# geliştirme/küçük dağıtımlar için yeterli). Birden fazla worker/sunucu ile
+# üretime çıkarken CACHE_BACKEND=redis ve REDIS_URL ortam değişkenlerini
+# ayarlayın; Django 4.0+ 'redis' python paketi kuruluysa yerleşik
+# RedisCache backend'ini kullanabilir (requirements.txt'e 'redis' eklenmeli).
+if os.environ.get("CACHE_BACKEND") == "redis":
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": os.environ.get("REDIS_URL", "redis://127.0.0.1:6379/1"),
+        }
+    }
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "zenithar-locmem-cache",
+        }
+    }
 
 # ======================
 # PORTAL ŞİFRELEME ANAHTARI (Genel Ayarlar > Portal için)

@@ -33,3 +33,39 @@ class Announcement(models.Model):
 
     def __str__(self):
         return f"[{self.get_category_display()}] {self.title}"
+
+
+class HelpVideo(models.Model):
+    """Aşama 32 (Yardım - Videolar): admin tarafından yönetilebilir eğitim videoları."""
+    title = models.CharField(max_length=255)
+    description = models.CharField(max_length=500, blank=True)
+    video_url = models.URLField(blank=True, help_text="YouTube/Vimeo embed linki (opsiyonel).")
+    order = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = "help_videos"
+        verbose_name = "Yardım Videosu"
+        verbose_name_plural = "Yardım Videoları"
+        ordering = ["order", "id"]
+
+    def __str__(self):
+        return self.title
+
+
+class UsageTip(models.Model):
+    """Aşama 33 (Yardım - Kılavuz): admin tarafından yönetilebilir kullanım ipuçları."""
+    title = models.CharField(max_length=255)
+    content = models.TextField()
+    icon = models.CharField(max_length=50, default="bi-lightning", help_text="Bootstrap Icons sınıf adı.")
+    order = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = "usage_tips"
+        verbose_name = "Kullanım İpucu"
+        verbose_name_plural = "Kullanım İpuçları"
+        ordering = ["order", "id"]
+
+    def __str__(self):
+        return self.title

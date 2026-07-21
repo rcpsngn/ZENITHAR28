@@ -79,3 +79,75 @@ class PortalSettingsTests(TestCase):
         })
         portal = PortalSettings.objects.get(user=self.user)
         self.assertEqual(portal.get_password(), "cok-gizli-sifre-123")
+
+
+# ============================================================
+# AŞAMA 38 — BİLDİRİM TERCİHLERİ
+# ============================================================
+class NotificationPreferencesTests(TestCase):
+    def setUp(self):
+        self.user = make_user()
+        self.client = Client()
+        self.client.force_login(self.user)
+
+    def test_varsayilan_tercihler_acik_gelir(self):
+        from .models import NotificationPreferences
+        self.client.get(reverse("notification_settings"))
+        prefs = NotificationPreferences.objects.get(user=self.user)
+        self.assertTrue(prefs.email_on_new_invoice)
+        self.assertTrue(prefs.notify_overdue_checks)
+
+    def test_tercih_kapatilip_kaydedilebilir(self):
+        from .models import NotificationPreferences
+        response = self.client.post(reverse("notification_settings"), {})  # checkbox'lar işaretsiz gönderildi
+        self.assertEqual(response.status_code, 302)
+        prefs = NotificationPreferences.objects.get(user=self.user)
+        self.assertFalse(prefs.email_on_new_invoice)
+        self.assertFalse(prefs.notify_overdue_checks)
+
+
+# ============================================================
+# AŞAMA 39 — SİSTEM TERCİHLERİ VE YEDEKLEME
+# ============================================================
+class SystemPreferencesTests(TestCase):
+    def setUp(self):
+        self.user = make_user()
+        self.client = Client()
+        self.client.force_login(self.user)
+
+    def test_dil_tercihi_kaydedilir(self):
+        response = self.client.post(reverse("system_settings"), {"language": "en"})
+        self.assertEqual(response.status_code, 302)
+        from .models import SystemPreferences
+        prefs = SystemPreferences.objects.get(user=self.user)
+        self.assertEqual(prefs.language, "en")
+
+    def test_yedek_indirme_sqlite_dosyasi_doner(self):
+        import tempfile
+        from django.test import override_settings
+
+        with tempfile.NamedTemporaryFile(suffix=".sqlite3", delete=False) as tmp:
+            tmp.write(b"sahte-sqlite-icerigi")
+            tmp_path = tmp.name
+
+        test_databases = {
+            "default": {"ENGINE": "django.db.backends.sqlite3", "NAME": tmp_path}
+        }
+        with override_settings(DATABASES=test_databases):
+            response = self.client.get(reverse("system_backup_download"))
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.get("Content-Disposition", "").startswith("attachment"))
+
+    def test_postgres_kullanilirken_yedek_indirme_404_doner(self):
+        from django.test import override_settings
+        test_databases = {
+            "default": {"ENGINE": "django.db.backends.postgresql", "NAME": "zenithar"}
+        }
+        with override_settings(DATABASES=test_databases):
+            response = self.client.get(reverse("system_backup_download"))
+        self.assertEqual(response.status_code, 404)
+
+    def test_giris_yapmamis_kullanici_yedek_indiremez(self):
+        anon_client = Client()
+        response = anon_client.get(reverse("system_backup_download"))
+        self.assertEqual(response.status_code, 302)

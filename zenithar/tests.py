@@ -15,6 +15,7 @@ from datetime import date
 
 from django.test import TestCase, Client
 from django.urls import reverse
+from django.core.cache import cache
 
 from apps.accounts.models import User
 from apps.current_accounts.models import Product
@@ -28,6 +29,7 @@ def make_user(username="testuser"):
 
 class ReportsStockAnalysisTests(TestCase):
     def setUp(self):
+        cache.clear()  # reports_view Aşama 42'de 5 dk cache'leniyor; testler arası sızıntıyı önler
         self.user = make_user()
         self.client = Client()
         self.client.force_login(self.user)
@@ -95,6 +97,26 @@ class ReportsStockAnalysisTests(TestCase):
             unit_price=Decimal("1000"), cost_price=Decimal("1"),
         )
         response = self.client.get(reverse("reports"))
+        self.assertEqual(response.context["total_potential_profit"], 0)
+
+    def test_rapor_sonucu_cache_e_yaziliyor(self):
+        """Aşama 42: reports_view sonucu kullanıcı+gün bazında cache'leniyor mu?"""
+        self.client.get(reverse("reports"))
+        cache_key = f"reports_view:{self.user.id}:{date.today().isoformat()}"
+        self.assertIsNotNone(cache.get(cache_key))
+
+    def test_cache_farkli_kullanicilar_icin_karismaz(self):
+        Product.objects.create(
+            user=self.user, name="Ürün A", quantity=Decimal("1"),
+            unit_price=Decimal("500"), cost_price=Decimal("0"),
+        )
+        self.client.get(reverse("reports"))  # self.user için cache'e yazılır
+
+        other = make_user(username="baskakullanici7")
+        other_client = Client()
+        other_client.force_login(other)
+        response = other_client.get(reverse("reports"))
+        # other kullanıcının cache anahtarı farklı olduğu için kendi (boş) verisini görmeli
         self.assertEqual(response.context["total_potential_profit"], 0)
 
 

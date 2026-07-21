@@ -23,7 +23,6 @@ class Migration(migrations.Migration):
                     ("logo", "Logo"),
                     ("mikro", "Mikro"),
                 ], default="zenithar", max_length=20)),
-                ("api_url", models.URLField(blank=True, help_text="Entegratörün verdiği API adresi (ör. https://api.saglayici.com)")),
                 ("api_username", models.CharField(blank=True, max_length=255)),
                 ("encrypted_password", models.TextField(blank=True)),
                 ("is_verified", models.BooleanField(default=False)),

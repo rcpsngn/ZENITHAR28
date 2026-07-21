@@ -7,13 +7,13 @@ apps/current_accounts için testler:
     python manage.py test apps.current_accounts
 """
 from decimal import Decimal
-from datetime import date
+from datetime import date, timedelta
 
 from django.test import TestCase, Client
 from django.urls import reverse
 
 from apps.accounts.models import User
-from .models import CurrentAccount, Transaction, Product, StockMovement
+from .models import CurrentAccount, Transaction, Product, StockMovement, Warehouse
 
 
 def make_user(username="testuser"):
@@ -170,3 +170,62 @@ class AccountStatementExportTests(TestCase):
         other_account = make_account(other, name="Başkasının Carisi")
         response = self.client.get(reverse("account_statement_export", args=[other_account.id, "csv"]))
         self.assertEqual(response.status_code, 404)
+
+
+# ============================================================
+# AŞAMA 19 — DEPO TESTLERİ
+# ============================================================
+class WarehouseTests(TestCase):
+    def setUp(self):
+        self.user = make_user()
+        self.client = Client()
+        self.client.force_login(self.user)
+
+    def test_depo_eklenir(self):
+        response = self.client.post(reverse("warehouse_save"), {"name": "Ana Depo", "location": "İstanbul"})
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(Warehouse.objects.filter(user=self.user).count(), 1)
+
+    def test_isim_bos_olunca_depo_eklenmez(self):
+        response = self.client.post(reverse("warehouse_save"), {"name": "", "location": "İstanbul"})
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(Warehouse.objects.filter(user=self.user).count(), 0)
+
+    def test_baska_kullanicinin_deposu_silinemez(self):
+        other = make_user(username="baskakullanici8")
+        other_warehouse = Warehouse.objects.create(user=other, name="Başkasının Deposu")
+        response = self.client.get(reverse("warehouse_delete", args=[other_warehouse.id]))
+        self.assertEqual(response.status_code, 404)
+        self.assertTrue(Warehouse.objects.filter(id=other_warehouse.id).exists())
+
+
+# ============================================================
+# AŞAMA 17 — CARİ HESAP YAŞLANDIRMA TESTLERİ
+# ============================================================
+class AgingBucketTests(TestCase):
+    def setUp(self):
+        self.user = make_user()
+        self.client = Client()
+        self.client.force_login(self.user)
+        self.account = make_account(self.user)
+
+    def test_odenmis_hesapta_yaslandirma_sifirdir(self):
+        Transaction.objects.create(current_account=self.account, type="debit", amount=Decimal("1000"), description="Borç", date=date.today())
+        Transaction.objects.create(current_account=self.account, type="credit", amount=Decimal("1000"), description="Ödeme", date=date.today())
+        response = self.client.get(reverse("account_statement_detail", args=[self.account.id]))
+        aging = response.context["aging"]
+        self.assertEqual(sum(aging.values()), 0)
+
+    def test_90_gunden_eski_borc_dogru_kovaya_duser(self):
+        old_date = date.today() - timedelta(days=120)
+        Transaction.objects.create(current_account=self.account, type="debit", amount=Decimal("500"), description="Eski borç", date=old_date)
+        response = self.client.get(reverse("account_statement_detail", args=[self.account.id]))
+        aging = response.context["aging"]
+        self.assertEqual(aging["d90_plus"], Decimal("500"))
+        self.assertEqual(aging["d0_30"], Decimal("0"))
+
+    def test_yeni_borc_0_30_kovasina_duser(self):
+        Transaction.objects.create(current_account=self.account, type="debit", amount=Decimal("300"), description="Yeni borç", date=date.today())
+        response = self.client.get(reverse("account_statement_detail", args=[self.account.id]))
+        aging = response.context["aging"]
+        self.assertEqual(aging["d0_30"], Decimal("300"))

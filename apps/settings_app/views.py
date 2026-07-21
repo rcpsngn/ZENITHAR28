@@ -2,8 +2,11 @@ from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
-from .models import CompanyProfile, PortalSettings, DocumentDesignSettings
-from .forms import PortalSettingsForm, DocumentDesignSettingsForm
+from .models import CompanyProfile, PortalSettings, DocumentDesignSettings, NotificationPreferences, SystemPreferences
+from .forms import PortalSettingsForm, DocumentDesignSettingsForm, NotificationPreferencesForm, SystemPreferencesForm
+from django.http import FileResponse, Http404
+from django.conf import settings as django_settings
+import os
 
 @login_required
 def company_info(request):
@@ -73,8 +76,41 @@ def portal_settings(request):
 
 @login_required
 def notification_settings(request):
-    return render(request, 'settings_app/notifications.html')
+    prefs, _ = NotificationPreferences.objects.get_or_create(user=request.user)
+    if request.method == "POST":
+        form = NotificationPreferencesForm(request.POST, instance=prefs)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Bildirim tercihleri kaydedildi.")
+            return redirect("notification_settings")
+    else:
+        form = NotificationPreferencesForm(instance=prefs)
+    return render(request, 'settings_app/notifications.html', {"form": form})
 
 @login_required
 def system_settings(request):
-    return render(request, 'settings_app/system.html')
+    prefs, _ = SystemPreferences.objects.get_or_create(user=request.user)
+    if request.method == "POST":
+        form = SystemPreferencesForm(request.POST, instance=prefs)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Sistem tercihleri kaydedildi.")
+            return redirect("system_settings")
+    else:
+        form = SystemPreferencesForm(instance=prefs)
+    return render(request, 'settings_app/system.html', {"form": form})
+
+@login_required
+def system_backup_download(request):
+    """
+    Aşama 39: 'SQL Veritabanı Yedeği İndir' butonunu gerçek bir dosya indirmeye bağlar.
+    Yalnızca SQLite kullanılıyorken çalışır (Postgres'e geçilirse pg_dump ile
+    değiştirilmesi gerekir — bilinçli küçük kapsamlı bir uygulama).
+    """
+    db_config = django_settings.DATABASES.get("default", {})
+    if "sqlite3" not in db_config.get("ENGINE", ""):
+        raise Http404("Yedek indirme yalnızca SQLite veritabanında desteklenir.")
+    db_path = db_config.get("NAME")
+    if not db_path or not os.path.exists(db_path):
+        raise Http404("Veritabanı dosyası bulunamadı.")
+    return FileResponse(open(db_path, "rb"), as_attachment=True, filename="zenithar_yedek.sqlite3")

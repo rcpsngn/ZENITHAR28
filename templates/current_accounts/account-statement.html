@@ -30,6 +30,13 @@
         </div>
     </div>
 
+    <div class="card" style="background: rgba(15, 31, 23, 0.5); border: 1px solid rgba(0, 255, 150, 0.2); border-radius: 6px; padding: 16px; margin-bottom:16px; display:flex; gap:20px; flex-wrap:wrap;">
+        <div><span style="color:#7a8a99; font-size:11px;">0-30 Gün</span><br><strong style="color:#00ff66;">{{ aging.d0_30|default:"0" }} ₺</strong></div>
+        <div><span style="color:#7a8a99; font-size:11px;">31-60 Gün</span><br><strong style="color:#f4c542;">{{ aging.d31_60|default:"0" }} ₺</strong></div>
+        <div><span style="color:#7a8a99; font-size:11px;">61-90 Gün</span><br><strong style="color:#ff9944;">{{ aging.d61_90|default:"0" }} ₺</strong></div>
+        <div><span style="color:#7a8a99; font-size:11px;">90+ Gün (Riskli)</span><br><strong style="color:#ff4444;">{{ aging.d90_plus|default:"0" }} ₺</strong></div>
+    </div>
+
     <div class="card" style="background: rgba(15, 31, 23, 0.5); border: 1px solid rgba(0, 255, 150, 0.2); border-radius: 6px; padding: 20px; overflow-x: auto;">
         <table style="width: 100%; border-collapse: collapse; text-align: left;">
             <thead>

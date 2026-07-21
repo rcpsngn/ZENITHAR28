@@ -1,5 +1,5 @@
 from django import forms
-from .models import PortalSettings, DocumentDesignSettings
+from .models import PortalSettings, DocumentDesignSettings, NotificationPreferences, SystemPreferences
 
 
 class PortalSettingsForm(forms.ModelForm):
@@ -35,3 +35,16 @@ class DocumentDesignSettingsForm(forms.ModelForm):
         if not value.isalnum():
             raise forms.ValidationError("Seri no öneki yalnızca harf ve rakam içerebilir.")
         return value
+
+
+class NotificationPreferencesForm(forms.ModelForm):
+    class Meta:
+        model = NotificationPreferences
+        fields = ["email_on_new_invoice", "notify_overdue_checks"]
+
+
+class SystemPreferencesForm(forms.ModelForm):
+    class Meta:
+        model = SystemPreferences
+        fields = ["language"]
+        widgets = {"language": forms.Select(attrs={"class": "search-input"})}

@@ -22,6 +22,36 @@ class Employee(models.Model):
         verbose_name_plural = 'Personeller'
         ordering = ['full_name']
 
+    @property
+    def tenure_years(self):
+        """İşe giriş tarihinden bu yana geçen tam yıl sayısı."""
+        from datetime import date
+        today = date.today()
+        years = today.year - self.hire_date.year
+        if (today.month, today.day) < (self.hire_date.month, self.hire_date.day):
+            years -= 1
+        return max(years, 0)
+
+    @property
+    def annual_leave_entitlement_days(self):
+        """
+        Aşama 27 notu: "işe giriş tarihine göre otomatik izin hakedişi
+        hesaplayan otomasyon." 4857 sayılı İş Kanunu'nun kıdeme göre yıllık
+        izin süreleri esas alınmıştır (basitleştirilmiş: yaş faktörü hariç):
+          1-5 yıl (5 yıldan az)  -> 14 gün
+          5-15 yıl (15 yıldan az) -> 20 gün
+          15+ yıl                -> 26 gün
+        1 yıldan az kıdemi olan personelin kanunen yıllık izin hakkı yoktur.
+        """
+        years = self.tenure_years
+        if years < 1:
+            return 0
+        if years < 5:
+            return 14
+        if years < 15:
+            return 20
+        return 26
+
 class Attendance(models.Model):
     TYPE_CHOICES = [
         ('entry', 'Giriş'),

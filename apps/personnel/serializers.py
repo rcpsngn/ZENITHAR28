@@ -3,10 +3,14 @@ from .models import Employee, Attendance, Salary, Leave
 from datetime import datetime
 
 class EmployeeSerializer(serializers.ModelSerializer):
+    tenure_years = serializers.ReadOnlyField()
+    annual_leave_entitlement_days = serializers.ReadOnlyField()
+
     class Meta:
         model = Employee
         fields = ['id', 'full_name', 'identity_number', 'phone', 'email', 'address', 
                   'position', 'department', 'hire_date', 'salary', 'is_active', 
+                  'tenure_years', 'annual_leave_entitlement_days',
                   'created_at', 'updated_at']
         read_only_fields = ['id', 'created_at', 'updated_at']
 

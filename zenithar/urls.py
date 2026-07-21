@@ -111,13 +111,25 @@ def home(request):
 
 @login_required
 def reports_view(request):
+    from django.core.cache import cache
     from apps.invoices.models import Invoice, InvoiceItem
     from apps.current_accounts.models import CurrentAccount, Product
+    from apps.personnel.models import Employee, Salary
     from django.db.models import Count
 
     user = request.user
     today = date.today()
     year_start = today.replace(month=1, day=1)
+
+    # Aşama 42 (Performans): bu sayfa birçok ağır aggregation sorgusu (Sum/Count,
+    # + Python tarafında sort) içeriyor. Veriler dakikalık değil günlük bazda
+    # anlamlı değiştiği için, sonucu kullanıcı+gün bazında 5 dakika cache'liyoruz.
+    # Yeni bir fatura oluşturulduğunda rapor birkaç dakika gecikmeli güncellenebilir;
+    # bu, muhasebe raporları için kabul edilebilir bir tradeoff'tur.
+    cache_key = f"reports_view:{user.id}:{today.isoformat()}"
+    cached_context = cache.get(cache_key)
+    if cached_context is not None:
+        return render(request, "reports/general-reports.html", cached_context)
 
     invoices_this_year = Invoice.objects.filter(user=user, type="e-fatura", issue_date__gte=year_start)
     status_summary_raw = invoices_this_year.values("status").annotate(count=Count("id"), total=Sum("total_amount")).order_by("-total")
@@ -163,7 +175,19 @@ def reports_view(request):
     total_potential_profit = sum((p.potential_profit for p in products), 0)
     most_profitable_products = sorted(products, key=lambda p: p.potential_profit, reverse=True)[:5]
 
-    return render(request, "reports/general-reports.html", {
+    # Aşama 31 (Raporlar - Personel): departman bazlı personel maliyeti.
+    # Önceki denetimde bu alt kalem gerçekten hiç yazılmamış olarak doğrulanmıştı.
+    department_costs = (
+        Salary.objects.filter(employee__user=user, year=today.year)
+        .values("employee__department")
+        .annotate(total_cost=Sum("net_salary"), employee_count=Count("employee", distinct=True))
+        .order_by("-total_cost")
+    )
+    total_personnel_cost_this_year = Salary.objects.filter(
+        employee__user=user, year=today.year
+    ).aggregate(s=Sum("net_salary"))["s"] or 0
+
+    context = {
         "status_summary": status_summary,
         "top_customers": top_customers,
         "top_selling_products": top_selling_products,
@@ -173,8 +197,12 @@ def reports_view(request):
         "low_stock_products": low_stock_products,
         "total_potential_profit": total_potential_profit,
         "most_profitable_products": most_profitable_products,
+        "department_costs": department_costs,
+        "total_personnel_cost_this_year": total_personnel_cost_this_year,
         "year": today.year,
-    })
+    }
+    cache.set(cache_key, context, 300)  # 5 dakika
+    return render(request, "reports/general-reports.html", context)
 
 
 urlpatterns = [

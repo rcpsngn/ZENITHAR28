@@ -10,6 +10,10 @@ urlpatterns = [
     path('stok-hareket/', views.stock_movement_list, name='stock_movement_list'),
     path('stok-hareket/kaydet/', views.stock_movement_save, name='stock_movement_save'),
 
+    path('depolar/', views.warehouse_list, name='warehouse_list'),
+    path('depolar/kaydet/', views.warehouse_save, name='warehouse_save'),
+    path('depolar/sil/<int:id>/', views.warehouse_delete, name='warehouse_delete'),
+
     path('cari-bakiye/', views.current_balance, name='current_balance'),
     path('cari-bakiye/kaydet/', views.account_save, name='account_save'),
     path('cari-bakiye/kaydet/<int:id>/', views.account_save, name='account_edit'),

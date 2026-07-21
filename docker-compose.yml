@@ -1,0 +1,25 @@
+# Aşama 43. Basit tutuldu: tek "web" servisi, SQLite dosyası kalıcı volume'de.
+# Redis cache (Aşama 42) kullanmak isterseniz "redis" servisinin yorumunu kaldırıp
+# .env'e CACHE_BACKEND=redis ve REDIS_URL=redis://redis:6379/1 ekleyin.
+version: "3.9"
+
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./db.sqlite3:/app/db.sqlite3
+      - media_data:/app/media
+      - static_data:/app/staticfiles
+    env_file:
+      - .env
+    restart: unless-stopped
+
+  # redis:
+  #   image: redis:7-alpine
+  #   restart: unless-stopped
+
+volumes:
+  media_data:
+  static_data:

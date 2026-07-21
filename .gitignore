@@ -1,16 +1,47 @@
-# Byte-compiled / optimized / DLL files
+# ==========================================================
+# Python
+# ==========================================================
 __pycache__/
 *.py[cod]
 *$py.class
-
-# C extensions
+*.pyo
 *.so
-
-# Distribution / packaging
 .Python
+.python-version
+
+# ==========================================================
+# Virtual Environments
+# ==========================================================
+.env
+.venv/
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+myvenv/
+
+# ==========================================================
+# Django
+# ==========================================================
+db.sqlite3
+db.sqlite3-journal
+local_settings.py
+staticfiles/
+media/
+
+# ==========================================================
+# Flask
+# ==========================================================
+instance/
+.webassets-cache
+
+# ==========================================================
+# Distribution / Packaging
+# ==========================================================
 build/
-develop-eggs/
 dist/
+develop-eggs/
 downloads/
 eggs/
 .eggs/
@@ -23,111 +54,110 @@ wheels/
 pip-wheel-metadata/
 share/python-wheels/
 *.egg-info/
-.installed.cfg
 *.egg
+.installed.cfg
 MANIFEST
 
+# ==========================================================
 # PyInstaller
-#  Usually these files are written by a python script from a templates
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
+# ==========================================================
 *.manifest
 *.spec
-.idea
-# Installer logs
+
+# ==========================================================
+# Logs
+# ==========================================================
+*.log
 pip-log.txt
 pip-delete-this-directory.txt
 
-# Unit test / coverage reports
+# ==========================================================
+# Testing / Coverage
+# ==========================================================
 htmlcov/
 .tox/
 .nox/
 .coverage
 .coverage.*
 .cache
-nosetests.xml
 coverage.xml
+nosetests.xml
 *.cover
 *.py,cover
 .hypothesis/
 .pytest_cache/
 
+# ==========================================================
 # Translations
-#*.mo
+# ==========================================================
 *.pot
 
-# Django stuff:
-*.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
-
-# Flask stuff:
-instance/
-.webassets-cache
-
-# Scrapy stuff:
+# ==========================================================
+# Scrapy
+# ==========================================================
 .scrapy
 
-# Sphinx documentation
+# ==========================================================
+# Documentation
+# ==========================================================
 docs/_build/
+/site
 
+# ==========================================================
 # PyBuilder
+# ==========================================================
 target/
 
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# IPython
+# ==========================================================
+# Jupyter / IPython
+# ==========================================================
+.ipynb_checkpoints/
 profile_default/
 ipython_config.py
 
-# pyenv
-.python-version
-
-# pipenv
-#   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
-#   However, in case of collaboration, if having platform-specific dependencies or dependencies
-#   having no cross-platform support, pipenv may install dependencies that don't work, or not
-#   install all needed dependencies.
-#Pipfile.lock
-
-# PEP 582; used by e.g. github.com/David-OConnor/pyflow
+# ==========================================================
+# PEP 582
+# ==========================================================
 __pypackages__/
 
-# Celery stuff
+# ==========================================================
+# Celery
+# ==========================================================
 celerybeat-schedule
 celerybeat.pid
 
-# SageMath parsed files
+# ==========================================================
+# SageMath
+# ==========================================================
 *.sage.py
 
-# Environments
-.env
-.venv
-env/
-myvenv/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
-# Spyder project settings
-.spyderproject
-.spyproject
-
-# Rope project settings
-.ropeproject
-
-# mkdocs documentation
-/site
-
-# mypy
+# ==========================================================
+# Type Checkers
+# ==========================================================
 .mypy_cache/
+.pyre/
 .dmypy.json
 dmypy.json
 
-# Pyre type checker
-.pyre/
+# ==========================================================
+# IDE / Editors
+# ==========================================================
+.vscode/
+.idea/
 
-.core/settings.py
+# ==========================================================
+# Version Control
+# ==========================================================
+.git/
+.gitignore
+
+# ==========================================================
+# Node.js
+# ==========================================================
+node_modules/
+
+# ==========================================================
+# Project-specific
+# ==========================================================
 core/settings.py
+.core/settings.py

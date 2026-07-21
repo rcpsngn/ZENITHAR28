@@ -4,10 +4,10 @@ from django.contrib import messages
 from django.db.models import Sum
 from django.http import HttpResponse
 from decimal import Decimal, InvalidOperation
-from datetime import datetime
+from datetime import datetime, date
 import csv
 
-from .models import CurrentAccount, Transaction, Product, StockMovement
+from .models import CurrentAccount, Transaction, Product, StockMovement, Warehouse
 
 
 def to_decimal(value, default="0"):
@@ -108,6 +108,31 @@ def stock_movement_save(request):
     return redirect("stock_movement_list")
 
 
+# ---- DEPO (Aşama 19) ----
+
+@login_required
+def warehouse_list(request):
+    warehouses = Warehouse.objects.filter(user=request.user)
+    return render(request, 'current_accounts/warehouse-list.html', {"warehouses": warehouses})
+
+
+@login_required
+def warehouse_save(request):
+    if request.method == "POST":
+        name = request.POST.get("name", "").strip()
+        if name:
+            Warehouse.objects.create(user=request.user, name=name, location=request.POST.get("location", ""))
+        else:
+            messages.error(request, "Depo adı zorunludur.")
+    return redirect("warehouse_list")
+
+
+@login_required
+def warehouse_delete(request, id):
+    get_object_or_404(Warehouse, id=id, user=request.user).delete()
+    return redirect("warehouse_list")
+
+
 # ---- CARİ BAKİYE ----
 
 @login_required
@@ -164,21 +189,70 @@ def _build_statement_rows(account):
     return rows
 
 
+def _aging_buckets(account):
+    """
+    Aşama 17 notu: "Cari Hesap Yaşlandırma ve Bakiye Raporları."
+
+    Basitleştirilmiş yaklaşım: tam FIFO eşleştirmesi (hangi borcun hangi
+    tahsilatla kapandığı) yerine, henüz ödenmemiş TOPLAM borç tutarını
+    borç kayıtlarının yaşına göre 4 kovaya (0-30 / 31-60 / 61-90 / 90+ gün)
+    dağıtıyoruz. Küçük ve anlaşılır bir yaklaşım; tam FIFO eşleştirmesi
+    ayrı, daha büyük bir görev olarak ele alınmalı.
+    """
+    today = date.today()
+    buckets = {"d0_30": Decimal("0"), "d31_60": Decimal("0"), "d61_90": Decimal("0"), "d90_plus": Decimal("0")}
+    debit_total = Decimal("0")
+    credit_total = Decimal("0")
+
+    for t in account.transactions.all():
+        if t.type == "debit":
+            debit_total += t.amount
+        else:
+            credit_total += t.amount
+
+    # Toplam tahsil edilmemiş bakiye (basit netleştirme):
+    outstanding = debit_total - credit_total
+    if outstanding <= 0:
+        return buckets  # borç yok / fazla ödeme var
+
+    # Outstanding tutarı, en eski borç kayıtlarından başlayarak yaş kovalarına dağıt.
+    remaining = outstanding
+    for t in account.transactions.filter(type="debit").order_by("date"):
+        if remaining <= 0:
+            break
+        take = min(t.amount, remaining)
+        age_days = (today - t.date).days
+        if age_days <= 30:
+            buckets["d0_30"] += take
+        elif age_days <= 60:
+            buckets["d31_60"] += take
+        elif age_days <= 90:
+            buckets["d61_90"] += take
+        else:
+            buckets["d90_plus"] += take
+        remaining -= take
+
+    return buckets
+
+
 @login_required
 def account_statement(request, id=None):
     accounts = CurrentAccount.objects.filter(user=request.user)
     selected_account = None
     running_rows = []
+    aging = None
 
     account_id = id or request.GET.get("account_id")
     if account_id:
         selected_account = get_object_or_404(CurrentAccount, id=account_id, user=request.user)
         running_rows = _build_statement_rows(selected_account)
+        aging = _aging_buckets(selected_account)
 
     return render(request, 'current_accounts/account-statement.html', {
         'accounts': accounts,
         'selected_account': selected_account,
         'running_rows': running_rows,
+        'aging': aging,
     })
 
 

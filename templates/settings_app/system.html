@@ -9,19 +9,20 @@
     </div>
 
     <div class="card" style="background: rgba(15, 31, 23, 0.5); border: 1px solid rgba(0, 255, 150, 0.2); border-radius: 6px; padding: 20px; max-width: 500px;">
-        <form style="display: flex; flex-direction: column; gap: 16px;">
+        <form method="post" style="display: flex; flex-direction: column; gap: 16px;">
+            {% csrf_token %}
             <div>
                 <label style="display: block; color: #1a202c; font-size: 13px; margin-bottom: 6px; font-weight: 600;">Varsayılan Sistem Dili</label>
-                <select class="search-input" style="width: 100%; height: 32px; box-sizing: border-box; padding: 0 5px;">
-                    <option>Türkçe (TR)</option>
-                    <option>English (EN)</option>
-                </select>
+                {{ form.language }}
+            </div>
+            <div>
+                <button type="submit" class="dark-btn" style="background: #002208; border: 1px solid #004411; color: #00ff66; padding: 8px 16px; cursor: pointer;">Tercihleri Kaydet</button>
             </div>
             <div style="border-top: 1px solid #002206; padding-top: 12px;">
                 <label style="display: block; color: #1a202c; font-size: 13px; margin-bottom: 6px; font-weight: 600;">Veritabanı Bakım ve Güvenlik</label>
-                <button type="button" class="dark-btn" style="background: #004411; border: 1px solid #00ff66; color: #00ff66; width: 100%; padding: 8px 0; font-weight: bold; cursor: pointer;">
+                <a href="{% url 'system_backup_download' %}" class="dark-btn" style="display:block; text-align:center; text-decoration:none; background: #004411; border: 1px solid #00ff66; color: #00ff66; width: 100%; padding: 8px 0; font-weight: bold; cursor: pointer; box-sizing: border-box;">
                     <i class="bi bi-download"></i> SQL Veritabanı Yedeği İndir (.sqlite3)
-                </button>
+                </a>
             </div>
         </form>
     </div>

@@ -95,3 +95,36 @@ class DocumentDesignSettings(models.Model):
 
     def __str__(self):
         return f"{self.user} - {self.invoice_number_prefix}"
+
+
+class NotificationPreferences(models.Model):
+    """Aşama 38 (Genel Ayarlar - Bildirim)."""
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='notification_preferences')
+    email_on_new_invoice = models.BooleanField(default=True)
+    notify_overdue_checks = models.BooleanField(default=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'notification_preferences'
+        verbose_name = 'Bildirim Tercihi'
+        verbose_name_plural = 'Bildirim Tercihleri'
+
+    def __str__(self):
+        return f"Bildirim Tercihleri - {self.user}"
+
+
+class SystemPreferences(models.Model):
+    """Aşama 39 (Genel Ayarlar - Sistem)."""
+    LANGUAGE_CHOICES = [("tr", "Türkçe (TR)"), ("en", "English (EN)")]
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='system_preferences')
+    language = models.CharField(max_length=5, choices=LANGUAGE_CHOICES, default="tr")
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'system_preferences'
+        verbose_name = 'Sistem Tercihi'
+        verbose_name_plural = 'Sistem Tercihleri'
+
+    def __str__(self):
+        return f"Sistem Tercihleri - {self.user}"
