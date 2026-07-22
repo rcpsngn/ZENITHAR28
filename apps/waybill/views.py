@@ -47,7 +47,11 @@ def waybill_create(request):
         date_error = _validate_waybill_date(issue_date)
         if date_error:
             messages.error(request, date_error)
-            return render(request, "waybill/waybill-create.html", {"active_tab": "create"})
+            from apps.settings_app.models import DocumentTemplate
+            document_templates = DocumentTemplate.objects.filter(
+                user=request.user, document_type="e-irsaliye", is_active=True
+            )
+            return render(request, "waybill/waybill-create.html", {"active_tab": "create", "document_templates": document_templates})
 
         waybill = Invoice.objects.create(
             user=request.user,
@@ -56,6 +60,7 @@ def waybill_create(request):
             invoice_number=generate_invoice_number("IRS"),
             type="e-irsaliye",
             invoice_type=request.POST.get("invoice_type", "satis"),
+            invoice_template=request.POST.get("invoice_template", "varsayilan"),
             issue_date=issue_date,
             currency=request.POST.get("currency", "TL"),
             exchange_rate=to_decimal(request.POST.get("exchange_rate"), "1.0000"),
@@ -89,7 +94,11 @@ def waybill_create(request):
 
         return redirect("waybill_draft")
 
-    return render(request, "waybill/waybill-create.html", {"active_tab": "create"})
+    from apps.settings_app.models import DocumentTemplate
+    document_templates = DocumentTemplate.objects.filter(
+        user=request.user, document_type="e-irsaliye", is_active=True
+    )
+    return render(request, "waybill/waybill-create.html", {"active_tab": "create", "document_templates": document_templates})
 
 
 @login_required
@@ -108,11 +117,17 @@ def waybill_edit(request, id):
                 }
                 for item in waybill.items.all()
             ])
+            from apps.settings_app.models import DocumentTemplate
+            document_templates = DocumentTemplate.objects.filter(
+                user=request.user, document_type="e-irsaliye", is_active=True
+            )
             return render(request, "waybill/waybill-create.html", {
                 "invoice": waybill, "items_json": items_json, "active_tab": "draft",
+                "document_templates": document_templates,
             })
 
         waybill.invoice_type = request.POST.get("invoice_type", waybill.invoice_type)
+        waybill.invoice_template = request.POST.get("invoice_template", waybill.invoice_template)
         waybill.issue_date = issue_date
         waybill.currency = request.POST.get("currency", waybill.currency)
         waybill.exchange_rate = to_decimal(request.POST.get("exchange_rate"), "1.0000")
@@ -157,7 +172,14 @@ def waybill_edit(request, id):
         for item in waybill.items.all()
     ])
 
-    return render(request, "waybill/waybill-create.html", {"invoice": waybill, "items_json": items_json, "active_tab": "draft"})
+    from apps.settings_app.models import DocumentTemplate
+    document_templates = DocumentTemplate.objects.filter(
+        user=request.user, document_type="e-irsaliye", is_active=True
+    )
+    return render(request, "waybill/waybill-create.html", {
+        "invoice": waybill, "items_json": items_json, "active_tab": "draft",
+        "document_templates": document_templates,
+    })
 
 
 # ---- LİSTELER ----

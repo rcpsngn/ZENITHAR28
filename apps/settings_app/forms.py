@@ -1,5 +1,5 @@
 from django import forms
-from .models import PortalSettings, DocumentDesignSettings, NotificationPreferences, SystemPreferences
+from .models import PortalSettings, DocumentDesignSettings, NotificationPreferences, SystemPreferences, DocumentTemplate
 
 
 class PortalSettingsForm(forms.ModelForm):
@@ -48,3 +48,53 @@ class SystemPreferencesForm(forms.ModelForm):
         model = SystemPreferences
         fields = ["language"]
         widgets = {"language": forms.Select(attrs={"class": "search-input"})}
+
+
+class DocumentTemplateCustomizeForm(forms.ModelForm):
+    class Meta:
+        model = DocumentTemplate
+        fields = [
+            "document_type", "name", "is_active", "is_default",
+            "sender_title", "discount_replaces", "unit_price_format",
+            "logo", "signature", "bank_info_html", "note", "sender_note", "recipient_note",
+        ]
+        widgets = {
+            "document_type": forms.Select(attrs={"class": "search-input"}),
+            "name": forms.TextInput(attrs={"class": "search-input"}),
+            "sender_title": forms.TextInput(attrs={"class": "search-input"}),
+            "unit_price_format": forms.Select(attrs={"class": "search-input"}),
+            "bank_info_html": forms.Textarea(attrs={"class": "search-input", "rows": 4}),
+            "note": forms.Textarea(attrs={"class": "search-input", "rows": 2}),
+            "sender_note": forms.Textarea(attrs={"class": "search-input", "rows": 2}),
+            "recipient_note": forms.Textarea(attrs={"class": "search-input", "rows": 2}),
+        }
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.creation_type = "customized"
+        if commit:
+            instance.save()
+        return instance
+
+
+class DocumentTemplateUploadForm(forms.ModelForm):
+    class Meta:
+        model = DocumentTemplate
+        fields = ["document_type", "name", "is_active", "is_default", "uploaded_file"]
+        widgets = {
+            "document_type": forms.Select(attrs={"class": "search-input"}),
+            "name": forms.TextInput(attrs={"class": "search-input"}),
+        }
+
+    def clean_uploaded_file(self):
+        f = self.cleaned_data.get("uploaded_file")
+        if f and not f.name.lower().endswith(".xslt"):
+            raise forms.ValidationError("Yalnızca '.xslt' uzantılı dosyalar yüklenebilir.")
+        return f
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.creation_type = "uploaded"
+        if commit:
+            instance.save()
+        return instance

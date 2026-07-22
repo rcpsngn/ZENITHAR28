@@ -37,6 +37,15 @@
                         </select>
                     </div>
                     <div class="input-unit">
+                        <label>İrsaliye Şablonu</label>
+                        <select name="invoice_template">
+                            <option value="varsayilan" {% if not invoice or invoice.invoice_template == 'varsayilan' %}selected{% endif %}>Varsayılan Şablon</option>
+                            {% for t in document_templates %}
+                                <option value="{{ t.id }}" {% if invoice.invoice_template == t.id|stringformat:"s" %}selected{% endif %}>{{ t.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="input-unit">
                         <label>Doküman Para Birimi</label>
                         <select name="currency" id="invoice_currency" onchange="fetchExchangeRate()">
                             <option value="TL" {% if not invoice or invoice.currency == "TL" %}selected{% endif %}>TRY - Türk Lirası</option>

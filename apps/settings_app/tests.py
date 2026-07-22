@@ -147,6 +147,133 @@ class SystemPreferencesTests(TestCase):
             response = self.client.get(reverse("system_backup_download"))
         self.assertEqual(response.status_code, 404)
 
+
+# ============================================================
+# BELGE TASARIMLARI (liste + özelleştirme + hazır .xslt yükleme)
+# ============================================================
+class DocumentTemplateListTests(TestCase):
+    def setUp(self):
+        self.user = make_user()
+        self.client = Client()
+        self.client.force_login(self.user)
+
+    def test_bos_liste_bos_durum_gosterir(self):
+        response = self.client.get(reverse("document_design"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context["templates"]), 0)
+
+    def test_giris_yapmamis_kullanici_yonlendirilir(self):
+        anon_client = Client()
+        response = anon_client.get(reverse("document_design"))
+        self.assertEqual(response.status_code, 302)
+
+
+class DocumentTemplateCustomizeTests(TestCase):
+    def setUp(self):
+        self.user = make_user()
+        self.client = Client()
+        self.client.force_login(self.user)
+
+    def test_yeni_ozellestirme_kaydedilir(self):
+        from .models import DocumentTemplate
+        response = self.client.post(reverse("document_design_customize_new"), {
+            "document_type": "e-fatura", "name": "Standart Fatura Tasarımı",
+            "sender_title": "Zenithar A.Ş.", "unit_price_format": "2",
+            "bank_info_html": "IBAN: TR00 0000", "note": "Teşekkürler",
+        })
+        self.assertEqual(response.status_code, 302)
+        template = DocumentTemplate.objects.get(user=self.user)
+        self.assertEqual(template.creation_type, "customized")
+        self.assertEqual(template.name, "Standart Fatura Tasarımı")
+
+    def test_varsayilan_isaretlenince_ayni_turdeki_digeri_varsayilan_olmaktan_cikar(self):
+        from .models import DocumentTemplate
+        t1 = DocumentTemplate.objects.create(user=self.user, document_type="e-fatura", name="T1", is_default=True)
+        response = self.client.post(reverse("document_design_customize_new"), {
+            "document_type": "e-fatura", "name": "T2", "is_default": "on", "unit_price_format": "2",
+        })
+        self.assertEqual(response.status_code, 302)
+        t1.refresh_from_db()
+        self.assertFalse(t1.is_default)
+        t2 = DocumentTemplate.objects.get(name="T2")
+        self.assertTrue(t2.is_default)
+
+    def test_baska_kullanicinin_tasarimini_duzenleyemez(self):
+        from .models import DocumentTemplate
+        other = make_user(username="baskakullanici9")
+        other_template = DocumentTemplate.objects.create(user=other, name="Başkasının Tasarımı")
+        response = self.client.get(reverse("document_design_customize", args=[other_template.id]))
+        self.assertEqual(response.status_code, 404)
+
+
+class DocumentTemplateUploadTests(TestCase):
+    def setUp(self):
+        self.user = make_user()
+        self.client = Client()
+        self.client.force_login(self.user)
+
+    def test_xslt_dosyasi_yuklenir(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from .models import DocumentTemplate
+        fake_xslt = SimpleUploadedFile("sablon.xslt", b"<xsl:stylesheet></xsl:stylesheet>", content_type="text/xml")
+        response = self.client.post(reverse("document_design_upload"), {
+            "document_type": "e-fatura", "name": "Yüklenen Şablon", "uploaded_file": fake_xslt,
+        })
+        self.assertEqual(response.status_code, 302)
+        template = DocumentTemplate.objects.get(user=self.user)
+        self.assertEqual(template.creation_type, "uploaded")
+
+    def test_xslt_olmayan_uzanti_reddedilir(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from .models import DocumentTemplate
+        fake_file = SimpleUploadedFile("sablon.txt", b"icerik", content_type="text/plain")
+        self.client.post(reverse("document_design_upload"), {
+            "document_type": "e-fatura", "name": "Geçersiz Dosya", "uploaded_file": fake_file,
+        })
+        self.assertEqual(DocumentTemplate.objects.count(), 0)
+
+    def test_indirme_yalnizca_yuklenmis_tasarimlar_icin_calisir(self):
+        from .models import DocumentTemplate
+        customized = DocumentTemplate.objects.create(user=self.user, name="Özelleştirilmiş")
+        response = self.client.get(reverse("document_design_download", args=[customized.id]))
+        self.assertEqual(response.status_code, 404)
+
+
+class DocumentTemplateActionTests(TestCase):
+    def setUp(self):
+        self.user = make_user()
+        self.client = Client()
+        self.client.force_login(self.user)
+
+    def test_silme_calisir(self):
+        from .models import DocumentTemplate
+        template = DocumentTemplate.objects.create(user=self.user, name="Silinecek")
+        response = self.client.get(reverse("document_design_delete", args=[template.id]))
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(DocumentTemplate.objects.filter(id=template.id).exists())
+
+    def test_aktiflik_degistirilebilir(self):
+        from .models import DocumentTemplate
+        template = DocumentTemplate.objects.create(user=self.user, name="Test", is_active=True)
+        self.client.get(reverse("document_design_toggle_active", args=[template.id]))
+        template.refresh_from_db()
+        self.assertFalse(template.is_active)
+
+    def test_onizleme_fatura_yokken_bilgi_mesaji_gosterir(self):
+        from .models import DocumentTemplate
+        template = DocumentTemplate.objects.create(user=self.user, document_type="e-fatura", name="Test")
+        response = self.client.get(reverse("document_design_preview", args=[template.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNone(response.context["sample_invoice"])
+
+    def test_baska_kullanicinin_tasarimi_silinemez(self):
+        from .models import DocumentTemplate
+        other = make_user(username="baskakullanici10")
+        other_template = DocumentTemplate.objects.create(user=other, name="Başkasının")
+        response = self.client.get(reverse("document_design_delete", args=[other_template.id]))
+        self.assertEqual(response.status_code, 404)
+        self.assertTrue(DocumentTemplate.objects.filter(id=other_template.id).exists())
+
     def test_giris_yapmamis_kullanici_yedek_indiremez(self):
         anon_client = Client()
         response = anon_client.get(reverse("system_backup_download"))

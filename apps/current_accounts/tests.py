@@ -229,3 +229,102 @@ class AgingBucketTests(TestCase):
         response = self.client.get(reverse("account_statement_detail", args=[self.account.id]))
         aging = response.context["aging"]
         self.assertEqual(aging["d0_30"], Decimal("300"))
+
+
+# ============================================================
+# AŞAMA 45 — CARİ EKSTRE OTOMATİK BELGE NO
+# ============================================================
+class AutoDocumentNumberTests(TestCase):
+    def setUp(self):
+        self.user = make_user()
+        self.client = Client()
+        self.client.force_login(self.user)
+        self.account = make_account(self.user)
+
+    def test_alacak_islemine_rcp_onekli_numara_atanir(self):
+        self.client.post(reverse("transaction_save", args=[self.account.id]), {
+            "type": "credit", "amount": "500", "date": "2026-01-10", "description": "Tahsilat",
+        })
+        tx = Transaction.objects.get(current_account=self.account)
+        self.assertTrue(tx.document_number.startswith("RCP"))
+
+    def test_borc_islemine_znt_onekli_numara_atanir(self):
+        self.client.post(reverse("transaction_save", args=[self.account.id]), {
+            "type": "debit", "amount": "500", "date": "2026-01-10", "description": "Borç",
+        })
+        tx = Transaction.objects.get(current_account=self.account)
+        self.assertTrue(tx.document_number.startswith("ZNT"))
+
+    def test_elle_girilen_belge_no_korunur(self):
+        self.client.post(reverse("transaction_save", args=[self.account.id]), {
+            "type": "debit", "amount": "500", "date": "2026-01-10", "description": "Borç",
+            "document_number": "OZEL-001",
+        })
+        tx = Transaction.objects.get(current_account=self.account)
+        self.assertEqual(tx.document_number, "OZEL-001")
+
+    def test_numara_sirayla_artar(self):
+        for _ in range(3):
+            self.client.post(reverse("transaction_save", args=[self.account.id]), {
+                "type": "credit", "amount": "100", "date": "2026-01-10", "description": "Tahsilat",
+            })
+        numbers = sorted(Transaction.objects.filter(current_account=self.account).values_list("document_number", flat=True))
+        self.assertEqual(len(set(numbers)), 3)  # hepsi benzersiz
+
+
+# ============================================================
+# AŞAMA 55 — DEPO-STOK ENTEGRASYONU
+# ============================================================
+class WarehouseStockIntegrationTests(TestCase):
+    def setUp(self):
+        self.user = make_user()
+        self.client = Client()
+        self.client.force_login(self.user)
+        self.product = make_product(self.user, quantity=Decimal("0"))
+        self.wh1 = Warehouse.objects.create(user=self.user, name="Depo 1")
+        self.wh2 = Warehouse.objects.create(user=self.user, name="Depo 2")
+
+    def test_depoya_giris_yapilinca_depo_stogu_artar(self):
+        from .models import ProductWarehouseStock
+        StockMovement.objects.create(
+            user=self.user, product=self.product, type="in", quantity=Decimal("50"),
+            date=date.today(), warehouse=self.wh1,
+        )
+        stock = ProductWarehouseStock.objects.get(product=self.product, warehouse=self.wh1)
+        self.assertEqual(stock.quantity, Decimal("50"))
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.quantity, Decimal("50"))
+
+    def test_transfer_kaynak_depodan_dusup_hedefe_eklenir(self):
+        from .models import ProductWarehouseStock
+        StockMovement.objects.create(user=self.user, product=self.product, type="in", quantity=Decimal("100"), date=date.today(), warehouse=self.wh1)
+
+        response = self.client.post(reverse("stock_movement_save"), {
+            "product": self.product.id, "type": "transfer", "quantity": "30",
+            "date": "2026-01-10", "warehouse": self.wh1.id, "target_warehouse": self.wh2.id,
+        })
+        self.assertEqual(response.status_code, 302)
+
+        source = ProductWarehouseStock.objects.get(product=self.product, warehouse=self.wh1)
+        target = ProductWarehouseStock.objects.get(product=self.product, warehouse=self.wh2)
+        self.assertEqual(source.quantity, Decimal("70"))
+        self.assertEqual(target.quantity, Decimal("30"))
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.quantity, Decimal("100"))  # toplam değişmez
+
+    def test_yetersiz_depo_stogundan_transfer_reddedilir(self):
+        response = self.client.post(reverse("stock_movement_save"), {
+            "product": self.product.id, "type": "transfer", "quantity": "999",
+            "date": "2026-01-10", "warehouse": self.wh1.id, "target_warehouse": self.wh2.id,
+        })
+        self.assertEqual(response.status_code, 302)
+        from .models import ProductWarehouseStock
+        self.assertFalse(ProductWarehouseStock.objects.filter(product=self.product, warehouse=self.wh2).exists())
+
+    def test_ayni_depo_ile_transfer_reddedilir(self):
+        response = self.client.post(reverse("stock_movement_save"), {
+            "product": self.product.id, "type": "transfer", "quantity": "10",
+            "date": "2026-01-10", "warehouse": self.wh1.id, "target_warehouse": self.wh1.id,
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(StockMovement.objects.filter(type="transfer").count(), 0)

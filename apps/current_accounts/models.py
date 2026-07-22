@@ -160,6 +160,7 @@ class StockMovement(models.Model):
     TYPE_CHOICES = [
         ('in', 'Giriş'),
         ('out', 'Çıkış'),
+        ('transfer', 'Depolar Arası Transfer'),
     ]
 
     REASON_CHOICES = [
@@ -168,6 +169,7 @@ class StockMovement(models.Model):
         ('return', 'İade'),
         ('count_adjustment', 'Sayım Düzeltmesi'),
         ('damaged', 'Fire / Hasar'),
+        ('transfer', 'Depolar Arası Transfer'),
         ('other', 'Diğer'),
     ]
 
@@ -179,6 +181,17 @@ class StockMovement(models.Model):
     date = models.DateField()
     reference_note = models.CharField(max_length=255, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    # Aşama 55 (Depo-Stok Entegrasyonu): giriş/çıkışta hangi depoyu etkilediği,
+    # transferde ise kaynak (warehouse) ve hedef (target_warehouse) depo.
+    warehouse = models.ForeignKey(
+        "Warehouse", on_delete=models.SET_NULL, null=True, blank=True, related_name="movements_out",
+        help_text="Giriş/Çıkış işleminin gerçekleştiği depo, ya da transferde KAYNAK depo."
+    )
+    target_warehouse = models.ForeignKey(
+        "Warehouse", on_delete=models.SET_NULL, null=True, blank=True, related_name="movements_in",
+        help_text="Yalnızca 'Depolar Arası Transfer' türünde: malın gittiği HEDEF depo."
+    )
 
     class Meta:
         db_table = 'stock_movements'

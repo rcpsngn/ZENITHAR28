@@ -1,0 +1,90 @@
+{% load static %}
+{% if sample_invoice %}
+<div style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #1a202c; padding-bottom:14px; margin-bottom:14px;">
+    <div>
+        <strong style="font-size:15px;">{{ instance.sender_title|default:"Firmanız A.Ş." }}</strong><br>
+        <span style="color:#555;">VKN: {{ sample_invoice.customer_tax_id|default:"—" }}</span>
+    </div>
+    <div style="text-align:center;">
+        {% if instance and instance.logo %}
+            <img src="{{ instance.logo.url }}" style="max-height:60px;">
+        {% else %}
+            <div style="width:100px; height:50px; background:#f0f0f0; display:flex; align-items:center; justify-content:center; color:#aaa; font-size:11px;">LOGO</div>
+        {% endif %}
+        <div style="font-weight:800; letter-spacing:2px; margin-top:6px; color:#c0392b;">
+            {% if sample_invoice.type == "e-arsiv" %}E-ARŞİV{% elif sample_invoice.type == "e-irsaliye" %}E-İRSALİYE{% else %}E-FATURA{% endif %}
+        </div>
+    </div>
+</div>
+
+<div style="display:flex; justify-content:space-between; margin-bottom:16px;">
+    <div>
+        <strong>SAYIN</strong><br>
+        {{ sample_invoice.customer_name }}<br>
+        {{ sample_invoice.customer_street|default:"" }}<br>
+        {{ sample_invoice.customer_district|default:"" }} / {{ sample_invoice.customer_city|default:"" }}
+    </div>
+    <table style="border-collapse:collapse; font-size:12px;">
+        <tr><td style="padding:2px 10px 2px 0; color:#555;">Fatura No:</td><td><strong>{{ sample_invoice.invoice_number }}</strong></td></tr>
+        <tr><td style="padding:2px 10px 2px 0; color:#555;">Fatura Tarihi:</td><td>{{ sample_invoice.issue_date|date:"d-m-Y" }}</td></tr>
+        <tr><td style="padding:2px 10px 2px 0; color:#555;">ETTN:</td><td style="font-family:monospace; font-size:10px;">{{ sample_invoice.ettn|default:"—" }}</td></tr>
+    </table>
+</div>
+
+<table style="width:100%; border-collapse:collapse; font-size:12px; margin-bottom:16px;">
+    <thead>
+        <tr style="border-bottom:2px solid #1a202c;">
+            <th style="text-align:left; padding:6px 4px;">Sıra</th>
+            <th style="text-align:left; padding:6px 4px;">Mal Hizmet</th>
+            <th style="text-align:right; padding:6px 4px;">Miktar</th>
+            <th style="text-align:right; padding:6px 4px;">Birim Fiyat</th>
+            <th style="text-align:right; padding:6px 4px;">KDV Oranı</th>
+            <th style="text-align:right; padding:6px 4px;">Tutar</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in sample_invoice.items.all %}
+        <tr style="border-bottom:1px solid #eee;">
+            <td style="padding:6px 4px;">{{ forloop.counter }}</td>
+            <td style="padding:6px 4px;">{{ item.description }}</td>
+            <td style="text-align:right; padding:6px 4px;">{{ item.quantity }} {{ item.unit }}</td>
+            <td style="text-align:right; padding:6px 4px;">
+                {% if instance.unit_price_format == "4" %}{{ item.unit_price|floatformat:4 }}{% elif instance.unit_price_format == "6" %}{{ item.unit_price|floatformat:6 }}{% else %}{{ item.unit_price|floatformat:2 }}{% endif %} {{ sample_invoice.currency }}
+            </td>
+            <td style="text-align:right; padding:6px 4px;">%{{ item.vat_rate|floatformat:0 }}</td>
+            <td style="text-align:right; padding:6px 4px;">{{ item.total|floatformat:2 }} {{ sample_invoice.currency }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" style="padding:10px; text-align:center; color:#999;">Kalem yok.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<table style="margin-left:auto; border-collapse:collapse; font-size:12px; width:280px;">
+    <tr><td style="padding:3px 10px; color:#555;">Mal Hizmet Toplam Tutarı</td><td style="text-align:right; padding:3px 0;">{{ sample_invoice.amount|floatformat:2 }} {{ sample_invoice.currency }}</td></tr>
+    <tr><td style="padding:3px 10px; color:#555;">Hesaplanan KDV</td><td style="text-align:right; padding:3px 0;">{{ sample_invoice.vat_amount|floatformat:2 }} {{ sample_invoice.currency }}</td></tr>
+    <tr style="border-top:2px solid #1a202c; font-weight:800;"><td style="padding:6px 10px;">Ödenecek Tutar</td><td style="text-align:right; padding:6px 0;">{{ sample_invoice.total_amount|floatformat:2 }} {{ sample_invoice.currency }}</td></tr>
+</table>
+
+{% if instance.note %}
+<div style="margin-top:16px; padding:10px; background:#fafafa; border:1px solid #eee; font-size:12px;">
+    <strong>Not:</strong> {{ instance.note }}
+</div>
+{% endif %}
+
+<div style="margin-top:20px; border-top:1px solid #ddd; padding-top:14px; font-size:11px; color:#555;">
+    <strong>Banka Bilgileri</strong><br>
+    {{ instance.bank_info_html|default:"—"|linebreaksbr }}
+</div>
+
+{% if instance and instance.signature %}
+<div style="margin-top:16px; text-align:right;">
+    <img src="{{ instance.signature.url }}" style="max-height:60px;">
+</div>
+{% endif %}
+
+{% else %}
+<div style="text-align:center; color:#999; padding:60px 0;">
+    Bu belge türü için henüz bir fatura kaydı yok — önizleme, ilk fatura oluşturulduğunda gerçek verilerle görünecektir.
+</div>
+{% endif %}

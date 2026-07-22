@@ -24,9 +24,24 @@
             </div>
             <div>
                 <label style="display:block; font-size:12px; color:#7a8a99; margin-bottom:4px;">Hareket Türü</label>
-                <select name="type" class="search-input" required>
+                <select name="type" id="movement_type" class="search-input" required onchange="toggleWarehouseFields()">
                     <option value="in">Giriş</option>
                     <option value="out">Çıkış</option>
+                    <option value="transfer">Depolar Arası Transfer</option>
+                </select>
+            </div>
+            <div id="warehouse_field">
+                <label style="display:block; font-size:12px; color:#7a8a99; margin-bottom:4px;">Depo</label>
+                <select name="warehouse" class="search-input">
+                    <option value="">— Seçiniz —</option>
+                    {% for w in warehouses %}<option value="{{ w.id }}">{{ w.name }}</option>{% endfor %}
+                </select>
+            </div>
+            <div id="target_warehouse_field" style="display:none;">
+                <label style="display:block; font-size:12px; color:#7a8a99; margin-bottom:4px;">Hedef Depo (Transfer)</label>
+                <select name="target_warehouse" class="search-input">
+                    <option value="">— Seçiniz —</option>
+                    {% for w in warehouses %}<option value="{{ w.id }}">{{ w.name }}</option>{% endfor %}
                 </select>
             </div>
             <div>
@@ -63,6 +78,7 @@
                     <th style="padding:8px;">Tarih</th>
                     <th style="padding:8px;">Ürün</th>
                     <th style="padding:8px;">Tür</th>
+                    <th style="padding:8px;">Depo</th>
                     <th style="padding:8px;">Sebep</th>
                     <th style="padding:8px;">Miktar</th>
                     <th style="padding:8px;">Not</th>
@@ -75,17 +91,29 @@
                     <td style="padding:8px;">{{ m.product.name }}</td>
                     <td style="padding:8px;">
                         {% if m.type == "in" %}<span style="color:#00ff66;">▲ Giriş</span>
+                        {% elif m.type == "transfer" %}<span style="color:#f4c542;">⇄ Transfer</span>
                         {% else %}<span style="color:#ff6666;">▼ Çıkış</span>{% endif %}
+                    </td>
+                    <td style="padding:8px; color:#7a8a99;">
+                        {% if m.type == "transfer" %}{{ m.warehouse.name|default:"—" }} → {{ m.target_warehouse.name|default:"—" }}
+                        {% else %}{{ m.warehouse.name|default:"—" }}{% endif %}
                     </td>
                     <td style="padding:8px;">{{ m.get_reason_display }}</td>
                     <td style="padding:8px;">{{ m.quantity }} {{ m.product.unit }}</td>
                     <td style="padding:8px; color:#7a8a99;">{{ m.reference_note|default:"—" }}</td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="6" style="padding:16px; text-align:center; color:#7a8a99;">Henüz stok hareketi yok.</td></tr>
+                <tr><td colspan="7" style="padding:16px; text-align:center; color:#7a8a99;">Henüz stok hareketi yok.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
+
+<script>
+function toggleWarehouseFields() {
+    const type = document.getElementById("movement_type").value;
+    document.getElementById("target_warehouse_field").style.display = (type === "transfer") ? "block" : "none";
+}
+</script>
 {% endblock %}

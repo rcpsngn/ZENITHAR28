@@ -152,6 +152,20 @@ def invoices_page(request):
 
         auto_invoice_number = f"{prefix}{str(new_sequence).zfill(9)}"
 
+        # Aşama 56: fatura bir cari hesaba bağlanabilir. Formda doğrudan seçim
+        # yapılmadıysa, müşteri VKN/TCKN'si mevcut bir cariyle eşleşiyorsa
+        # otomatik olarak o cariye bağlanır (manuel iş yükünü azaltır).
+        current_account = None
+        current_account_id = request.POST.get("current_account")
+        if current_account_id:
+            from apps.current_accounts.models import CurrentAccount
+            current_account = CurrentAccount.objects.filter(id=current_account_id, user=request.user).first()
+        else:
+            customer_tax_id = request.POST.get("customer_tax_id", "").strip()
+            if customer_tax_id:
+                from apps.current_accounts.models import CurrentAccount
+                current_account = CurrentAccount.objects.filter(user=request.user, tax_id=customer_tax_id).first()
+
         invoice = Invoice.objects.create(
             user=request.user, ettn=auto_ettn, custom_no="TR1.2",
             invoice_number=request.POST.get("invoice_number") or auto_invoice_number,
@@ -162,6 +176,7 @@ def invoices_page(request):
             issue_date=request.POST.get("date") or datetime.now().date(),
             currency=request.POST.get("currency", "TL"),
             exchange_rate=to_decimal(request.POST.get("exchange_rate"), "1.0000"),
+            current_account=current_account,
             customer_name=request.POST.get("customer_name"),
             customer_tax_id=request.POST.get("customer_tax_id", ""),
             customer_tax_office=request.POST.get("customer_tax_office", ""),
@@ -199,7 +214,14 @@ def invoices_page(request):
 
         return redirect("invoices_draft")
 
-    return render(request, "invoices/invoices-create.html")
+    # Aşama 44 devamı: Belge Tasarımları modülünden bu belge türü (e-Fatura)
+    # için kaydedilmiş, aktif tasarımlar "Fatura Şablonu" alanına gerçek
+    # seçenekler olarak sunulur.
+    from apps.settings_app.models import DocumentTemplate
+    document_templates = DocumentTemplate.objects.filter(
+        user=request.user, document_type="e-fatura", is_active=True
+    )
+    return render(request, "invoices/invoices-create.html", {"document_templates": document_templates})
 
 
 # FATURA DÜZENLEME
@@ -263,9 +285,14 @@ def invoice_edit(request, id):
         for item in invoice.items.all()
     ])
 
+    from apps.settings_app.models import DocumentTemplate
+    document_templates = DocumentTemplate.objects.filter(
+        user=request.user, document_type="e-fatura", is_active=True
+    )
     return render(request, "invoices/invoices-create.html", {
         "invoice": invoice,
         "items_json": items_json,
+        "document_templates": document_templates,
     })
 
 

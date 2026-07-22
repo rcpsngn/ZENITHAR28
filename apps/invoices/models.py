@@ -63,12 +63,28 @@ class Invoice(models.Model):
     is_read = models.BooleanField(default=True)
     is_archived = models.BooleanField(default=False)
 
+    # Aşama 56 (Cari Ekstre - Fatura Entegrasyonu): fatura bir cari hesaba
+    # bağlanabilir. Onaylanınca/ödendiğinde apps/invoices/signals.py otomatik
+    # bir Transaction (borç) oluşturur — bkz. ledger_posted (tekrar tekrar
+    # kayıt oluşmasını önleyen bayrak).
+    current_account = models.ForeignKey(
+        "current_accounts.CurrentAccount", on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="invoices",
+    )
+    ledger_posted = models.BooleanField(
+        default=False,
+        help_text="Bu fatura için cari ekstreye otomatik borç kaydı zaten oluşturuldu mu?"
+    )
+
     # Otomatik & Genel Bilgiler
     ettn = models.CharField(max_length=100, unique=True, blank=True, null=True)
     type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='e-fatura')
     invoice_type = models.CharField(max_length=30, choices=INVOICE_TYPE_CHOICES, default='temel')
     invoice_category = models.CharField(max_length=30, choices=INVOICE_CATEGORY_CHOICES, default='satis')
-    invoice_template = models.CharField(max_length=30, default='varsayilan')
+    invoice_template = models.CharField(
+        max_length=40, default='varsayilan',
+        help_text="'varsayilan' ya da Belge Tasarımları (DocumentTemplate) modülünden seçilen bir tasarımın UUID'si."
+    )
     invoice_number = models.CharField(max_length=50, unique=True)
     custom_no = models.CharField(max_length=50, blank=True)
 

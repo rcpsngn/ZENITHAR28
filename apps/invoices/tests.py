@@ -256,3 +256,101 @@ class EArchiveNotificationTests(TestCase):
         )
         response = self.client.get(reverse("invoice_notify_customer", args=[invoice.id]))
         self.assertEqual(response.status_code, 302)
+
+
+# ============================================================
+# AŞAMA 56 — CARİ EKSTRE-FATURA ENTEGRASYONU
+# ============================================================
+class InvoiceLedgerIntegrationTests(TestCase):
+    def setUp(self):
+        self.user = make_user()
+        self.client = Client()
+        self.client.force_login(self.user)
+
+    def _make_account(self, **overrides):
+        from apps.current_accounts.models import CurrentAccount
+        defaults = dict(user=self.user, type="customer", name="Test Cari A.Ş.")
+        defaults.update(overrides)
+        return CurrentAccount.objects.create(**defaults)
+
+    def test_onaylanan_fatura_cari_ekstreye_borc_olarak_islenir(self):
+        from apps.current_accounts.models import Transaction
+        account = self._make_account()
+        invoice = make_invoice(
+            self.user, seq="000000009", status="sent", current_account=account,
+        )
+        InvoiceItem.objects.create(invoice=invoice, description="Ürün", quantity=Decimal("1"), unit_price=Decimal("1000"), vat_rate=Decimal("20"))
+
+        invoice.status = "approved"
+        invoice.save()
+
+        account.refresh_from_db()
+        self.assertEqual(account.balance, Decimal("1200.00"))
+        self.assertTrue(Transaction.objects.filter(current_account=account, document_number=invoice.invoice_number).exists())
+
+    def test_ayni_fatura_iki_kez_islenmez(self):
+        from apps.current_accounts.models import Transaction
+        account = self._make_account()
+        invoice = make_invoice(self.user, seq="000000010", status="approved", current_account=account)
+        InvoiceItem.objects.create(invoice=invoice, description="Ürün", quantity=Decimal("1"), unit_price=Decimal("500"), vat_rate=Decimal("0"))
+        invoice.refresh_from_db()
+
+        # Fatura tekrar save edilse bile (ör. notes güncellense) ikinci bir kayıt oluşmamalı.
+        invoice.notes = "güncellenmiş not"
+        invoice.save()
+
+        self.assertEqual(Transaction.objects.filter(current_account=account).count(), 1)
+
+    def test_cari_hesap_baglanmamis_fatura_ekstreyi_etkilemez(self):
+        from apps.current_accounts.models import Transaction
+        invoice = make_invoice(self.user, seq="000000011", status="approved")
+        self.assertEqual(Transaction.objects.count(), 0)
+
+    def test_vkn_eslesirse_cari_otomatik_baglanir(self):
+        from apps.current_accounts.models import CurrentAccount
+        account = self._make_account(tax_id="1234567890")
+        response = self.client.post(reverse("invoices_page"), {
+            "customer_name": "Otomatik Eşleşen Müşteri", "customer_tax_id": "1234567890", "type": "e-fatura",
+        })
+        self.assertEqual(response.status_code, 302)
+        invoice = Invoice.objects.filter(user=self.user).first()
+        self.assertEqual(invoice.current_account_id, account.id)
+
+
+# ============================================================
+# BELGE TASARIMLARINDAN FATURA ŞABLONU SEÇİMİ
+# ============================================================
+class InvoiceTemplateSelectionTests(TestCase):
+    def setUp(self):
+        self.user = make_user()
+        self.client = Client()
+        self.client.force_login(self.user)
+
+    def test_bos_liste_sadece_varsayilan_gosterir(self):
+        response = self.client.get(reverse("invoices_page"))
+        self.assertEqual(len(response.context["document_templates"]), 0)
+
+    def test_aktif_efatura_sablonu_secenek_olarak_gelir(self):
+        from apps.settings_app.models import DocumentTemplate
+        DocumentTemplate.objects.create(user=self.user, document_type="e-fatura", name="Kurumsal Şablon")
+        DocumentTemplate.objects.create(user=self.user, document_type="e-irsaliye", name="İrsaliye Şablonu")
+        response = self.client.get(reverse("invoices_page"))
+        names = [t.name for t in response.context["document_templates"]]
+        self.assertIn("Kurumsal Şablon", names)
+        self.assertNotIn("İrsaliye Şablonu", names)  # yanlış belge türü karışmamalı
+
+    def test_pasif_sablon_listede_gorunmez(self):
+        from apps.settings_app.models import DocumentTemplate
+        DocumentTemplate.objects.create(user=self.user, document_type="e-fatura", name="Pasif Şablon", is_active=False)
+        response = self.client.get(reverse("invoices_page"))
+        self.assertEqual(len(response.context["document_templates"]), 0)
+
+    def test_secilen_sablon_faturaya_kaydedilir(self):
+        from apps.settings_app.models import DocumentTemplate
+        template = DocumentTemplate.objects.create(user=self.user, document_type="e-fatura", name="Kurumsal Şablon")
+        response = self.client.post(reverse("invoices_page"), {
+            "customer_name": "Test Müşteri", "type": "e-fatura", "invoice_template": str(template.id),
+        })
+        self.assertEqual(response.status_code, 302)
+        invoice = Invoice.objects.filter(user=self.user).first()
+        self.assertEqual(invoice.invoice_template, str(template.id))

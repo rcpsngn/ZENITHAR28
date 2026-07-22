@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="forms-container" style="padding: 10px 24px 40px 24px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; border-bottom: 1px solid rgba(0, 255, 150, 0.15); padding-bottom: 12px; background:#1a2233; padding:14px 18px; border-radius:6px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <i class="bi bi-display" style="color: #ffffff; font-size: 22px;"></i>
+            <h2 style="color: #ffffff; margin: 0; font-size: 18px; font-weight: 600;">Belge Tasarımları</h2>
+        </div>
+        <div style="display:flex; gap:10px;">
+            <button type="button" onclick="document.getElementById('uploadModal').style.display='flex'" style="background:#00ff66; color:#002208; border:none; padding:9px 18px; border-radius:6px; font-weight:700; cursor:pointer;">Yeni Yükle</button>
+            <a href="{% url 'document_design_customize_new' %}" style="background:#00ff66; color:#002208; border:none; padding:9px 18px; border-radius:6px; font-weight:700; cursor:pointer; text-decoration:none;">Yeni Özelleştirme</a>
+        </div>
+    </div>
+
+    <div class="card" style="background: rgba(15, 31, 23, 0.5); border: 1px solid rgba(0, 255, 150, 0.2); border-radius: 6px; padding: 20px; overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size:13px;">
+            <thead>
+                <tr style="border-bottom: 1px solid rgba(0,255,150,0.2); color:#7a8a99; font-size:11px;">
+                    <th style="padding:8px;">Tekil No</th>
+                    <th style="padding:8px;">Ad</th>
+                    <th style="padding:8px;">Belge Türü</th>
+                    <th style="padding:8px;">Varsayılan</th>
+                    <th style="padding:8px;">Aktif mi?</th>
+                    <th style="padding:8px;">Oluşturulma Tarihi</th>
+                    <th style="padding:8px;">Oluşturulma Şekli</th>
+                    <th style="padding:8px; text-align:right;">İşlemler</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in templates %}
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                    <td style="padding:8px; color:#7a8a99; font-family:monospace; font-size:11px;">{{ t.id }}</td>
+                    <td style="padding:8px;">{{ t.name }}</td>
+                    <td style="padding:8px;">{{ t.get_document_type_display }}</td>
+                    <td style="padding:8px;">
+                        {% if t.is_default %}<span style="background:#004411; color:#00ff66; padding:3px 10px; border-radius:4px; font-size:11px; font-weight:700;">Varsayılan</span>
+                        {% else %}<a href="{% url 'document_design_set_default' t.id %}" style="color:#7a8a99; font-size:11px;">Varsayılan Yap</a>{% endif %}
+                    </td>
+                    <td style="padding:8px;">
+                        <a href="{% url 'document_design_toggle_active' t.id %}" style="text-decoration:none;">
+                        {% if t.is_active %}<span style="background:#004411; color:#00ff66; padding:3px 10px; border-radius:4px; font-size:11px; font-weight:700;">Aktif</span>
+                        {% else %}<span style="background:#3a0505; color:#ff6666; padding:3px 10px; border-radius:4px; font-size:11px; font-weight:700;">Pasif</span>{% endif %}
+                        </a>
+                    </td>
+                    <td style="padding:8px; color:#7a8a99;">{{ t.created_at|date:"d.m.Y" }}</td>
+                    <td style="padding:8px;">
+                        {% if t.creation_type == "uploaded" %}<span style="background:#052033; color:#33aaff; padding:3px 10px; border-radius:4px; font-size:11px;">Yüklenmiş</span>
+                        {% else %}<span style="background:#052033; color:#33aaff; padding:3px 10px; border-radius:4px; font-size:11px;">Özelleştirilmiş</span>{% endif %}
+                    </td>
+                    <td style="padding:8px; text-align:right; white-space:nowrap;">
+                        {% if t.creation_type == "customized" %}
+                            <a href="{% url 'document_design_customize' t.id %}" title="Düzenle" style="text-decoration:none;">✏️</a>
+                        {% endif %}
+                        <a href="{% url 'document_design_preview' t.id %}" title="Önizle" style="text-decoration:none;">🔍</a>
+                        <a href="{% url 'document_design_delete' t.id %}" title="Sil" onclick="return confirm('{{ t.name }} silinsin mi?');" style="text-decoration:none;">❌</a>
+                        {% if t.creation_type == "uploaded" %}
+                            <a href="{% url 'document_design_download' t.id %}" title="İndir" style="text-decoration:none;">⬇️</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="8" style="padding:20px; text-align:center; color:#7a8a99;">Henüz belge tasarımı eklenmemiş. "Yeni Özelleştirme" veya "Yeni Yükle" ile başlayın.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <p style="color:#7a8a99; font-size:12px; margin-top:14px;">
+        Fatura seri no öneki ve alt not gibi numaralandırma ayarları için
+        <a href="{% url 'document_numbering_settings' %}" style="color:#00ff66;">Belge Numaralandırma Ayarları</a> sayfasına bakın.
+    </p>
+</div>
+
+<!-- ============================================================ -->
+<!-- "Yeni Belge Tasarımı" YÜKLEME MODALI -->
+<!-- ============================================================ -->
+<div id="uploadModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:1000; align-items:center; justify-content:center;">
+    <div style="background:#0f1f17; border:1px solid rgba(0,255,150,0.3); border-radius:8px; padding:24px; width:420px; max-width:90%;">
+        <h3 style="color:#00ff66; margin-top:0;">Yeni Belge Tasarımı</h3>
+        <div style="background:#052033; border:1px solid #33aaff; color:#33aaff; padding:10px; border-radius:4px; font-size:12px; margin-bottom:16px;">
+            Yükleme yapabilmek için ".xslt" uzantılı dosyanızı seçiniz.
+        </div>
+        <form method="post" action="{% url 'document_design_upload' %}" enctype="multipart/form-data" style="display:flex; flex-direction:column; gap:12px;">
+            {% csrf_token %}
+            <div>
+                <label style="display:block; font-size:12px; color:#7a8a99; margin-bottom:4px;">Belge Türü</label>
+                <select name="document_type" class="search-input" style="width:100%;">
+                    <option value="e-fatura">e-Fatura</option>
+                    <option value="e-arsiv">E-Arşiv</option>
+                    <option value="e-irsaliye">e-İrsaliye</option>
+                </select>
+            </div>
+            <div>
+                <label style="display:block; font-size:12px; color:#7a8a99; margin-bottom:4px;">Tasarım Adı</label>
+                <input type="text" name="name" class="search-input" style="width:100%; box-sizing:border-box;" required>
+            </div>
+            <div style="display:flex; gap:16px; align-items:center;">
+                <label style="font-size:12px; color:#1a202c; display:flex; align-items:center; gap:6px;"><input type="checkbox" name="is_active" checked> Aktif mi?</label>
+                <label style="font-size:12px; color:#1a202c; display:flex; align-items:center; gap:6px;"><input type="checkbox" name="is_default"> Varsayılan mı?</label>
+            </div>
+            <div>
+                <label style="display:block; font-size:12px; color:#7a8a99; margin-bottom:4px;">Belge Tasarımı Dosyası (.xslt)</label>
+                <input type="file" name="uploaded_file" accept=".xslt" required>
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:10px;">
+                <button type="button" onclick="document.getElementById('uploadModal').style.display='none'" style="background:transparent; border:1px solid #7a8a99; color:#7a8a99; padding:8px 16px; border-radius:6px; cursor:pointer;">İptal</button>
+                <button type="submit" style="background:#00ff66; color:#002208; border:none; padding:8px 16px; border-radius:6px; font-weight:700; cursor:pointer;">Tamam</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -136,3 +136,30 @@ class WaybillApprovalFlowTests(TestCase):
         other_wb = make_waybill(other, seq="000000002", status="sent")
         response = self.client.get(reverse("waybill_approve", args=[other_wb.id]))
         self.assertEqual(response.status_code, 404)
+
+
+class WaybillTemplateSelectionTests(TestCase):
+    def setUp(self):
+        self.user = make_user()
+        self.client = Client()
+        self.client.force_login(self.user)
+
+    def test_aktif_eirsaliye_sablonu_secenek_olarak_gelir(self):
+        from apps.settings_app.models import DocumentTemplate
+        DocumentTemplate.objects.create(user=self.user, document_type="e-irsaliye", name="İrsaliye Şablonu")
+        DocumentTemplate.objects.create(user=self.user, document_type="e-fatura", name="Fatura Şablonu")
+        response = self.client.get(reverse("waybill_create"))
+        names = [t.name for t in response.context["document_templates"]]
+        self.assertIn("İrsaliye Şablonu", names)
+        self.assertNotIn("Fatura Şablonu", names)
+
+    def test_secilen_sablon_irsaliyeye_kaydedilir(self):
+        from apps.settings_app.models import DocumentTemplate
+        template = DocumentTemplate.objects.create(user=self.user, document_type="e-irsaliye", name="İrsaliye Şablonu")
+        response = self.client.post(reverse("waybill_create"), {
+            "customer_name": "Test Müşteri", "date": date.today().isoformat(),
+            "items_json_data": "[]", "invoice_template": str(template.id),
+        })
+        self.assertEqual(response.status_code, 302)
+        wb = Invoice.objects.filter(user=self.user, type="e-irsaliye").first()
+        self.assertEqual(wb.invoice_template, str(template.id))

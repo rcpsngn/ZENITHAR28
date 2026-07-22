@@ -64,6 +64,9 @@
                             <label>Fatura Şablonu</label>
                             <select name="invoice_template">
                                 <option value="varsayilan" {% if not invoice or invoice.invoice_template == 'varsayilan' %}selected{% endif %}>Varsayılan Şablon</option>
+                                {% for t in document_templates %}
+                                    <option value="{{ t.id }}" {% if invoice.invoice_template == t.id|stringformat:"s" %}selected{% endif %}>{{ t.name }}</option>
+                                {% endfor %}
                             </select>
                         </div>
                     </div>

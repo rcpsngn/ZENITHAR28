@@ -7,7 +7,7 @@ from decimal import Decimal, InvalidOperation
 from datetime import datetime, date
 import csv
 
-from .models import CurrentAccount, Transaction, Product, StockMovement, Warehouse
+from .models import CurrentAccount, Transaction, Product, StockMovement, Warehouse, ProductWarehouseStock
 
 
 def to_decimal(value, default="0"):
@@ -61,11 +61,13 @@ def product_delete(request, id):
 
 @login_required
 def stock_movement_list(request):
-    movements = StockMovement.objects.filter(user=request.user).select_related("product")
+    movements = StockMovement.objects.filter(user=request.user).select_related("product", "warehouse", "target_warehouse")
     products = Product.objects.filter(user=request.user, is_active=True)
+    warehouses = Warehouse.objects.filter(user=request.user, is_active=True)
     return render(request, 'current_accounts/stock-movement.html', {
         'movements': movements,
         'products': products,
+        'warehouses': warehouses,
     })
 
 
@@ -78,6 +80,16 @@ def stock_movement_save(request):
     movement_type = request.POST.get("type")
     quantity = to_decimal(request.POST.get("quantity"), "0")
     date_str = request.POST.get("date") or datetime.now().date().isoformat()
+
+    warehouse = None
+    warehouse_id = request.POST.get("warehouse")
+    if warehouse_id:
+        warehouse = get_object_or_404(Warehouse, id=warehouse_id, user=request.user)
+
+    target_warehouse = None
+    target_warehouse_id = request.POST.get("target_warehouse")
+    if target_warehouse_id:
+        target_warehouse = get_object_or_404(Warehouse, id=target_warehouse_id, user=request.user)
 
     if movement_type not in dict(StockMovement.TYPE_CHOICES):
         messages.error(request, "Geçersiz hareket türü.")
@@ -98,11 +110,32 @@ def stock_movement_save(request):
         )
         return redirect("stock_movement_list")
 
+    # Aşama 55: Transfer için kaynak/hedef depo zorunlu, aynı depo olamaz,
+    # ve kaynak depodaki mevcut stok aşılamaz (toplam Product.quantity değil,
+    # o depoya özel ProductWarehouseStock kontrol edilir).
+    if movement_type == "transfer":
+        if not warehouse or not target_warehouse:
+            messages.error(request, "Transfer için kaynak ve hedef depo seçilmelidir.")
+            return redirect("stock_movement_list")
+        if warehouse_id == target_warehouse_id:
+            messages.error(request, "Kaynak ve hedef depo aynı olamaz.")
+            return redirect("stock_movement_list")
+        source_stock = ProductWarehouseStock.objects.filter(product=product, warehouse=warehouse).first()
+        available = source_stock.quantity if source_stock else Decimal("0")
+        if quantity > available:
+            messages.error(
+                request,
+                f"Yetersiz depo stoğu: '{warehouse.name}' deposunda '{product.name}' için mevcut "
+                f"{available} {product.unit}, talep edilen {quantity} {product.unit}."
+            )
+            return redirect("stock_movement_list")
+
     StockMovement.objects.create(
         user=request.user, product=product, type=movement_type,
         reason=request.POST.get("reason", "other"),
         quantity=quantity, date=date_str,
         reference_note=request.POST.get("reference_note", ""),
+        warehouse=warehouse, target_warehouse=target_warehouse,
     )
     messages.success(request, f"{product.name} için {dict(StockMovement.TYPE_CHOICES)[movement_type].lower()} hareketi kaydedildi.")
     return redirect("stock_movement_list")
@@ -331,17 +364,49 @@ def account_statement_export(request, id, file_format):
     return HttpResponse("Desteklenmeyen format. 'csv' ya da 'xlsx' kullanın.", status=400)
 
 
+def generate_transaction_document_number(user, transaction_type: str) -> str:
+    """
+    Aşama 45: Alacak (credit/tahsilat) işlemlerine RCP, borç (debit) işlemlerine
+    ZNT önekiyle otomatik artan belge numarası üretir. Mantık, apps/invoices/views.py
+    > generate_invoice_number() ile aynı desendir (yıl + sıra no, zfill 9).
+    """
+    prefix_code = "RCP" if transaction_type == "credit" else "ZNT"
+    current_year = datetime.now().year
+    prefix = f"{prefix_code}{current_year}"
+
+    last = (
+        Transaction.objects.filter(
+            current_account__user=user, document_number__startswith=prefix
+        )
+        .order_by("-document_number")
+        .first()
+    )
+    if last:
+        try:
+            new_sequence = int(last.document_number[len(prefix):]) + 1
+        except ValueError:
+            new_sequence = 1
+    else:
+        new_sequence = 1
+    return f"{prefix}{str(new_sequence).zfill(9)}"
+
+
 @login_required
 def transaction_save(request, account_id):
     account = get_object_or_404(CurrentAccount, id=account_id, user=request.user)
     if request.method == "POST":
+        transaction_type = request.POST.get("type", "debit")
+        document_number = request.POST.get("document_number", "").strip()
+        if not document_number:
+            document_number = generate_transaction_document_number(request.user, transaction_type)
+
         transaction = Transaction.objects.create(
             current_account=account,
-            type=request.POST.get("type", "debit"),
+            type=transaction_type,
             amount=to_decimal(request.POST.get("amount"), "0"),
             description=request.POST.get("description", ""),
             date=request.POST.get("date"),
-            document_number=request.POST.get("document_number", ""),
+            document_number=document_number,
         )
         if transaction.type == "debit":
             account.balance += transaction.amount

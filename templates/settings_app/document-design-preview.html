@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div style="padding: 10px 24px 40px 24px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h2 style="color:#00ff66; margin:0; font-size:18px;">🔍 Belge Detayı — {{ template.name }}</h2>
+        <a href="{% url 'document_design' %}" style="background:#00ff66; color:#002208; border:none; padding:8px 18px; border-radius:6px; font-weight:700; cursor:pointer; text-decoration:none;">Kapat</a>
+    </div>
+
+    <div class="card" style="background:#ffffff; border-radius:6px; padding:30px; color:#1a202c; font-size:13px; max-width:850px;">
+        {% if template.creation_type == "uploaded" %}
+            {% if xslt_result.success %}
+                <div style="border:1px solid #ddd; padding:16px;">{{ xslt_result.output|safe }}</div>
+            {% else %}
+                <div style="color:#c0392b; padding:20px; text-align:center; background:#fff5f5; border:1px solid #f5c6cb; border-radius:4px;">
+                    ⚠️ {{ xslt_result.message }}
+                </div>
+            {% endif %}
+        {% else %}
+            {% include "settings_app/_document_preview.html" %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

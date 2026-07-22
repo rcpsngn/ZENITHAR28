@@ -1,3 +1,4 @@
+import uuid
 from django.db import models
 from apps.accounts.models import User
 from .crypto import encrypt_value, decrypt_value, mask_value
@@ -128,3 +129,66 @@ class SystemPreferences(models.Model):
 
     def __str__(self):
         return f"Sistem Tercihleri - {self.user}"
+
+class DocumentTemplate(models.Model):
+    """
+    Belge Tasarımları (Uyumsoft portal referanslı liste + özelleştirme +
+    hazır .xslt yükleme akışı). Aşama 36'nın ötesinde, kullanıcının aynı belge
+    türü (e-Fatura/e-Arşiv/e-İrsaliye) için BİRDEN FAZLA adlandırılmış tasarım
+    tutabilmesini ve birini "varsayılan" seçebilmesini sağlar.
+    """
+    DOCUMENT_TYPE_CHOICES = [
+        ("e-fatura", "e-Fatura"),
+        ("e-arsiv", "E-Arşiv"),
+        ("e-irsaliye", "e-İrsaliye"),
+    ]
+    CREATION_TYPE_CHOICES = [
+        ("customized", "Özelleştirilmiş"),
+        ("uploaded", "Yüklenmiş (.xslt)"),
+    ]
+    UNIT_PRICE_FORMAT_CHOICES = [
+        ("2", "0,00"),
+        ("4", "0,0000"),
+        ("6", "0,000000"),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="document_templates")
+    document_type = models.CharField(max_length=20, choices=DOCUMENT_TYPE_CHOICES, default="e-fatura")
+    name = models.CharField(max_length=150)
+    creation_type = models.CharField(max_length=20, choices=CREATION_TYPE_CHOICES, default="customized")
+    is_active = models.BooleanField(default=True)
+    is_default = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    # ---- "Yeni Özelleştirme" formu alanları (Belge Tasarımı Özelleştirme ekranı) ----
+    sender_title = models.CharField(max_length=255, blank=True, help_text="Faturada 'Gönderici' olarak görünecek ünvan.")
+    discount_replaces = models.BooleanField(default=False, help_text="İskonto, birim fiyatın yerine mi geçsin?")
+    unit_price_format = models.CharField(max_length=2, choices=UNIT_PRICE_FORMAT_CHOICES, default="2")
+    logo = models.ImageField(upload_to="document_templates/logos/", blank=True, null=True)
+    signature = models.ImageField(upload_to="document_templates/signatures/", blank=True, null=True)
+    bank_info_html = models.TextField(blank=True, help_text="Belge altında görünecek banka hesap bilgileri (zengin metin).")
+    note = models.TextField(blank=True)
+    sender_note = models.TextField(blank=True)
+    recipient_note = models.TextField(blank=True)
+
+    # ---- "Yeni Yükle" akışı: hazır .xslt dosyası ----
+    uploaded_file = models.FileField(upload_to="document_templates/uploads/", blank=True, null=True)
+
+    class Meta:
+        db_table = "document_templates"
+        verbose_name = "Belge Tasarımı"
+        verbose_name_plural = "Belge Tasarımları"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.name} ({self.get_document_type_display()})"
+
+    def save(self, *args, **kwargs):
+        # Aynı belge türünde tek bir "varsayılan" olabilir.
+        if self.is_default:
+            DocumentTemplate.objects.filter(
+                user=self.user, document_type=self.document_type, is_default=True
+            ).exclude(pk=self.pk).update(is_default=False)
+        super().save(*args, **kwargs)
