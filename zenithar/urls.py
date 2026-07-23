@@ -45,7 +45,7 @@ def home(request):
     # ---- Belge hacmi trend grafiği (son 30 gün) — Uyumsoft portal referanslı ana sayfa ----
     from apps.help.models import Announcement
 
-    trend_days = 30
+    trend_days = 90  # istemci tarafında 7/30/90 gün arasında geçiş yapılabilir
     trend_start = today - timedelta(days=trend_days - 1)
     trend_labels = []
     efatura_series, earsiv_series, eirsaliye_series, pending_series = [], [], [], []

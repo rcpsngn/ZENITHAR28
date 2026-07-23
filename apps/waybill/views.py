@@ -7,7 +7,7 @@ import uuid
 from datetime import datetime, timedelta
 
 from apps.invoices.models import Invoice, InvoiceItem
-from apps.invoices.views import to_decimal, generate_invoice_number, _safe_redirect
+from apps.invoices.views import to_decimal, generate_invoice_number, _safe_redirect, _optional_item_kwargs
 
 # Aşama 14 notu: "Fiili sevk tarihi ve saati doğrulama kontrolleri (Geçmişe
 # dönük irsaliye kısıtı) backend'e eklenmeli." Bir irsaliye ne gelecekte bir
@@ -45,6 +45,13 @@ def waybill_create(request):
     if request.method == "POST":
         issue_date = request.POST.get("date") or datetime.now().date()
         date_error = _validate_waybill_date(issue_date)
+
+        # Aşama 52: fiili sevk tarihi de aynı kısıtlara tabi (gelecekte olamaz,
+        # çok geriye tarihlenemez) — girildiyse doğrulanır.
+        actual_shipment_date = request.POST.get("actual_shipment_date") or None
+        if not date_error and actual_shipment_date:
+            date_error = _validate_waybill_date(actual_shipment_date)
+
         if date_error:
             messages.error(request, date_error)
             from apps.settings_app.models import DocumentTemplate
@@ -62,6 +69,9 @@ def waybill_create(request):
             invoice_type=request.POST.get("invoice_type", "satis"),
             invoice_template=request.POST.get("invoice_template", "varsayilan"),
             issue_date=issue_date,
+            actual_shipment_date=actual_shipment_date or None,
+            waybill_scenario=request.POST.get("waybill_scenario", ""),
+            waybill_type=request.POST.get("waybill_type", "sevk"),
             currency=request.POST.get("currency", "TL"),
             exchange_rate=to_decimal(request.POST.get("exchange_rate"), "1.0000"),
             customer_name=request.POST.get("customer_name"),
@@ -88,6 +98,7 @@ def waybill_create(request):
                     unit=item.get("unit"),
                     unit_price=to_decimal(item.get("price"), "0"),
                     vat_rate=to_decimal(item.get("vat"), "0"),
+                    **_optional_item_kwargs(item),
                 )
         except Exception:
             pass
@@ -108,6 +119,11 @@ def waybill_edit(request, id):
     if request.method == "POST":
         issue_date = request.POST.get("date") or waybill.issue_date
         date_error = _validate_waybill_date(issue_date)
+
+        actual_shipment_date = request.POST.get("actual_shipment_date") or None
+        if not date_error and actual_shipment_date:
+            date_error = _validate_waybill_date(actual_shipment_date)
+
         if date_error:
             messages.error(request, date_error)
             items_json = json.dumps([
@@ -129,6 +145,9 @@ def waybill_edit(request, id):
         waybill.invoice_type = request.POST.get("invoice_type", waybill.invoice_type)
         waybill.invoice_template = request.POST.get("invoice_template", waybill.invoice_template)
         waybill.issue_date = issue_date
+        waybill.actual_shipment_date = actual_shipment_date or None
+        waybill.waybill_scenario = request.POST.get("waybill_scenario", waybill.waybill_scenario)
+        waybill.waybill_type = request.POST.get("waybill_type", waybill.waybill_type)
         waybill.currency = request.POST.get("currency", waybill.currency)
         waybill.exchange_rate = to_decimal(request.POST.get("exchange_rate"), "1.0000")
         waybill.customer_name = request.POST.get("customer_name")
@@ -155,6 +174,7 @@ def waybill_edit(request, id):
                     unit=item.get("unit"),
                     unit_price=to_decimal(item.get("price"), "0"),
                     vat_rate=to_decimal(item.get("vat"), "0"),
+                    **_optional_item_kwargs(item),
                 )
         except Exception:
             pass

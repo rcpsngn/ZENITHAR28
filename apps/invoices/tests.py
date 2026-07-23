@@ -9,7 +9,8 @@ bu yüzden Final - Test görevinde ilk ele alınan modül burası oldu.
     python manage.py test apps.invoices
 """
 from decimal import Decimal
-from datetime import date
+from datetime import date, timedelta
+import json
 
 from django.test import TestCase, Client
 from django.urls import reverse
@@ -354,3 +355,88 @@ class InvoiceTemplateSelectionTests(TestCase):
         self.assertEqual(response.status_code, 302)
         invoice = Invoice.objects.filter(user=self.user).first()
         self.assertEqual(invoice.invoice_template, str(template.id))
+
+
+# ============================================================
+# AŞAMA 46/47 — KALEM DİĞER SEÇENEKLER + KDV MUAFİYETİ
+# AŞAMA 48/49 — İHRACAT FATURA/TESLİM YERİ BİLGİLERİ
+# ============================================================
+class InvoiceOptionalFieldsTests(TestCase):
+    def setUp(self):
+        self.user = make_user()
+        self.client = Client()
+        self.client.force_login(self.user)
+
+    def test_kalem_diger_secenekler_kaydedilir(self):
+        items = json.dumps([{
+            "desc": "Dizüstü Bilgisayar", "qty": 1, "unit": "Adet", "price": 1000, "vat": 20,
+            "seller_code": "SAT-001", "brand": "Örnek Marka", "barcode": "8690000000001",
+            "vat_exemption_reason": "301",
+        }])
+        response = self.client.post(reverse("invoices_page"), {
+            "customer_name": "Test Müşteri", "type": "e-fatura", "items_json_data": items,
+        })
+        self.assertEqual(response.status_code, 302)
+        item = InvoiceItem.objects.filter(invoice__user=self.user).first()
+        self.assertEqual(item.seller_code, "SAT-001")
+        self.assertEqual(item.brand, "Örnek Marka")
+        self.assertEqual(item.vat_exemption_reason, "301")
+
+    def test_diger_secenekler_bos_birakilirsa_hata_vermez(self):
+        items = json.dumps([{"desc": "Basit Kalem", "qty": 1, "unit": "Adet", "price": 100, "vat": 20}])
+        response = self.client.post(reverse("invoices_page"), {
+            "customer_name": "Test Müşteri", "type": "e-fatura", "items_json_data": items,
+        })
+        self.assertEqual(response.status_code, 302)
+        item = InvoiceItem.objects.filter(invoice__user=self.user).first()
+        self.assertEqual(item.seller_code, "")
+        self.assertIsNone(item.order_date)
+
+    def test_ihracat_bilgileri_kaydedilir(self):
+        response = self.client.post(reverse("invoices_page"), {
+            "customer_name": "Yurt Dışı Müşteri", "type": "e-fatura", "invoice_type": "ihracat",
+            "export_gtip_no": "8471.30", "export_delivery_terms": "FOB",
+            "export_delivery_country": "Almanya", "export_delivery_city": "Berlin",
+        })
+        self.assertEqual(response.status_code, 302)
+        invoice = Invoice.objects.filter(user=self.user).first()
+        self.assertEqual(invoice.export_gtip_no, "8471.30")
+        self.assertEqual(invoice.export_delivery_country, "Almanya")
+
+
+# ============================================================
+# AŞAMA 50/51/52 — İRSALİYE SENARYO/TİP/FİİLİ SEVK TARİHİ
+# ============================================================
+class WaybillScenarioFieldsTests(TestCase):
+    def setUp(self):
+        self.user = make_user()
+        self.client = Client()
+        self.client.force_login(self.user)
+
+    def test_senaryo_ve_tip_kaydedilir(self):
+        response = self.client.post(reverse("waybill_create"), {
+            "customer_name": "Test Müşteri", "date": date.today().isoformat(),
+            "items_json_data": "[]", "waybill_scenario": "hks", "waybill_type": "matbu",
+        })
+        self.assertEqual(response.status_code, 302)
+        wb = Invoice.objects.filter(user=self.user, type="e-irsaliye").first()
+        self.assertEqual(wb.waybill_scenario, "hks")
+        self.assertEqual(wb.waybill_type, "matbu")
+
+    def test_fiili_sevk_tarihi_gecmiste_cok_eskiyse_reddedilir(self):
+        too_old = (date.today() - timedelta(days=30)).isoformat()
+        response = self.client.post(reverse("waybill_create"), {
+            "customer_name": "Test Müşteri", "date": date.today().isoformat(),
+            "items_json_data": "[]", "actual_shipment_date": too_old,
+        })
+        self.assertEqual(response.status_code, 200)  # forma hatayla geri döner
+        self.assertEqual(Invoice.objects.filter(user=self.user, type="e-irsaliye").count(), 0)
+
+    def test_fiili_sevk_tarihi_gecerliyse_kaydedilir(self):
+        response = self.client.post(reverse("waybill_create"), {
+            "customer_name": "Test Müşteri", "date": date.today().isoformat(),
+            "items_json_data": "[]", "actual_shipment_date": date.today().isoformat(),
+        })
+        self.assertEqual(response.status_code, 302)
+        wb = Invoice.objects.filter(user=self.user, type="e-irsaliye").first()
+        self.assertEqual(wb.actual_shipment_date, date.today())

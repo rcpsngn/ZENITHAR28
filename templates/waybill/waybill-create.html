@@ -29,6 +29,26 @@
                         <input type="date" name="date" required value="{% if invoice %}{{ invoice.issue_date|date:'Y-m-d' }}{% else %}{% now 'Y-m-d' %}{% endif %}">
                     </div>
                     <div class="input-unit">
+                        <label>Fiili Sevk Tarihi</label>
+                        <input type="date" name="actual_shipment_date" value="{% if invoice.actual_shipment_date %}{{ invoice.actual_shipment_date|date:'Y-m-d' }}{% endif %}">
+                    </div>
+                    <div class="input-unit">
+                        <label>Senaryo Tipi</label>
+                        <select name="waybill_scenario">
+                            <option value="" {% if not invoice or not invoice.waybill_scenario %}selected{% endif %}>—</option>
+                            <option value="temel" {% if invoice.waybill_scenario == "temel" %}selected{% endif %}>Temel İrsaliye</option>
+                            <option value="hks" {% if invoice.waybill_scenario == "hks" %}selected{% endif %}>HKS İrsaliye</option>
+                            <option value="insaat_demiri" {% if invoice.waybill_scenario == "insaat_demiri" %}selected{% endif %}>İnşaat Demiri İzleme Sistemi</option>
+                        </select>
+                    </div>
+                    <div class="input-unit">
+                        <label>İrsaliye Tipi</label>
+                        <select name="waybill_type">
+                            <option value="sevk" {% if not invoice or invoice.waybill_type == "sevk" %}selected{% endif %}>Sevk</option>
+                            <option value="matbu" {% if invoice.waybill_type == "matbu" %}selected{% endif %}>Matbu</option>
+                        </select>
+                    </div>
+                    <div class="input-unit">
                         <label>İrsaliye Tipi / Senaryo</label>
                         <select name="invoice_type">
                             <option value="satis" {% if not invoice or invoice.invoice_type == "satis" %}selected{% endif %}>Satış</option>
@@ -165,10 +185,10 @@
     <div class="modal-window">
         <div class="modal-top">Mal/Hizmet Bilgisi Ekle/Düzenle <span class="close-x" onclick="closeItemModal()">×</span></div>
         <div class="modal-tabs">
-            <div class="tab-item active">📝 Genel Bilgiler</div>
-            <div class="tab-item" style="opacity: 0.5;">⚙️ Diğer Seçenekler</div>
+            <div class="tab-item active" id="tab_general" onclick="switchItemTab('general')">📝 Genel Bilgiler</div>
+            <div class="tab-item" id="tab_other" onclick="switchItemTab('other')">⚙️ Diğer Seçenekler</div>
         </div>
-        <div class="modal-body-grid">
+        <div class="modal-body-grid" id="panel_general">
             <div class="input-unit span-all">
                 <label>Mal/Hizmet Tanımı</label>
                 <input type="text" id="m_desc" placeholder="Ürün veya malzeme adını giriniz...">
@@ -203,6 +223,25 @@
                 <input type="text" id="m_total_calc" readonly class="readonly-style" value="0.00">
             </div>
         </div>
+
+        <!-- Aşama 54: Diğer Seçenekler (Mal Bilgisi) — Aşama 46 ile ortak InvoiceItem alanları -->
+        <div class="modal-body-grid" id="panel_other" style="display:none;">
+            <div class="input-unit"><label>Satıcı Kodu</label><input type="text" id="m_seller_code"></div>
+            <div class="input-unit"><label>Alıcı Kodu</label><input type="text" id="m_buyer_code"></div>
+            <div class="input-unit"><label>Üretici Kodu / Barkod</label><input type="text" id="m_barcode"></div>
+            <div class="input-unit"><label>Marka</label><input type="text" id="m_brand"></div>
+            <div class="input-unit"><label>Model</label><input type="text" id="m_model_name"></div>
+            <div class="input-unit"><label>Menşei</label><input type="text" id="m_origin_country"></div>
+            <div class="input-unit span-all"><label>Açıklama (Ek)</label><input type="text" id="m_additional_description"></div>
+            <div class="input-unit span-all"><label>Not</label><input type="text" id="m_item_note"></div>
+            <div class="input-unit"><label>Sınıflandırma Değeri</label><input type="text" id="m_classification_value"></div>
+            <div class="input-unit"><label>Sınıflandırma Versiyonu</label><input type="text" id="m_classification_version"></div>
+            <div class="input-unit"><label>Sınıflandırma Kodu</label><input type="text" id="m_classification_code"></div>
+            <div class="input-unit"><label>Sipariş No</label><input type="text" id="m_order_number"></div>
+            <div class="input-unit"><label>Sipariş Tarihi</label><input type="date" id="m_order_date"></div>
+            <div class="input-unit"><label>Ek Bilgi ID</label><input type="text" id="m_additional_info_id"></div>
+        </div>
+
         <div class="modal-actions">
             <button type="button" class="m-btn m-cancel" onclick="closeItemModal()">İptal</button>
             <button type="button" class="m-btn m-ok" onclick="pushItemToGrid()">Tamam</button>

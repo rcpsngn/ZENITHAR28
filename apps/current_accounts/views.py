@@ -27,27 +27,56 @@ def stock_tracking(request):
     products = Product.objects.filter(user=request.user)
     total_stock_value = sum((p.stock_value for p in products), Decimal("0"))
     low_stock_count = sum(1 for p in products if p.is_low_stock)
+    warehouses = Warehouse.objects.filter(user=request.user, is_active=True)
     return render(request, 'current_accounts/stock-tracking.html', {
         'products': products,
         'total_stock_value': total_stock_value,
         'low_stock_count': low_stock_count,
+        'warehouses': warehouses,
     })
 
 
 @login_required
 def product_save(request, id=None):
+    is_new_product = id is None
     product = get_object_or_404(Product, id=id, user=request.user) if id else Product(user=request.user)
     if request.method == "POST":
         product.code = request.POST.get("code", "")
         product.name = request.POST.get("name")
         product.category = request.POST.get("category", "")
         product.unit = request.POST.get("unit", "Adet")
-        product.quantity = to_decimal(request.POST.get("quantity"), "0")
         product.unit_price = to_decimal(request.POST.get("unit_price"), "0")
         product.cost_price = to_decimal(request.POST.get("cost_price"), "0")
         product.vat_rate = to_decimal(request.POST.get("vat_rate"), "20")
         product.min_stock_level = to_decimal(request.POST.get("min_stock_level"), "0")
+
+        # Aşama 55 devamı: Yeni ürün eklerken, stok birden fazla depoya
+        # dağıtılabiliyorsa (ör. 2 depoya yarı yarıya gönderildiyse) burada
+        # depo bazlı miktar girilebilir. Girilirse ürünün toplam miktarı bu
+        # dağılımın TOPLAMINDAN türetilir (StockMovement sinyali üzerinden,
+        # çift sayım olmaması için doğrudan atama YAPILMAZ). Depo dağılımı
+        # girilmezse eskisi gibi düz "Miktar" alanı kullanılır (depoya
+        # bağlanmamış genel stok).
+        warehouse_allocations = []
+        if is_new_product:
+            for warehouse in Warehouse.objects.filter(user=request.user, is_active=True):
+                qty = to_decimal(request.POST.get(f"warehouse_qty_{warehouse.id}"), "0")
+                if qty > 0:
+                    warehouse_allocations.append((warehouse, qty))
+
+        if warehouse_allocations:
+            product.quantity = 0  # StockMovement sinyali aşağıda gerçek miktara yükseltecek
+        else:
+            product.quantity = to_decimal(request.POST.get("quantity"), "0")
+
         product.save()
+
+        for warehouse, qty in warehouse_allocations:
+            StockMovement.objects.create(
+                user=request.user, product=product, type="in", reason="count_adjustment",
+                quantity=qty, date=datetime.now().date(), warehouse=warehouse,
+                reference_note=f"Ürün oluşturulurken '{warehouse.name}' deposuna ilk stok girişi.",
+            )
     return redirect("stock_tracking")
 
 

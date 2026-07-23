@@ -133,13 +133,14 @@ class HomeDashboardTests(TestCase):
         response = self.client.get(reverse("home"))
         self.assertEqual(response.status_code, 200)
 
-    def test_trend_verisi_30_gun_uzunlugundadir(self):
+    def test_trend_verisi_90_gun_uzunlugundadir(self):
+        """Trend verisi artık 90 gün; ana sayfadaki 7/30/90 gün butonları bunu istemci tarafında dilimler."""
         response = self.client.get(reverse("home"))
         import json
         labels = json.loads(response.context["trend_labels_json"])
         efatura = json.loads(response.context["trend_efatura_json"])
-        self.assertEqual(len(labels), 30)
-        self.assertEqual(len(efatura), 30)
+        self.assertEqual(len(labels), 90)
+        self.assertEqual(len(efatura), 90)
 
     def test_gonderilen_efatura_trend_grafigine_yansir(self):
         Invoice.objects.create(

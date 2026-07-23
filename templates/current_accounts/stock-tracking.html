@@ -92,6 +92,21 @@
                 <div class="input-unit"><label>Maliyet Fiyatı (Alış)</label><input type="number" step="0.01" name="cost_price" id="p_cost_price" value="0"></div>
                 <div class="input-unit"><label>KDV Oranı (%)</label><input type="number" step="0.01" name="vat_rate" id="p_vat_rate" value="20"></div>
                 <div class="input-unit"><label>Kritik Stok Seviyesi</label><input type="number" step="0.01" name="min_stock_level" id="p_min_stock" value="0"></div>
+
+                {% if warehouses %}
+                <div id="warehouse_allocation_section" style="grid-column: 1 / -1; border-top:1px solid rgba(0,255,150,0.15); padding-top:12px; margin-top:6px;">
+                    <label style="display:block; margin-bottom:8px; font-weight:600;">Depo Dağılımı (opsiyonel — ör. 2 depoya yarı yarıya girdiyseniz)</label>
+                    <div style="display:flex; flex-wrap:wrap; gap:12px;">
+                        {% for w in warehouses %}
+                        <div class="input-unit" style="min-width:160px;">
+                            <label>{{ w.name }}</label>
+                            <input type="number" step="0.01" min="0" class="warehouse-qty-input" name="warehouse_qty_{{ w.id }}" id="p_wh_{{ w.id }}" value="" placeholder="0" oninput="recalcWarehouseTotal()">
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <small id="warehouse_total_hint" style="display:block; margin-top:6px; color:#7a8a99;"></small>
+                </div>
+                {% endif %}
             </div>
             <div class="modal-preview-footer">
                 <button type="button" class="m-btn m-cancel" onclick="closeProductModal()">Vazgeç</button>
@@ -103,6 +118,29 @@
 
 <link rel="stylesheet" href="{% static 'css/invoice-actions.css' %}?v=2">
 <script>
+function recalcWarehouseTotal() {
+    const inputs = document.querySelectorAll(".warehouse-qty-input");
+    let total = 0;
+    let anyFilled = false;
+    inputs.forEach(function (inp) {
+        const val = parseFloat(inp.value);
+        if (!isNaN(val) && val > 0) {
+            total += val;
+            anyFilled = true;
+        }
+    });
+    const qtyField = document.getElementById("p_quantity");
+    const hint = document.getElementById("warehouse_total_hint");
+    if (anyFilled) {
+        qtyField.value = total;
+        qtyField.readOnly = true;
+        hint.textContent = "Toplam miktar (" + total + ") depo dağılımından otomatik hesaplandı.";
+    } else {
+        qtyField.readOnly = false;
+        hint.textContent = "";
+    }
+}
+
 function openProductModal(id, code, name, category, unit, quantity, unit_price, vat_rate, min_stock, cost_price) {
     const form = document.getElementById("productForm");
     document.getElementById("productModalTitle").textContent = id ? "✏️ Ürün Düzenle" : "➕ Yeni Ürün";
@@ -112,10 +150,22 @@ function openProductModal(id, code, name, category, unit, quantity, unit_price, 
     document.getElementById("p_category").value = category || "";
     document.getElementById("p_unit").value = unit || "Adet";
     document.getElementById("p_quantity").value = quantity || 0;
+    document.getElementById("p_quantity").readOnly = false;
     document.getElementById("p_unit_price").value = unit_price || 0;
     document.getElementById("p_cost_price").value = cost_price || 0;
     document.getElementById("p_vat_rate").value = vat_rate || 20;
     document.getElementById("p_min_stock").value = min_stock || 0;
+
+    // Depo dağılımı yalnızca YENİ ürün eklerken uygulanır (Aşama 55 devamı) —
+    // mevcut bir ürünü düzenlerken çift sayıma yol açmamak için bu bölüm
+    // gizlenir; depo bazlı düzenleme için "Stok Hareket" sayfası kullanılmalı.
+    const whSection = document.getElementById("warehouse_allocation_section");
+    if (whSection) {
+        whSection.style.display = id ? "none" : "block";
+        document.querySelectorAll(".warehouse-qty-input").forEach(function (inp) { inp.value = ""; });
+        document.getElementById("warehouse_total_hint").textContent = "";
+    }
+
     document.getElementById("productModal").style.display = "flex";
 }
 function closeProductModal() { document.getElementById("productModal").style.display = "none"; }

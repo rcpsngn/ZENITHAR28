@@ -30,6 +30,28 @@ function triggerGibQuery() {
 function openItemModal() {
     document.getElementById("itemModal").style.display = "flex";
     document.getElementById("m_desc").focus();
+    // Aşama 46/54: her açılışta "Diğer Seçenekler" alanlarını temizle, ilk sekmeye dön.
+    ["m_seller_code", "m_buyer_code", "m_barcode", "m_brand", "m_model_name",
+     "m_origin_country", "m_additional_description", "m_item_note",
+     "m_classification_value", "m_classification_version", "m_classification_code",
+     "m_related_waybill_number", "m_related_waybill_date", "m_order_number",
+     "m_order_date", "m_additional_info_id"].forEach(function (id) {
+        const el = document.getElementById(id);
+        if (el) el.value = "";
+    });
+    switchItemTab("general");
+}
+
+function switchItemTab(tab) {
+    const general = document.getElementById("panel_general");
+    const other = document.getElementById("panel_other");
+    const tabGeneral = document.getElementById("tab_general");
+    const tabOther = document.getElementById("tab_other");
+    if (!general || !other) return;
+    general.style.display = (tab === "general") ? "grid" : "none";
+    other.style.display = (tab === "other") ? "grid" : "none";
+    if (tabGeneral) tabGeneral.classList.toggle("active", tab === "general");
+    if (tabOther) tabOther.classList.toggle("active", tab === "other");
 }
 
 function closeItemModal() {
@@ -46,6 +68,11 @@ function runModalMath() {
     document.getElementById("m_total_calc").value = (base + vatCalc).toFixed(2);
 }
 
+function _fieldValue(id) {
+    const el = document.getElementById(id);
+    return el ? el.value : "";
+}
+
 function pushItemToGrid() {
     const desc = document.getElementById("m_desc").value || "Malzeme/Hizmet";
     const qty = parseFloat(document.getElementById("m_qty").value) || 1;
@@ -53,7 +80,28 @@ function pushItemToGrid() {
     const price = parseFloat(document.getElementById("m_price").value) || 0;
     const vat = parseFloat(document.getElementById("m_vat").value) || 20;
 
-    tempItemsList.push({ desc, qty, unit, price, vat });
+    // Aşama 46/47/54: "Diğer Seçenekler" ve KDV muafiyet sebebi — tamamı
+    // opsiyonel, alan sayfada yoksa (waybill'de vat_exemption olmayabilir) boş geçilir.
+    tempItemsList.push({
+        desc, qty, unit, price, vat,
+        vat_exemption_reason: _fieldValue("m_vat_exemption_reason"),
+        seller_code: _fieldValue("m_seller_code"),
+        buyer_code: _fieldValue("m_buyer_code"),
+        barcode: _fieldValue("m_barcode"),
+        brand: _fieldValue("m_brand"),
+        model_name: _fieldValue("m_model_name"),
+        origin_country: _fieldValue("m_origin_country"),
+        additional_description: _fieldValue("m_additional_description"),
+        item_note: _fieldValue("m_item_note"),
+        classification_value: _fieldValue("m_classification_value"),
+        classification_version: _fieldValue("m_classification_version"),
+        classification_code: _fieldValue("m_classification_code"),
+        related_waybill_number: _fieldValue("m_related_waybill_number"),
+        related_waybill_date: _fieldValue("m_related_waybill_date"),
+        order_number: _fieldValue("m_order_number"),
+        order_date: _fieldValue("m_order_date"),
+        additional_info_id: _fieldValue("m_additional_info_id"),
+    });
     renderTableGrid();
 
     document.getElementById("m_desc").value = "";

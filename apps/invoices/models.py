@@ -76,6 +76,43 @@ class Invoice(models.Model):
         help_text="Bu fatura için cari ekstreye otomatik borç kaydı zaten oluşturuldu mu?"
     )
 
+    # ---- Aşama 50/51/52: E-İrsaliye'ye özel alanlar (yalnızca type='e-irsaliye' iken anlamlı) ----
+    WAYBILL_SCENARIO_CHOICES = [
+        ("", "—"),
+        ("temel", "Temel İrsaliye"),
+        ("hks", "HKS İrsaliye"),
+        ("insaat_demiri", "İnşaat Demiri İzleme Sistemi"),
+    ]
+    WAYBILL_TYPE_CHOICES = [
+        ("sevk", "Sevk"),
+        ("matbu", "Matbu"),
+    ]
+    waybill_scenario = models.CharField(max_length=20, choices=WAYBILL_SCENARIO_CHOICES, blank=True, default="")
+    waybill_type = models.CharField(max_length=10, choices=WAYBILL_TYPE_CHOICES, blank=True, default="sevk")
+    actual_shipment_date = models.DateField(
+        null=True, blank=True,
+        help_text="Fiili sevk tarihi — irsaliye düzenleme tarihinden (issue_date) farklı, malın gerçekten yola çıktığı tarih."
+    )
+
+    # ---- Aşama 48/49: İhracat senaryosuna özel alanlar (yalnızca invoice_type='ihracat' iken anlamlı) ----
+    export_gtip_no = models.CharField(max_length=50, blank=True, verbose_name="GTİP No")
+    export_delivery_terms = models.CharField(max_length=100, blank=True, verbose_name="Teslim Şartı")
+    export_shipping_method = models.CharField(max_length=100, blank=True, verbose_name="Gönderilme Şekli")
+    export_package_marks = models.CharField(max_length=200, blank=True, verbose_name="Kabın Markası/Cinsi")
+    export_package_number = models.CharField(max_length=50, blank=True, verbose_name="Kap Numarası")
+    export_package_count = models.CharField(max_length=20, blank=True, verbose_name="Kap Adedi")
+    export_customs_tracking_no = models.CharField(max_length=100, blank=True, verbose_name="Gümrük Takip No")
+
+    export_delivery_country = models.CharField(max_length=100, blank=True, verbose_name="Teslim Yeri - Ülke")
+    export_delivery_city = models.CharField(max_length=100, blank=True, verbose_name="Teslim Yeri - Şehir")
+    export_delivery_district = models.CharField(max_length=100, blank=True, verbose_name="Teslim Yeri - İlçe")
+    export_delivery_town = models.CharField(max_length=100, blank=True, verbose_name="Teslim Yeri - Kasaba/Köy")
+    export_delivery_street = models.CharField(max_length=200, blank=True, verbose_name="Teslim Yeri - Cadde/Sokak")
+    export_delivery_postal_code = models.CharField(max_length=20, blank=True, verbose_name="Teslim Yeri - Posta Kodu")
+    export_delivery_building_name = models.CharField(max_length=100, blank=True, verbose_name="Teslim Yeri - Bina Adı")
+    export_delivery_building_no = models.CharField(max_length=20, blank=True, verbose_name="Teslim Yeri - Bina No")
+    export_delivery_door_no = models.CharField(max_length=20, blank=True, verbose_name="Teslim Yeri - Kapı No")
+
     # Otomatik & Genel Bilgiler
     ettn = models.CharField(max_length=100, unique=True, blank=True, null=True)
     type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='e-fatura')
@@ -158,6 +195,13 @@ class Invoice(models.Model):
 
 
 class InvoiceItem(models.Model):
+    VAT_EXEMPTION_CHOICES = [
+        ("", "— Muafiyet Yok —"),
+        ("301", "301 - İhracat İstisnası"),
+        ("350", "350 - Askeri Alanlar İstisnası"),
+        ("999", "999 - Diğer"),
+    ]
+
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='items')
     description = models.CharField(max_length=500)
     quantity = models.DecimalField(max_digits=10, decimal_places=2, default=1)
@@ -167,6 +211,28 @@ class InvoiceItem(models.Model):
     vat_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    # Aşama 47: kalem bazında KDV muafiyet sebebi (zorunlu değil).
+    vat_exemption_reason = models.CharField(max_length=3, choices=VAT_EXEMPTION_CHOICES, blank=True, default="")
+
+    # Aşama 46 / 54: "Diğer Seçenekler" — tamamı opsiyonel, hem e-Fatura hem
+    # e-İrsaliye kalemlerinde ortak kullanılır (aynı InvoiceItem modeli).
+    seller_code = models.CharField(max_length=100, blank=True, verbose_name="Satıcı Kodu")
+    buyer_code = models.CharField(max_length=100, blank=True, verbose_name="Alıcı Kodu")
+    barcode = models.CharField(max_length=100, blank=True, verbose_name="Üretici Kodu / Barkod")
+    brand = models.CharField(max_length=150, blank=True, verbose_name="Marka")
+    model_name = models.CharField(max_length=150, blank=True, verbose_name="Model")
+    additional_description = models.CharField(max_length=500, blank=True, verbose_name="Açıklama (Ek)")
+    item_note = models.CharField(max_length=500, blank=True, verbose_name="Not")
+    origin_country = models.CharField(max_length=100, blank=True, verbose_name="Menşei")
+    classification_value = models.CharField(max_length=100, blank=True, verbose_name="Sınıflandırma Değeri")
+    classification_version = models.CharField(max_length=50, blank=True, verbose_name="Sınıflandırma Versiyonu")
+    classification_code = models.CharField(max_length=50, blank=True, verbose_name="Sınıflandırma Kodu")
+    related_waybill_number = models.CharField(max_length=100, blank=True, verbose_name="İrsaliye No")
+    related_waybill_date = models.DateField(null=True, blank=True, verbose_name="İrsaliye Tarihi")
+    order_number = models.CharField(max_length=100, blank=True, verbose_name="Sipariş No")
+    order_date = models.DateField(null=True, blank=True, verbose_name="Sipariş Tarihi")
+    additional_info_id = models.CharField(max_length=100, blank=True, verbose_name="Ek Bilgi ID")
 
     class Meta:
         db_table = 'invoice_items'

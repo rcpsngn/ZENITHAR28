@@ -328,3 +328,62 @@ class WarehouseStockIntegrationTests(TestCase):
         })
         self.assertEqual(response.status_code, 302)
         self.assertEqual(StockMovement.objects.filter(type="transfer").count(), 0)
+
+
+# ============================================================
+# YENİ ÜRÜN OLUŞTURURKEN DEPO DAĞILIMI
+# ============================================================
+class ProductCreationWarehouseAllocationTests(TestCase):
+    def setUp(self):
+        self.user = make_user()
+        self.client = Client()
+        self.client.force_login(self.user)
+        self.wh1 = Warehouse.objects.create(user=self.user, name="Depo 1")
+        self.wh2 = Warehouse.objects.create(user=self.user, name="Depo 2")
+
+    def test_depo_dagitimi_ile_urun_olusturulur_ve_toplam_dogru_hesaplanir(self):
+        from .models import ProductWarehouseStock
+        response = self.client.post(reverse("product_save"), {
+            "name": "Yarı Yarıya Dağıtılan Ürün", "unit": "Adet",
+            f"warehouse_qty_{self.wh1.id}": "50",
+            f"warehouse_qty_{self.wh2.id}": "50",
+        })
+        self.assertEqual(response.status_code, 302)
+        product = Product.objects.get(user=self.user, name="Yarı Yarıya Dağıtılan Ürün")
+        self.assertEqual(product.quantity, Decimal("100"))
+        self.assertEqual(
+            ProductWarehouseStock.objects.get(product=product, warehouse=self.wh1).quantity, Decimal("50")
+        )
+        self.assertEqual(
+            ProductWarehouseStock.objects.get(product=product, warehouse=self.wh2).quantity, Decimal("50")
+        )
+
+    def test_depo_dagitimi_olmadan_urun_eskisi_gibi_calisir(self):
+        response = self.client.post(reverse("product_save"), {
+            "name": "Depoya Bağlanmamış Ürün", "unit": "Adet", "quantity": "75",
+        })
+        self.assertEqual(response.status_code, 302)
+        product = Product.objects.get(user=self.user, name="Depoya Bağlanmamış Ürün")
+        self.assertEqual(product.quantity, Decimal("75"))
+        self.assertEqual(StockMovement.objects.filter(product=product).count(), 0)
+
+    def test_tek_depoya_kismi_dagitim_calisir(self):
+        response = self.client.post(reverse("product_save"), {
+            "name": "Tek Depoya Giren Ürün", "unit": "Adet",
+            f"warehouse_qty_{self.wh1.id}": "30",
+        })
+        self.assertEqual(response.status_code, 302)
+        product = Product.objects.get(user=self.user, name="Tek Depoya Giren Ürün")
+        self.assertEqual(product.quantity, Decimal("30"))
+
+    def test_urun_duzenlenirken_depo_dagitimi_uygulanmaz(self):
+        """Çift sayımı önlemek için depo dağılımı yalnızca YENİ ürün eklerken çalışır."""
+        product = make_product(self.user, quantity=Decimal("100"))
+        self.client.post(reverse("product_edit", args=[product.id]), {
+            "name": product.name, "unit": "Adet", "quantity": "100",
+            f"warehouse_qty_{self.wh1.id}": "999",
+        })
+        product.refresh_from_db()
+        self.assertEqual(product.quantity, Decimal("100"))
+        from .models import ProductWarehouseStock
+        self.assertFalse(ProductWarehouseStock.objects.filter(product=product, warehouse=self.wh1).exists())

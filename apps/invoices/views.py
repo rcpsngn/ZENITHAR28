@@ -28,6 +28,45 @@ def to_decimal(value, default="0"):
         return Decimal(default)
 
 
+def _optional_item_kwargs(item: dict) -> dict:
+    """
+    Aşama 46/47/54: kalem JSON'undaki opsiyonel "Diğer Seçenekler" ve KDV
+    muafiyet sebebi alanlarını InvoiceItem.objects.create() için kwarg
+    sözlüğüne çevirir. Tüm alanlar isteğe bağlıdır; JS tarafında
+    gönderilmezse boş string/None olarak düşer, ValidationError oluşmaz.
+
+    Hem e-Fatura (apps/invoices/views.py) hem e-İrsaliye (apps/waybill/views.py)
+    kalemleri aynı InvoiceItem modelini kullandığı için bu fonksiyon ortaktır.
+    """
+    def _date_or_none(value):
+        if not value:
+            return None
+        try:
+            return datetime.strptime(value, "%Y-%m-%d").date()
+        except (ValueError, TypeError):
+            return None
+
+    return {
+        "vat_exemption_reason": item.get("vat_exemption_reason", ""),
+        "seller_code": item.get("seller_code", ""),
+        "buyer_code": item.get("buyer_code", ""),
+        "barcode": item.get("barcode", ""),
+        "brand": item.get("brand", ""),
+        "model_name": item.get("model_name", ""),
+        "additional_description": item.get("additional_description", ""),
+        "item_note": item.get("item_note", ""),
+        "origin_country": item.get("origin_country", ""),
+        "classification_value": item.get("classification_value", ""),
+        "classification_version": item.get("classification_version", ""),
+        "classification_code": item.get("classification_code", ""),
+        "related_waybill_number": item.get("related_waybill_number", ""),
+        "related_waybill_date": _date_or_none(item.get("related_waybill_date")),
+        "order_number": item.get("order_number", ""),
+        "order_date": _date_or_none(item.get("order_date")),
+        "additional_info_id": item.get("additional_info_id", ""),
+    }
+
+
 def invoices_home(request):
     return redirect("invoices_draft")
 
@@ -194,7 +233,25 @@ def invoices_page(request):
             delivery_district=request.POST.get("delivery_district", ""),
             delivery_postal_code=request.POST.get("delivery_postal_code", ""),
             delivery_street=request.POST.get("delivery_street", ""),
-            notes=request.POST.get("notes", ""), status="draft"
+            notes=request.POST.get("notes", ""), status="draft",
+            # Aşama 48/49: yalnızca invoice_type='ihracat' iken anlamlı, ama
+            # her zaman kaydedilebilir (boşsa sorun olmaz, formda gösterilmez).
+            export_gtip_no=request.POST.get("export_gtip_no", ""),
+            export_delivery_terms=request.POST.get("export_delivery_terms", ""),
+            export_shipping_method=request.POST.get("export_shipping_method", ""),
+            export_package_marks=request.POST.get("export_package_marks", ""),
+            export_package_number=request.POST.get("export_package_number", ""),
+            export_package_count=request.POST.get("export_package_count", ""),
+            export_customs_tracking_no=request.POST.get("export_customs_tracking_no", ""),
+            export_delivery_country=request.POST.get("export_delivery_country", ""),
+            export_delivery_city=request.POST.get("export_delivery_city", ""),
+            export_delivery_district=request.POST.get("export_delivery_district", ""),
+            export_delivery_town=request.POST.get("export_delivery_town", ""),
+            export_delivery_street=request.POST.get("export_delivery_street", ""),
+            export_delivery_postal_code=request.POST.get("export_delivery_postal_code", ""),
+            export_delivery_building_name=request.POST.get("export_delivery_building_name", ""),
+            export_delivery_building_no=request.POST.get("export_delivery_building_no", ""),
+            export_delivery_door_no=request.POST.get("export_delivery_door_no", ""),
         )
 
         items_json = request.POST.get("items_json_data", "[]")
@@ -207,7 +264,8 @@ def invoices_page(request):
                     quantity=to_decimal(item.get("qty"), "1"),
                     unit=item.get("unit"),
                     unit_price=to_decimal(item.get("price"), "0"),
-                    vat_rate=to_decimal(item.get("vat"), "0")
+                    vat_rate=to_decimal(item.get("vat"), "0"),
+                    **_optional_item_kwargs(item),
                 )
         except Exception:
             pass
@@ -254,6 +312,22 @@ def invoice_edit(request, id):
         invoice.delivery_postal_code = request.POST.get("delivery_postal_code", "")
         invoice.delivery_street = request.POST.get("delivery_street", "")
         invoice.notes = request.POST.get("notes", "")
+        invoice.export_gtip_no = request.POST.get("export_gtip_no", "")
+        invoice.export_delivery_terms = request.POST.get("export_delivery_terms", "")
+        invoice.export_shipping_method = request.POST.get("export_shipping_method", "")
+        invoice.export_package_marks = request.POST.get("export_package_marks", "")
+        invoice.export_package_number = request.POST.get("export_package_number", "")
+        invoice.export_package_count = request.POST.get("export_package_count", "")
+        invoice.export_customs_tracking_no = request.POST.get("export_customs_tracking_no", "")
+        invoice.export_delivery_country = request.POST.get("export_delivery_country", "")
+        invoice.export_delivery_city = request.POST.get("export_delivery_city", "")
+        invoice.export_delivery_district = request.POST.get("export_delivery_district", "")
+        invoice.export_delivery_town = request.POST.get("export_delivery_town", "")
+        invoice.export_delivery_street = request.POST.get("export_delivery_street", "")
+        invoice.export_delivery_postal_code = request.POST.get("export_delivery_postal_code", "")
+        invoice.export_delivery_building_name = request.POST.get("export_delivery_building_name", "")
+        invoice.export_delivery_building_no = request.POST.get("export_delivery_building_no", "")
+        invoice.export_delivery_door_no = request.POST.get("export_delivery_door_no", "")
         invoice.save()
 
         invoice.items.all().delete()
@@ -267,7 +341,8 @@ def invoice_edit(request, id):
                     quantity=to_decimal(item.get("qty"), "1"),
                     unit=item.get("unit"),
                     unit_price=to_decimal(item.get("price"), "0"),
-                    vat_rate=to_decimal(item.get("vat"), "0")
+                    vat_rate=to_decimal(item.get("vat"), "0"),
+                    **_optional_item_kwargs(item),
                 )
         except Exception:
             pass

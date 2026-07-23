@@ -32,14 +32,35 @@
 </div>
 
 <!-- ============================================================ -->
-<!-- 2) BELGE HACMİ TREND GRAFİĞİ (son 30 gün) — Uyumsoft portal referanslı -->
+<!-- 2) BELGE HACMİ TREND GRAFİĞİ — Uyumsoft portal referanslı -->
 <!-- ============================================================ -->
 <div class="card" style="background: rgba(15, 31, 23, 0.5); border: 1px solid rgba(0, 255, 150, 0.2); border-radius: 8px; padding: 20px; margin: 20px 0;">
-    <canvas id="trendChart" height="90"></canvas>
+
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:6px;">
+        <div id="trendSummaryBadges" style="display:flex; gap:16px; flex-wrap:wrap;"></div>
+        <div style="display:flex; gap:6px; background:rgba(0,0,0,0.2); padding:4px; border-radius:6px;">
+            <button type="button" class="trend-range-btn" data-days="7" onclick="setTrendRange(7)">7 Gün</button>
+            <button type="button" class="trend-range-btn" data-days="30" onclick="setTrendRange(30)">30 Gün</button>
+            <button type="button" class="trend-range-btn" data-days="90" onclick="setTrendRange(90)">90 Gün</button>
+        </div>
+    </div>
+
+    <canvas id="trendChart" height="85"></canvas>
     <div id="trendToggle" onclick="toggleReportsPanel()" style="text-align:center; margin-top:14px; padding:10px; cursor:pointer; color:#00ff66; font-size:14px; font-weight:600; border-top:1px solid rgba(0,255,150,0.1);">
         📊 Raporları ve Duyuruları Görüntülemek için Tıklayınız <span id="trendToggleArrow">▾</span>
     </div>
 </div>
+
+<style>
+    .trend-range-btn {
+        background: transparent; border: none; color: #7a8a99; font-size: 12px; font-weight: 600;
+        padding: 6px 14px; border-radius: 5px; cursor: pointer; transition: all 0.15s ease;
+    }
+    .trend-range-btn.active { background: #00ff66; color: #002208; }
+    .trend-badge { font-size: 12px; color: #7a8a99; display:flex; align-items:center; gap:6px; }
+    .trend-badge .dot { width:9px; height:9px; border-radius:50%; display:inline-block; }
+    .trend-badge b { color: #e8f0ea; font-size: 14px; }
+</style>
 
 <!-- ============================================================ -->
 <!-- GENİŞLETİLEBİLİR PANEL: durum özetleri + son işlemler + duyurular -->
@@ -199,34 +220,107 @@
 </div>
 
 <script>
-document.addEventListener("DOMContentLoaded", function () {
-    const trendLabels = {{ trend_labels_json|safe }};
-    const trendEfatura = {{ trend_efatura_json|safe }};
-    const trendEarsiv = {{ trend_earsiv_json|safe }};
-    const trendEirsaliye = {{ trend_eirsaliye_json|safe }};
-    const trendPending = {{ trend_pending_json|safe }};
+const trendSeriesConfig = [
+    { key: "efatura", label: "E-Fatura", color: "#ff5c9d" },
+    { key: "earsiv", label: "E-Arşiv", color: "#8fd14f" },
+    { key: "eirsaliye", label: "E-İrsaliye", color: "#4fc3f7" },
+    { key: "pending", label: "Onay Bekleyen", color: "#f4c542" },
+];
 
-    new Chart(document.getElementById("trendChart"), {
+let trendChartInstance = null;
+let trendFullData = {};
+let currentTrendRange = 30;
+
+function hexToRgba(hex, alpha) {
+    const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function updateTrendBadges(slicedData) {
+    const container = document.getElementById("trendSummaryBadges");
+    container.innerHTML = trendSeriesConfig.map(function (s) {
+        const total = slicedData[s.key].reduce(function (a, b) { return a + b; }, 0);
+        return `<span class="trend-badge"><span class="dot" style="background:${s.color};"></span>${s.label}: <b>${total}</b></span>`;
+    }).join("");
+}
+
+function setTrendRange(days) {
+    currentTrendRange = days;
+    document.querySelectorAll(".trend-range-btn").forEach(function (btn) {
+        btn.classList.toggle("active", parseInt(btn.dataset.days, 10) === days);
+    });
+
+    const labels = trendFullData.labels.slice(-days);
+    const sliced = {};
+    trendSeriesConfig.forEach(function (s) { sliced[s.key] = trendFullData[s.key].slice(-days); });
+    updateTrendBadges(sliced);
+
+    if (trendChartInstance) {
+        trendChartInstance.data.labels = labels;
+        trendChartInstance.data.datasets.forEach(function (ds, i) {
+            ds.data = sliced[trendSeriesConfig[i].key];
+        });
+        // Az sayıda gün gösterilirken noktaları belirginleştir, çok gün varken sadeleştir.
+        const pointRadius = days <= 7 ? 3 : (days <= 30 ? 2 : 0);
+        trendChartInstance.data.datasets.forEach(function (ds) { ds.pointRadius = pointRadius; });
+        trendChartInstance.options.scales.x.ticks.maxTicksLimit = days <= 7 ? 7 : (days <= 30 ? 10 : 12);
+        trendChartInstance.update();
+    }
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+    trendFullData = {
+        labels: {{ trend_labels_json|safe }},
+        efatura: {{ trend_efatura_json|safe }},
+        earsiv: {{ trend_earsiv_json|safe }},
+        eirsaliye: {{ trend_eirsaliye_json|safe }},
+        pending: {{ trend_pending_json|safe }},
+    };
+
+    const ctx = document.getElementById("trendChart").getContext("2d");
+    const datasets = trendSeriesConfig.map(function (s) {
+        const gradient = ctx.createLinearGradient(0, 0, 0, 220);
+        gradient.addColorStop(0, hexToRgba(s.color, 0.28));
+        gradient.addColorStop(1, hexToRgba(s.color, 0));
+        return {
+            label: s.label,
+            data: trendFullData[s.key].slice(-currentTrendRange),
+            borderColor: s.color,
+            backgroundColor: gradient,
+            fill: true,
+            tension: 0.25,
+            pointRadius: 2,
+            pointHoverRadius: 5,
+            pointBackgroundColor: s.color,
+            borderWidth: 2.5,
+        };
+    });
+
+    trendChartInstance = new Chart(ctx, {
         type: "line",
-        data: {
-            labels: trendLabels,
-            datasets: [
-                { label: "E-Fatura", data: trendEfatura, borderColor: "#ff5c9d", backgroundColor: "transparent", tension: 0.4, pointRadius: 0, borderWidth: 2 },
-                { label: "E-Arşiv", data: trendEarsiv, borderColor: "#8fd14f", backgroundColor: "transparent", tension: 0.4, pointRadius: 0, borderWidth: 2 },
-                { label: "E-İrsaliye", data: trendEirsaliye, borderColor: "#4fc3f7", backgroundColor: "transparent", tension: 0.4, pointRadius: 0, borderWidth: 2 },
-                { label: "Onay Bekleyen", data: trendPending, borderColor: "#f4c542", backgroundColor: "transparent", tension: 0.4, pointRadius: 0, borderWidth: 2 },
-            ]
-        },
+        data: { labels: trendFullData.labels.slice(-currentTrendRange), datasets: datasets },
         options: {
             responsive: true,
             interaction: { mode: "index", intersect: false },
-            plugins: { legend: { position: "bottom", labels: { color: "#7a8a99" } } },
+            animation: { duration: 400 },
+            plugins: {
+                legend: { position: "bottom", labels: { color: "#7a8a99", usePointStyle: true, boxWidth: 8 } },
+                tooltip: {
+                    backgroundColor: "#1a2233", titleColor: "#fff", bodyColor: "#d8e0ea",
+                    padding: 10, cornerRadius: 6, displayColors: true,
+                }
+            },
             scales: {
-                y: { beginAtZero: true, ticks: { color: "#7a8a99" }, grid: { color: "rgba(255,255,255,0.05)" } },
+                y: {
+                    beginAtZero: true, ticks: { color: "#7a8a99", precision: 0 },
+                    grid: { color: "rgba(255,255,255,0.05)" },
+                },
                 x: { ticks: { color: "#7a8a99", maxTicksLimit: 10 }, grid: { display: false } },
             }
         }
     });
+
+    setTrendRange(30);
 });
 
 function toggleReportsPanel() {

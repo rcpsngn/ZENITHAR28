@@ -47,7 +47,7 @@
                         </div>
                         <div class="input-unit horizontal-row">
                             <label>Senaryo Tipi</label>
-                            <select name="invoice_type">
+                            <select name="invoice_type" id="invoice_type_select" onchange="toggleExportBox()">
                                 <option value="temel" {% if not invoice or invoice.invoice_type == "temel" %}selected{% endif %}>Temel</option>
                                 <option value="ticari" {% if invoice.invoice_type == "ticari" %}selected{% endif %}>Ticari</option>
                                 <option value="yolcu_beraber" {% if invoice.invoice_type == "yolcu_beraber" %}selected{% endif %}>Yolcu Beraber</option>
@@ -327,6 +327,32 @@
                 </div>
             </div>
 
+            <!-- İHRACAT BİLGİLERİ (Aşama 48/49) — yalnızca "Fatura Tipi: İhracat" seçilince görünür -->
+            <div class="erp-box" id="export_info_box" style="display:none;">
+                <div class="box-header">🚢 İhracat Fatura Bilgileri</div>
+                <div class="box-content grid-4">
+                    <div class="input-unit"><label>GTİP No</label><input type="text" name="export_gtip_no" value="{{ invoice.export_gtip_no|default:'' }}"></div>
+                    <div class="input-unit"><label>Teslim Şartı</label><input type="text" name="export_delivery_terms" value="{{ invoice.export_delivery_terms|default:'' }}"></div>
+                    <div class="input-unit"><label>Gönderilme Şekli</label><input type="text" name="export_shipping_method" value="{{ invoice.export_shipping_method|default:'' }}"></div>
+                    <div class="input-unit"><label>Kabın Markası/Cinsi</label><input type="text" name="export_package_marks" value="{{ invoice.export_package_marks|default:'' }}"></div>
+                    <div class="input-unit"><label>Kap Numarası</label><input type="text" name="export_package_number" value="{{ invoice.export_package_number|default:'' }}"></div>
+                    <div class="input-unit"><label>Kap Adedi</label><input type="text" name="export_package_count" value="{{ invoice.export_package_count|default:'' }}"></div>
+                    <div class="input-unit"><label>Gümrük Takip No</label><input type="text" name="export_customs_tracking_no" value="{{ invoice.export_customs_tracking_no|default:'' }}"></div>
+                </div>
+                <div class="box-header" style="border-top:1px solid rgba(0,255,150,0.1);">📍 İhracat Teslim / Ödeme Yeri</div>
+                <div class="box-content grid-4">
+                    <div class="input-unit"><label>Ülke</label><input type="text" name="export_delivery_country" value="{{ invoice.export_delivery_country|default:'' }}"></div>
+                    <div class="input-unit"><label>Şehir</label><input type="text" name="export_delivery_city" value="{{ invoice.export_delivery_city|default:'' }}"></div>
+                    <div class="input-unit"><label>İlçe</label><input type="text" name="export_delivery_district" value="{{ invoice.export_delivery_district|default:'' }}"></div>
+                    <div class="input-unit"><label>Kasaba/Köy</label><input type="text" name="export_delivery_town" value="{{ invoice.export_delivery_town|default:'' }}"></div>
+                    <div class="input-unit"><label>Cadde/Sokak</label><input type="text" name="export_delivery_street" value="{{ invoice.export_delivery_street|default:'' }}"></div>
+                    <div class="input-unit"><label>Posta Kodu</label><input type="text" name="export_delivery_postal_code" value="{{ invoice.export_delivery_postal_code|default:'' }}"></div>
+                    <div class="input-unit"><label>Bina Adı</label><input type="text" name="export_delivery_building_name" value="{{ invoice.export_delivery_building_name|default:'' }}"></div>
+                    <div class="input-unit"><label>Bina No</label><input type="text" name="export_delivery_building_no" value="{{ invoice.export_delivery_building_no|default:'' }}"></div>
+                    <div class="input-unit"><label>Kapı No</label><input type="text" name="export_delivery_door_no" value="{{ invoice.export_delivery_door_no|default:'' }}"></div>
+                </div>
+            </div>
+
             <!-- MAL VE HİZMET BİLGİLERİ -->
             <div class="erp-box padding-none">
                 <div class="box-header" style="padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;">
@@ -383,10 +409,10 @@
     <div class="modal-window">
         <div class="modal-top">Mal/Hizmet Bilgisi Ekle/Düzenle <span class="close-x" onclick="closeItemModal()">×</span></div>
         <div class="modal-tabs">
-            <div class="tab-item active">📝 Genel Bilgiler</div>
-            <div class="tab-item" style="opacity: 0.5;">⚙️ Diğer Seçenekler</div>
+            <div class="tab-item active" id="tab_general" onclick="switchItemTab('general')">📝 Genel Bilgiler</div>
+            <div class="tab-item" id="tab_other" onclick="switchItemTab('other')">⚙️ Diğer Seçenekler</div>
         </div>
-        <div class="modal-body-grid">
+        <div class="modal-body-grid" id="panel_general">
             <div class="input-unit span-all">
                 <label>Mal/Hizmet Tanımı</label>
                 <input type="text" id="m_desc" placeholder="Ürün veya malzeme adını giriniz...">
@@ -413,6 +439,15 @@
                 <input type="number" id="m_vat" value="20" oninput="runModalMath()">
             </div>
             <div class="input-unit">
+                <label>KDV Muafiyet Sebebi</label>
+                <select id="m_vat_exemption_reason">
+                    <option value="">— Muafiyet Yok —</option>
+                    <option value="301">301 - İhracat İstisnası</option>
+                    <option value="350">350 - Askeri Alanlar İstisnası</option>
+                    <option value="999">999 - Diğer</option>
+                </select>
+            </div>
+            <div class="input-unit">
                 <label>Hesaplanan KDV</label>
                 <input type="text" id="m_vat_calc" readonly class="readonly-style" value="0.00">
             </div>
@@ -421,6 +456,27 @@
                 <input type="text" id="m_total_calc" readonly class="readonly-style" value="0.00">
             </div>
         </div>
+
+        <!-- Aşama 46/54: Diğer Seçenekler — tamamı opsiyonel, hem e-Fatura hem e-İrsaliye kalemlerinde ortak -->
+        <div class="modal-body-grid" id="panel_other" style="display:none;">
+            <div class="input-unit"><label>Satıcı Kodu</label><input type="text" id="m_seller_code"></div>
+            <div class="input-unit"><label>Alıcı Kodu</label><input type="text" id="m_buyer_code"></div>
+            <div class="input-unit"><label>Üretici Kodu / Barkod</label><input type="text" id="m_barcode"></div>
+            <div class="input-unit"><label>Marka</label><input type="text" id="m_brand"></div>
+            <div class="input-unit"><label>Model</label><input type="text" id="m_model_name"></div>
+            <div class="input-unit"><label>Menşei</label><input type="text" id="m_origin_country"></div>
+            <div class="input-unit span-all"><label>Açıklama (Ek)</label><input type="text" id="m_additional_description"></div>
+            <div class="input-unit span-all"><label>Not</label><input type="text" id="m_item_note"></div>
+            <div class="input-unit"><label>Sınıflandırma Değeri</label><input type="text" id="m_classification_value"></div>
+            <div class="input-unit"><label>Sınıflandırma Versiyonu</label><input type="text" id="m_classification_version"></div>
+            <div class="input-unit"><label>Sınıflandırma Kodu</label><input type="text" id="m_classification_code"></div>
+            <div class="input-unit"><label>İrsaliye No</label><input type="text" id="m_related_waybill_number"></div>
+            <div class="input-unit"><label>İrsaliye Tarihi</label><input type="date" id="m_related_waybill_date"></div>
+            <div class="input-unit"><label>Sipariş No</label><input type="text" id="m_order_number"></div>
+            <div class="input-unit"><label>Sipariş Tarihi</label><input type="date" id="m_order_date"></div>
+            <div class="input-unit"><label>Ek Bilgi ID</label><input type="text" id="m_additional_info_id"></div>
+        </div>
+
         <div class="modal-actions">
             <button type="button" class="m-btn m-cancel" onclick="closeItemModal()">İptal</button>
             <button type="button" class="m-btn m-ok" onclick="pushItemToGrid()">Tamam</button>
@@ -430,6 +486,14 @@
 
 <!-- JS YÖNETİMİ & TABLO MOTORU -->
 <script src="{% static 'js/invoice-calculator.js' %}"></script>
+<script>
+    function switchItemTab(tab) {
+        document.getElementById("panel_general").style.display = (tab === "general") ? "grid" : "none";
+        document.getElementById("panel_other").style.display = (tab === "other") ? "grid" : "none";
+        document.getElementById("tab_general").classList.toggle("active", tab === "general");
+        document.getElementById("tab_other").classList.toggle("active", tab === "other");
+    }
+</script>
 <script>
     // Dinamik Ürün Listesi Dizisi
     let tempItemsList = [];
@@ -460,8 +524,18 @@
         document.getElementById('m_qty').value = '1.00';
         document.getElementById('m_price').value = '0.00';
         document.getElementById('m_vat').value = '20';
+        document.getElementById('m_vat_exemption_reason').value = '';
         document.getElementById('m_vat_calc').value = '0.00';
         document.getElementById('m_total_calc').value = '0.00';
+        // Aşama 46/54: "Diğer Seçenekler" alanlarını da temizle
+        ['m_seller_code', 'm_buyer_code', 'm_barcode', 'm_brand', 'm_model_name',
+         'm_origin_country', 'm_additional_description', 'm_item_note',
+         'm_classification_value', 'm_classification_version', 'm_classification_code',
+         'm_related_waybill_number', 'm_related_waybill_date', 'm_order_number',
+         'm_order_date', 'm_additional_info_id'].forEach(function (id) {
+            document.getElementById(id).value = '';
+        });
+        switchItemTab('general');
         document.getElementById('itemModal').style.display = 'flex';
     }
 
@@ -505,9 +579,27 @@
             qty: qty,
             unit: unit,
             price: price,
+            vat: vatPercent,
             vat_percent: vatPercent,
             vat_total: vatTotal,
-            grand_total: grandTotal
+            grand_total: grandTotal,
+            vat_exemption_reason: document.getElementById('m_vat_exemption_reason').value,
+            seller_code: document.getElementById('m_seller_code').value,
+            buyer_code: document.getElementById('m_buyer_code').value,
+            barcode: document.getElementById('m_barcode').value,
+            brand: document.getElementById('m_brand').value,
+            model_name: document.getElementById('m_model_name').value,
+            origin_country: document.getElementById('m_origin_country').value,
+            additional_description: document.getElementById('m_additional_description').value,
+            item_note: document.getElementById('m_item_note').value,
+            classification_value: document.getElementById('m_classification_value').value,
+            classification_version: document.getElementById('m_classification_version').value,
+            classification_code: document.getElementById('m_classification_code').value,
+            related_waybill_number: document.getElementById('m_related_waybill_number').value,
+            related_waybill_date: document.getElementById('m_related_waybill_date').value,
+            order_number: document.getElementById('m_order_number').value,
+            order_date: document.getElementById('m_order_date').value,
+            additional_info_id: document.getElementById('m_additional_info_id').value
         });
 
         renderTableGrid();
@@ -560,6 +652,16 @@
     function submitMainForm() {
         document.getElementById("mainInvoiceForm").submit();
     }
+
+    // Aşama 48/49: İhracat Fatura Bilgileri paneli yalnızca "İhracat" seçilince görünür.
+    function toggleExportBox() {
+        const select = document.getElementById("invoice_type_select");
+        const box = document.getElementById("export_info_box");
+        if (select && box) {
+            box.style.display = (select.value === "ihracat") ? "block" : "none";
+        }
+    }
+    document.addEventListener("DOMContentLoaded", toggleExportBox);
 </script>
 
 {% if invoice %}
