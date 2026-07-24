@@ -310,7 +310,7 @@ class InvoiceLedgerIntegrationTests(TestCase):
     def test_vkn_eslesirse_cari_otomatik_baglanir(self):
         from apps.current_accounts.models import CurrentAccount
         account = self._make_account(tax_id="1234567890")
-        response = self.client.post(reverse("invoices_page"), {
+        response = self.client.post(reverse("invoices_create"), {
             "customer_name": "Otomatik Eşleşen Müşteri", "customer_tax_id": "1234567890", "type": "e-fatura",
         })
         self.assertEqual(response.status_code, 302)
@@ -328,14 +328,14 @@ class InvoiceTemplateSelectionTests(TestCase):
         self.client.force_login(self.user)
 
     def test_bos_liste_sadece_varsayilan_gosterir(self):
-        response = self.client.get(reverse("invoices_page"))
+        response = self.client.get(reverse("invoices_create"))
         self.assertEqual(len(response.context["document_templates"]), 0)
 
     def test_aktif_efatura_sablonu_secenek_olarak_gelir(self):
         from apps.settings_app.models import DocumentTemplate
         DocumentTemplate.objects.create(user=self.user, document_type="e-fatura", name="Kurumsal Şablon")
         DocumentTemplate.objects.create(user=self.user, document_type="e-irsaliye", name="İrsaliye Şablonu")
-        response = self.client.get(reverse("invoices_page"))
+        response = self.client.get(reverse("invoices_create"))
         names = [t.name for t in response.context["document_templates"]]
         self.assertIn("Kurumsal Şablon", names)
         self.assertNotIn("İrsaliye Şablonu", names)  # yanlış belge türü karışmamalı
@@ -343,13 +343,13 @@ class InvoiceTemplateSelectionTests(TestCase):
     def test_pasif_sablon_listede_gorunmez(self):
         from apps.settings_app.models import DocumentTemplate
         DocumentTemplate.objects.create(user=self.user, document_type="e-fatura", name="Pasif Şablon", is_active=False)
-        response = self.client.get(reverse("invoices_page"))
+        response = self.client.get(reverse("invoices_create"))
         self.assertEqual(len(response.context["document_templates"]), 0)
 
     def test_secilen_sablon_faturaya_kaydedilir(self):
         from apps.settings_app.models import DocumentTemplate
         template = DocumentTemplate.objects.create(user=self.user, document_type="e-fatura", name="Kurumsal Şablon")
-        response = self.client.post(reverse("invoices_page"), {
+        response = self.client.post(reverse("invoices_create"), {
             "customer_name": "Test Müşteri", "type": "e-fatura", "invoice_template": str(template.id),
         })
         self.assertEqual(response.status_code, 302)
@@ -373,7 +373,7 @@ class InvoiceOptionalFieldsTests(TestCase):
             "seller_code": "SAT-001", "brand": "Örnek Marka", "barcode": "8690000000001",
             "vat_exemption_reason": "301",
         }])
-        response = self.client.post(reverse("invoices_page"), {
+        response = self.client.post(reverse("invoices_create"), {
             "customer_name": "Test Müşteri", "type": "e-fatura", "items_json_data": items,
         })
         self.assertEqual(response.status_code, 302)
@@ -384,7 +384,7 @@ class InvoiceOptionalFieldsTests(TestCase):
 
     def test_diger_secenekler_bos_birakilirsa_hata_vermez(self):
         items = json.dumps([{"desc": "Basit Kalem", "qty": 1, "unit": "Adet", "price": 100, "vat": 20}])
-        response = self.client.post(reverse("invoices_page"), {
+        response = self.client.post(reverse("invoices_create"), {
             "customer_name": "Test Müşteri", "type": "e-fatura", "items_json_data": items,
         })
         self.assertEqual(response.status_code, 302)
@@ -393,7 +393,7 @@ class InvoiceOptionalFieldsTests(TestCase):
         self.assertIsNone(item.order_date)
 
     def test_ihracat_bilgileri_kaydedilir(self):
-        response = self.client.post(reverse("invoices_page"), {
+        response = self.client.post(reverse("invoices_create"), {
             "customer_name": "Yurt Dışı Müşteri", "type": "e-fatura", "invoice_type": "ihracat",
             "export_gtip_no": "8471.30", "export_delivery_terms": "FOB",
             "export_delivery_country": "Almanya", "export_delivery_city": "Berlin",

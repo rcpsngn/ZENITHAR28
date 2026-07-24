@@ -160,15 +160,36 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Aşama 43: Docker'da `collectstatic` sonrası dosyaları sıkıştırıp
 # hash'leyerek sunar (nginx/CDN olmadan da production-ready statik sunum).
-# whitenoise kurulu değilse Django'nun varsayılan statik dosya storage'ına düşer.
-if WHITENOISE_INSTALLED:
+#
+# ÖNEMLİ: ManifestStaticFilesStorage bir "staticfiles.json" manifest dosyası
+# gerektirir; bu dosya yalnızca `collectstatic` çalıştırıldıktan SONRA var
+# olur. Geliştirme ortamında ve `manage.py test` çalıştırırken collectstatic
+# hiç çalışmaz — bu yüzden Manifest sürümü SADECE üretimde (DEBUG=False)
+# kullanılır. DEBUG=True iken (dev/test) manifest gerektirmeyen, sıkıştırma
+# yapan ama hash'lemeyen basit whitenoise storage'ı kullanılır.
+if WHITENOISE_INSTALLED and not DEBUG:
     STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
         "staticfiles": {
             "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
         },
     }
+elif WHITENOISE_INSTALLED:
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+        },
+    }
 else:
     STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
         "staticfiles": {
             "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
         },

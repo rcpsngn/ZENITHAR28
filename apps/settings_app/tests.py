@@ -25,13 +25,13 @@ class DocumentDesignSettingsTests(TestCase):
         self.client.force_login(self.user)
 
     def test_varsayilan_prefix_znt_dir(self):
-        response = self.client.get(reverse("document_design"))
+        response = self.client.get(reverse("document_numbering_settings"))
         self.assertEqual(response.status_code, 200)
         design = DocumentDesignSettings.objects.get(user=self.user)
         self.assertEqual(design.invoice_number_prefix, "ZNT")
 
     def test_ozel_prefix_kaydedilir_ve_kucuk_harf_buyutulur(self):
-        response = self.client.post(reverse("document_design"), {
+        response = self.client.post(reverse("document_numbering_settings"), {
             "invoice_number_prefix": "abc", "footer_note": "Test notu",
         })
         self.assertEqual(response.status_code, 302)
@@ -39,7 +39,7 @@ class DocumentDesignSettingsTests(TestCase):
         self.assertEqual(design.invoice_number_prefix, "ABC")
 
     def test_ozel_karakterli_prefix_reddedilir(self):
-        response = self.client.post(reverse("document_design"), {
+        response = self.client.post(reverse("document_numbering_settings"), {
             "invoice_number_prefix": "AB-C!", "footer_note": "",
         })
         self.assertEqual(response.status_code, 200)  # forma hata ile geri döner
@@ -48,7 +48,7 @@ class DocumentDesignSettingsTests(TestCase):
 
     def test_kaydedilen_prefix_yeni_fatura_numarasina_yansir(self):
         DocumentDesignSettings.objects.create(user=self.user, invoice_number_prefix="ABC")
-        response = self.client.post(reverse("invoices_page"), {
+        response = self.client.post(reverse("invoices_create"), {
             "customer_name": "Test Müşteri", "type": "e-fatura",
         })
         self.assertEqual(response.status_code, 302)

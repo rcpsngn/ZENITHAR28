@@ -154,10 +154,10 @@ class Invoice(models.Model):
     customer_address = models.TextField(blank=True)
 
     # Finansal Toplamlar
-    amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     vat_rate = models.DecimalField(max_digits=5, decimal_places=2, default=20)
-    vat_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
-    total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    vat_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
 
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
     issue_date = models.DateField()
